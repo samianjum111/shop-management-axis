@@ -1,9 +1,25 @@
+
 {% extends "desktop/base.html" %}
 {% block content %}
 <h2>💰 Expenses & Udhaar</h2>
-<a href="/expenses/add/" class="btn btn-primary">+ Add</a>
-<p>Total Given: {{ total_given }} | Total Taken: {{ total_taken }}</p>
-<table class="table"><tr><th>Title</th><th>Amount</th><th>Category</th><th>Person</th></tr>
-{% for e in expenses %}<tr><td>{{ e.title }}</td><td>{{ e.amount }}</td><td>{{ e.category }}</td><td>{{ e.person_name }}</td></tr>{% endfor %}
+<a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="btn btn-primary">+ Add</a>
+<p>Total Given (pending): ₹{{ total_given }} | Total Taken (pending): ₹{{ total_taken }}</p>
+<table class="table">
+    <tr><th>Title</th><th>Amount</th><th>Category</th><th>Person</th><th>Due Date</th><th>Repaid</th><th>Action</th></tr>
+    {% for e in expenses %}
+    <tr>
+        <td>{{ e.title }}</td>
+        <td>₹{{ e.amount }}</td>
+        <td>{{ e.category }}</td>
+        <td>{{ e.person_name }}</td>
+        <td>{{ e.due_date|default:"-" }}</td>
+        <td>{{ e.is_repaid|yesno:"Yes,No" }}</td>
+        <td>
+            {% if not e.is_repaid and e.category == 'given_loan' or e.category == 'taken_loan' %}
+                <a href="/portal/{{ tenant.schema_name }}/expenses/repay/{{ e.id }}/" class="btn btn-sm btn-success">Mark Repaid</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
 </table>
 {% endblock %}

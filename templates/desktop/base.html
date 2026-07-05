@@ -12,9 +12,9 @@
     <h4>{{ tenant.name|default:"SaaS" }}</h4>
     <hr>
     <a href="/portal/{{ tenant.schema_name }}/dashboard/" class="text-white d-block">🏠 Dashboard</a>
-    <a href="/chakki/" class="text-white d-block">🌾 Chakki</a>
-    <a href="/expenses/" class="text-white d-block">💰 Expenses</a>
-    <a href="/chakki/settings/" class="text-white d-block">⚙️ Settings</a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/" class="text-white d-block">🌾 Chakki</a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/" class="text-white d-block">💰 Expenses</a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="text-white d-block">⚙️ Settings</a>
     <a href="/portal/{{ tenant.schema_name }}/logout/" class="text-white d-block mt-5">🚪 Logout</a>
 </div>
 <div class="col-md-10 p-4">

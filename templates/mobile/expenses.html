@@ -2,9 +2,19 @@
 {% extends "mobile/base.html" %}
 {% block content %}
 <h2>💰 Expenses & Udhaar</h2>
-<a href="/expenses/add/" class="btn btn-primary">+ Add</a>
-<p>Total Given: {{ total_given }} | Total Taken: {{ total_taken }}</p>
-<list-group class="list-group"><tr><th>Title</th><th>Amount</th><th>Category</th><th>Person</th></tr>
-{% for e in expenses %}<tr><td>{{ e.title }}</td><td>{{ e.amount }}</td><td>{{ e.category }}</td><td>{{ e.person_name }}</td></tr>{% endfor %}
-</list-group>
+<a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="btn btn-primary">+ Add</a>
+<p>Given: ₹{{ total_given }} | Taken: ₹{{ total_taken }}</p>
+{% for e in expenses %}
+<div class="card">
+    <div class="card-body">
+        <b>{{ e.title }}</b> - ₹{{ e.amount }}<br>
+        Category: {{ e.category }}<br>
+        Person: {{ e.person_name }}<br>
+        Due: {{ e.due_date|default:"-" }} | Repaid: {{ e.is_repaid|yesno:"Yes,No" }}
+        {% if not e.is_repaid and e.category == 'given_loan' or e.category == 'taken_loan' %}
+            <a href="/portal/{{ tenant.schema_name }}/expenses/repay/{{ e.id }}/" class="btn btn-sm btn-success">Mark Repaid</a>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

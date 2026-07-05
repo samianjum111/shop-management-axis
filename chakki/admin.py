@@ -1,2 +1,7 @@
+
 from django.contrib import admin
-# Models intentionally hidden from admin
+from .models import ChakkiCustomer, ChakkiSetting, ChakkiOrder
+
+admin.site.register(ChakkiCustomer)
+admin.site.register(ChakkiSetting)
+admin.site.register(ChakkiOrder)

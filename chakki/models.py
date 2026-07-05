@@ -1,3 +1,4 @@
+
 from django.db import models
 from django.utils import timezone
 
@@ -15,7 +16,7 @@ class ChakkiSetting(models.Model):
     cleaning_rate = models.DecimalField(max_digits=10, decimal_places=2, default=5.0, help_text="Per KG")
 
     def __str__(self):
-        return f"Rates (Grind: {self.grinding_rate}, Clean: {self.cleaning_rate})"
+        return f"Grind: {self.grinding_rate}, Clean: {self.cleaning_rate}"
 
 class ChakkiOrder(models.Model):
     STATUS_CHOICES = [
@@ -35,10 +36,11 @@ class ChakkiOrder(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        setting = ChakkiSetting.objects.first() or ChakkiSetting.objects.create()
+        setting, _ = ChakkiSetting.objects.get_or_create(id=1)
         self.grinding_charges = self.total_kg * setting.grinding_rate
         self.cleaning_charges = self.total_kg * setting.cleaning_rate if self.is_cleaning_done else 0
         self.total_amount = self.grinding_charges + self.cleaning_charges
+        # Auto-ready when ready_time passes (handled in view)
         super().save(*args, **kwargs)
 
     def __str__(self):

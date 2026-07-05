@@ -15,9 +15,9 @@
     {% block content %}{% endblock %}
     <div class="fixed-bottom bg-white p-2 d-flex justify-content-around border-top">
         <a href="/portal/{{ tenant.schema_name }}/dashboard/" class="btn btn-link">🏠</a>
-        <a href="/chakki/" class="btn btn-link">🌾</a>
-        <a href="/expenses/" class="btn btn-link">💰</a>
-        <a href="/chakki/add/" class="btn btn-primary">+ Order</a>
+        <a href="/portal/{{ tenant.schema_name }}/chakki/" class="btn btn-link">🌾</a>
+        <a href="/portal/{{ tenant.schema_name }}/expenses/" class="btn btn-link">💰</a>
+        <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn btn-primary">+ Order</a>
     </div>
 </div>
 </body>

@@ -1,15 +1,24 @@
+
 {% extends "desktop/base.html" %}
 {% block content %}
 <h2>Add Expense</h2>
-<form method="post">{% csrf_token %}
-    <input name="title" placeholder="Title" class="form-control mb-2">
-    <input name="amount" placeholder="Amount" class="form-control mb-2" type="number">
+<form method="post">
+    {% csrf_token %}
+    <input name="title" placeholder="Title" class="form-control mb-2" required>
+    <input name="amount" placeholder="Amount" class="form-control mb-2" type="number" step="0.01" required>
     <select name="category" class="form-control mb-2">
-        <option value="general">General</option><option value="medicine">Medicine</option>
-        <option value="given_loan">Given Loan</option><option value="taken_loan">Taken Loan</option>
+        <option value="general">General</option>
+        <option value="medicine">Medicine</option>
+        <option value="food">Food</option>
+        <option value="utility">Utility</option>
+        <option value="given_loan">Given Loan (Udhaar)</option>
+        <option value="taken_loan">Taken Loan</option>
+        <option value="other">Other</option>
     </select>
-    <input name="person_name" placeholder="Person Name" class="form-control mb-2">
-    <input type="checkbox" name="is_credit"> Is this money given to someone?
+    <input name="person_name" placeholder="Person Name (for loans)" class="form-control mb-2">
+    <input name="due_date" type="date" class="form-control mb-2">
+    <input type="checkbox" name="is_credit" id="is_credit">
+    <label for="is_credit">Is this money given to someone?</label>
     <button class="btn btn-primary mt-2">Save</button>
 </form>
 {% endblock %}

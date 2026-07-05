@@ -1,2 +1,5 @@
+
 from django.contrib import admin
-# Models intentionally hidden from admin
+from .models import Expense
+
+admin.site.register(Expense)

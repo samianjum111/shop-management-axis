@@ -23,6 +23,20 @@ def portal_logout(request, schema_name):
     logout(request)
     return redirect('portal_login', schema_name=schema_name)
 
+
+def redirect_to_portal_login(request):
+    next_url = request.GET.get('next', '')
+    schema = None
+    if next_url:
+        parts = next_url.split('/')
+        if len(parts) >= 3 and parts[1] == 'portal':
+            schema = parts[2]
+    if schema:
+        from django.shortcuts import redirect
+        return redirect(f'/portal/{schema}/?next={next_url}')
+    else:
+        from django.shortcuts import redirect
+        return redirect('/admin/')
 @login_required
 def portal_dashboard(request, schema_name):
     tenant = get_object_or_404(Tenant, schema_name=schema_name)

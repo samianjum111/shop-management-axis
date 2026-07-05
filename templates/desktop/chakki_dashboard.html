@@ -1,3 +1,4 @@
+
 {% extends "desktop/base.html" %}
 {% block content %}
 <h2>🌾 Chakki Dashboard</h2>
@@ -5,17 +6,28 @@
     <div class="col-md-3"><div class="card p-3"><h5>Pending</h5><h2>{{ pending }}</h2></div></div>
     <div class="col-md-3"><div class="card p-3 bg-warning"><h5>Ready</h5><h2>{{ ready }}</h2></div></div>
     <div class="col-md-3"><div class="card p-3 bg-success text-white"><h5>Completed</h5><h2>{{ completed }}</h2></div></div>
+    <div class="col-md-3"><div class="card p-3 bg-info"><h5>Total Income</h5><h2>₹{{ total_income }}</h2></div></div>
 </div>
-<a href="/chakki/add/" class="btn btn-primary mb-3">+ New Order</a>
+<div class="row mt-3">
+    <div class="col-md-4"><div class="card p-3"><h6>Pending Value</h6><h4>₹{{ total_pending_value }}</h4></div></div>
+    <div class="col-md-4"><div class="card p-3"><h6>Total Expenses</h6><h4>₹{{ total_expenses }}</h4></div></div>
+    <div class="col-md-4"><div class="card p-3"><h6>Net Profit</h6><h4>₹{{ net_profit }}</h4></div></div>
+</div>
+<div class="row mt-2">
+    <div class="col-md-6"><div class="card p-3"><h6>Loans Given (Pending)</h6><h4>₹{{ total_given }}</h4></div></div>
+    <div class="col-md-6"><div class="card p-3"><h6>Loans Taken (Pending)</h6><h4>₹{{ total_taken }}</h4></div></div>
+</div>
+<a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn btn-primary mb-3">+ New Order</a>
+<h4>Recent Orders</h4>
 <table class="table table-bordered">
-<tr><th>Customer</th><th>KG</th><th>Total</th><th>Ready Time</th><th>Status</th><th>Action</th></tr>
-{% for o in recent_orders %}
-<tr class="{% if o.status == 'ready' %}table-warning{% endif %}">
-    <td>{{ o.customer.name }}</td><td>{{ o.total_kg }}</td><td>{{ o.total_amount }}</td>
-    <td>{{ o.ready_time|date:"d M H:i" }}</td>
-    <td>{{ o.status }}</td>
-    <td>{% if o.status != 'completed' %}<a href="/chakki/complete/{{ o.id }}/" class="btn btn-sm btn-success">Complete</a>{% else %}✅{% endif %}</td>
-</tr>
-{% endfor %}
+    <tr><th>Customer</th><th>KG</th><th>Total</th><th>Ready Time</th><th>Status</th><th>Action</th></tr>
+    {% for o in recent_orders %}
+    <tr class="{% if o.status == 'ready' %}table-warning{% endif %}">
+        <td>{{ o.customer.name }}</td><td>{{ o.total_kg }}</td><td>₹{{ o.total_amount }}</td>
+        <td>{{ o.ready_time|date:"d M H:i" }}</td>
+        <td>{{ o.status }}</td>
+        <td>{% if o.status != 'completed' %}<a href="/portal/{{ tenant.schema_name }}/chakki/complete/{{ o.id }}/" class="btn btn-sm btn-success">Complete</a>{% else %}✅{% endif %}</td>
+    </tr>
+    {% endfor %}
 </table>
 {% endblock %}
