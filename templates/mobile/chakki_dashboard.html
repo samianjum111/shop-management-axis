@@ -1,0 +1,19 @@
+{% extends "mobile/base.html" %}
+{% block content %}
+<div class="row text-center">
+    <div class="col-4"><div class="card"><div class="card-body"><h5>⏳ Pending</h5><h2>{{ pending }}</h2></div></div></div>
+    <div class="col-4"><div class="card bg-warning"><div class="card-body"><h5>🔔 Ready</h5><h2>{{ ready }}</h2></div></div></div>
+    <div class="col-4"><div class="card bg-success text-white"><div class="card-body"><h5>✅ Done</h5><h2>{{ completed }}</h2></div></div></div>
+</div>
+<a href="/chakki/add/" class="btn btn-primary btn-lg w-100 mb-3">➕ New Order</a>
+<h6>Recent Orders</h6>
+{% for o in recent_orders %}
+<div class="card {% if o.status == 'ready' %}border-warning{% endif %}">
+  <div class="card-body">
+    <b>{{ o.customer.name }}</b> - {{ o.total_kg }}kg | ₹{{ o.total_amount }}<br>
+    <small>Ready: {{ o.ready_time|date:"d M H:i" }} | Status: {{ o.status }}</small>
+    {% if o.status != 'completed' %}<a href="/chakki/complete/{{ o.id }}/" class="btn btn-sm btn-success float-end">✅ Done</a>{% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

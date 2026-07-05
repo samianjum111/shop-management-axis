@@ -1,0 +1,10 @@
+
+{% extends "mobile/base.html" %}
+{% block content %}
+<h2>💰 Expenses & Udhaar</h2>
+<a href="/expenses/add/" class="btn btn-primary">+ Add</a>
+<p>Total Given: {{ total_given }} | Total Taken: {{ total_taken }}</p>
+<list-group class="list-group"><tr><th>Title</th><th>Amount</th><th>Category</th><th>Person</th></tr>
+{% for e in expenses %}<tr><td>{{ e.title }}</td><td>{{ e.amount }}</td><td>{{ e.category }}</td><td>{{ e.person_name }}</td></tr>{% endfor %}
+</list-group>
+{% endblock %}

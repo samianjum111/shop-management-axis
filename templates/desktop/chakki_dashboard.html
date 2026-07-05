@@ -1,0 +1,21 @@
+{% extends "desktop/base.html" %}
+{% block content %}
+<h2>🌾 Chakki Dashboard</h2>
+<div class="row">
+    <div class="col-md-3"><div class="card p-3"><h5>Pending</h5><h2>{{ pending }}</h2></div></div>
+    <div class="col-md-3"><div class="card p-3 bg-warning"><h5>Ready</h5><h2>{{ ready }}</h2></div></div>
+    <div class="col-md-3"><div class="card p-3 bg-success text-white"><h5>Completed</h5><h2>{{ completed }}</h2></div></div>
+</div>
+<a href="/chakki/add/" class="btn btn-primary mb-3">+ New Order</a>
+<table class="table table-bordered">
+<tr><th>Customer</th><th>KG</th><th>Total</th><th>Ready Time</th><th>Status</th><th>Action</th></tr>
+{% for o in recent_orders %}
+<tr class="{% if o.status == 'ready' %}table-warning{% endif %}">
+    <td>{{ o.customer.name }}</td><td>{{ o.total_kg }}</td><td>{{ o.total_amount }}</td>
+    <td>{{ o.ready_time|date:"d M H:i" }}</td>
+    <td>{{ o.status }}</td>
+    <td>{% if o.status != 'completed' %}<a href="/chakki/complete/{{ o.id }}/" class="btn btn-sm btn-success">Complete</a>{% else %}✅{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "desktop/base.html" %}
+{% block content %}
+<h2>⚙️ Rates Setting</h2>
+<form method="post">
+    {% csrf_token %}
+    <label>Grinding per KG</label><input name="grinding_rate" value="{{ setting.grinding_rate }}" class="form-control">
+    <label>Cleaning per KG</label><input name="cleaning_rate" value="{{ setting.cleaning_rate }}" class="form-control">
+    <button class="btn btn-primary mt-2">Save</button>
+</form>
+{% endblock %}

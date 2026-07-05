@@ -1,0 +1,16 @@
+
+{% extends "desktop/base.html" %}
+{% block content %}
+<h2>Add Expense</h2>
+<form method="post">{% csrf_token %}
+    <input name="title" placeholder="Title" class="form-control mb-2">
+    <input name="amount" placeholder="Amount" class="form-control mb-2" type="number">
+    <select name="category" class="form-control mb-2">
+        <option value="general">General</option><option value="medicine">Medicine</option>
+        <option value="given_loan">Given Loan</option><option value="taken_loan">Taken Loan</option>
+    </select>
+    <input name="person_name" placeholder="Person Name" class="form-control mb-2">
+    <input type="checkbox" name="is_credit"> Is this money given to someone?
+    <button class="btn btn-primary mt-2">Save</button>
+</form>
+{% endblock %}
