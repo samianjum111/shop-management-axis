@@ -82,7 +82,7 @@ DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
 
 
 
-# TENANT_MODEL = 'tenants.Tenant'  # disabled   # app.Model
+TENANT_MODEL = 'tenants.Tenant'
 
 # Authentication – use default backend
 AUTHENTICATION_BACKENDS = [
