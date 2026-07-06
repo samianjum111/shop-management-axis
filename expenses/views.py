@@ -190,7 +190,9 @@ def complete_reminder(request, reminder_id, **kwargs):
 def worker_list(request, **kwargs):
     workers = Worker.objects.all().order_by('-created_at')
     categories = WorkerCategory.objects.all()
-    context = {'workers': workers, 'categories': categories, 'tenant': request.tenant}
+    active_count = workers.filter(status='active').count()
+    categories_count = categories.count()
+    context = {'workers': workers, 'categories': categories, 'tenant': request.tenant, 'active_count': active_count, 'categories_count': categories_count}
     template = 'mobile/worker_list.html' if request.mobile else 'desktop/worker_list.html'
     return render(request, template, context)
 def add_worker(request, **kwargs):
@@ -275,7 +277,7 @@ def edit_worker(request, worker_id, **kwargs):
         return redirect('worker_list', schema_name=request.tenant.schema_name)
     context = {'worker': worker, 'categories': categories, 'tenant': request.tenant}
     template = 'mobile/edit_worker.html' if request.mobile else 'desktop/edit_worker.html'
-    return render(request, template)
+    return render(request, template, context)
 
 @login_required
 def add_expense(request, **kwargs):
@@ -443,6 +445,7 @@ def worker_pay(request, worker_id, **kwargs):
         period_start = request.POST.get('period_start')
         period_end = request.POST.get('period_end')
         notes = request.POST.get('notes', '')
+        next_url = request.POST.get('next') or request.GET.get('next')
         if amount > 0 and payment_date and period_start and period_end:
             WorkerPayment.objects.create(
                 worker=worker,
@@ -455,11 +458,10 @@ def worker_pay(request, worker_id, **kwargs):
             messages.success(request, f"Payment of {amount} recorded for {worker.name}.")
         else:
             messages.error(request, "Invalid payment data.")
+        if next_url:
+            return redirect(next_url)
         return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)
-    return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)
-
-
-@login_required
+    return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)@login_required
 def edit_worker_category(request, **kwargs):
     if request.method == 'POST':
         category_id = request.POST.get('category_id')
@@ -482,3 +484,197 @@ def delete_worker_category(request, category_id, **kwargs):
     category.delete()
     messages.success(request, "Category deleted.")
     return redirect('worker_list', schema_name=request.tenant.schema_name)
+
+
+
+
+@login_required
+
+@login_required
+def pending_payments(request, **kwargs):
+    """List workers with pending payments, optimized for performance."""
+    from decimal import Decimal
+    from datetime import timedelta, date
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db.models import Prefetch
+
+    # Prefetch attendances for the last 90 days only (to reduce data)
+    today = date.today()
+    recent_start = today - timedelta(days=90)
+
+    workers = Worker.objects.filter(is_active=True, status='active').order_by('name')
+    pending_list = []
+
+    # Prefetch attendances for each worker (only last 90 days)
+    workers = workers.prefetch_related(
+        Prefetch('attendances', queryset=WorkerAttendance.objects.filter(date__gte=recent_start))
+    )
+
+    for worker in workers:
+        # Get payments (already ordered)
+        payments = worker.payments.order_by('payment_date')
+        total_paid = payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+
+        # Get attendance history (last 30 days for display)
+        attendances = worker.attendances.filter(date__gte=recent_start).order_by('-date')[:30]
+
+        # Determine the start date for period generation
+        last_payment = payments.last()
+        if last_payment:
+            last_period_end = last_payment.period_end
+        else:
+            last_period_end = worker.joining_date
+
+        # Limit the date range to last 365 days to avoid huge loops
+        start_date = max(last_period_end, today - timedelta(days=365))
+        start_date = max(worker.joining_date, start_date)
+
+        periods = []
+        MAX_PERIODS = 500  # safety limit
+
+        if worker.salary_type == 'daily':
+            current_date = start_date
+            while current_date <= today and len(periods) < MAX_PERIODS:
+                att = worker.attendances.filter(date=current_date).first()
+                due = worker.salary_amount if (att and att.status == 'present') else Decimal('0.00')
+                periods.append({
+                    'start': current_date.isoformat(),
+                    'end': current_date.isoformat(),
+                    'due': str(due),
+                    'paid': '0.00',
+                    'remaining': str(due)
+                })
+                current_date += timedelta(days=1)
+
+        elif worker.salary_type == 'weekly':
+            current_start = start_date
+            while current_start <= today and len(periods) < MAX_PERIODS:
+                current_end = current_start + timedelta(days=6)
+                if current_end > today:
+                    current_end = today
+                present_days = worker.attendances.filter(
+                    date__range=[current_start, current_end],
+                    status='present'
+                ).count()
+                daily_rate = worker.salary_amount / 7
+                due = present_days * daily_rate
+                periods.append({
+                    'start': current_start.isoformat(),
+                    'end': current_end.isoformat(),
+                    'due': str(due),
+                    'paid': '0.00',
+                    'remaining': str(due)
+                })
+                current_start = current_end + timedelta(days=1)
+
+        elif worker.salary_type == 'monthly':
+            current_start = start_date
+            while current_start <= today and len(periods) < MAX_PERIODS:
+                year = current_start.year
+                month = current_start.month
+                if month == 12:
+                    next_month = date(year+1, 1, 1)
+                else:
+                    next_month = date(year, month+1, 1)
+                current_end = next_month - timedelta(days=1)
+                if current_end > today:
+                    current_end = today
+                present_days = worker.attendances.filter(
+                    date__range=[current_start, current_end],
+                    status='present'
+                ).count()
+                days_in_month = (next_month - current_start).days
+                daily_rate = worker.salary_amount / days_in_month
+                due = present_days * daily_rate
+                periods.append({
+                    'start': current_start.isoformat(),
+                    'end': current_end.isoformat(),
+                    'due': str(due),
+                    'paid': '0.00',
+                    'remaining': str(due)
+                })
+                current_start = next_month
+
+        # Apply FIFO allocation
+        periods.sort(key=lambda x: x['start'])
+        remaining_payment = total_paid
+        for period in periods:
+            if remaining_payment <= 0:
+                break
+            due = Decimal(period['due'])
+            if due > 0:
+                paid = min(due, remaining_payment)
+                period['paid'] = str(paid)
+                period['remaining'] = str(due - paid)
+                remaining_payment -= paid
+
+        # Filter only periods with remaining > 0
+        pending_periods = [p for p in periods if Decimal(p['remaining']) > 0]
+
+        total_pending = sum(Decimal(p['remaining']) for p in pending_periods)
+        if total_pending == 0:
+            continue
+
+        due_date = pending_periods[0]['start'] if pending_periods else None
+
+        # Build serializable data for JavaScript
+        worker_data = {
+            'id': worker.id,
+            'name': worker.name,
+            'father_name': worker.father_name,
+            'cnic': worker.cnic,
+            'phone': worker.phone,
+            'address': worker.address,
+            'joining_date': worker.joining_date.isoformat(),
+            'salary_amount': str(worker.salary_amount),
+            'salary_type': worker.salary_type,
+        }
+
+        attendance_list = [
+            {'date': att.date.isoformat(), 'status': att.status}
+            for att in attendances
+        ]
+
+        payment_list = [
+            {
+                'payment_date': p.payment_date.isoformat(),
+                'amount': str(p.amount),
+                'period_start': p.period_start.isoformat(),
+                'period_end': p.period_end.isoformat()
+            }
+            for p in payments[:20]
+        ]
+
+        pending_list.append({
+            'worker': worker_data,
+            'total_pending': str(total_pending),
+            'pending_periods': pending_periods,
+            'due_date': due_date,
+            'attendance_history': attendance_list,
+            'payment_history': payment_list,
+            'total_paid': str(total_paid),
+        })
+
+    # Pagination (20 per page)
+    paginator = Paginator(pending_list, 20)
+    page = request.GET.get('page')
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    total_pending_sum = sum(Decimal(item['total_pending']) for item in pending_list)
+    worker_count = len(pending_list)
+
+    context = {
+        'page_obj': page_obj,
+        'total_pending_sum': total_pending_sum,
+        'worker_count': worker_count,
+        'tenant': request.tenant,
+        'today': today,
+    }
+    template = 'mobile/pending_payments.html' if request.mobile else 'desktop/pending_payments.html'
+    return render(request, template, context)
+
