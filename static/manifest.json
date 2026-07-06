@@ -1,7 +1,7 @@
 {
   "name": "Chakki SaaS",
   "short_name": "Chakki",
-  "start_url": "/portal/2/",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#343a40",
   "background_color": "#ffffff",

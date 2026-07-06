@@ -287,6 +287,17 @@
 
 
 
+
+    <script>
+    // Store tenant in localStorage for PWA root redirect
+    (function() {
+        const tenant = '{{ tenant.schema_name }}';
+        if (tenant) {
+            localStorage.setItem('chakki_tenant', tenant);
+        }
+    })();
+    </script>
+
 </body>
 
 </html>

@@ -1,7 +1,7 @@
 // Service Worker for PWA – Chakki SaaS
 const CACHE_NAME = 'chakki-cache-v1';
 const urlsToCache = [
-  '/portal/2/dashboard/',
+  '/',
   '/static/manifest.json',
 ];
 
@@ -15,11 +15,31 @@ self.addEventListener('install', event => {
   );
 });
 
+
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then(response => {
+        if (response) {
+          // Only return cached response if it's a 200 OK
+          if (response.status === 200) {
+            return response;
+          }
+        }
+        return fetch(event.request).then(fetchResponse => {
+          // Cache only successful responses
+          if (fetchResponse && fetchResponse.status === 200) {
+            const responseClone = fetchResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return fetchResponse;
+        });
+      })
   );
+});
+
 });
 
 self.addEventListener('activate', event => {

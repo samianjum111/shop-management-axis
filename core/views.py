@@ -52,3 +52,7 @@ def portal_dashboard(request, schema_name):
     request.tenant = tenant
     from chakki.views import dashboard as chakki_dashboard
     return chakki_dashboard(request)
+
+def root_redirect(request):
+    """Serve a simple HTML page that redirects via JavaScript."""
+    return render(request, 'root.html')
