@@ -70,9 +70,8 @@ DATABASES = {
     )
 }
 
-# Authentication backends
+# Authentication backends – single tenant, use default
 AUTHENTICATION_BACKENDS = [
-    'core.auth_backend.TenantAuthBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
