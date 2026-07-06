@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
-# from tenants.models import Tenant
+from tenants.models import Tenant
 
 def portal_login(request, schema_name):
     tenant = Tenant.objects.filter(schema_name=schema_name).first()
