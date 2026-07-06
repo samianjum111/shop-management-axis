@@ -175,7 +175,7 @@ def add_order(request, **kwargs):
         # Save again to recalculate total and payment status
         order.save()
         messages.success(request, f"Order #{order.id} created! Ready at {ready_time.strftime('%I:%M %p')}")
-        return redirect('chakki_dashboard', schema_name=request.tenant.schema_name)
+        return redirect('portal_dashboard', schema_name=request.tenant.schema_name)
 
     template = 'mobile/add_order.html' if request.mobile else 'desktop/add_order.html'
     return render(request, template, {'setting': setting, 'categories': categories})
@@ -268,7 +268,7 @@ def complete_order(request, order_id, **kwargs):
         order.completed_at = timezone.now()
         order.save()
         messages.success(request, f"Order #{order.id} Completed!")
-    return redirect('chakki_dashboard', schema_name=request.tenant.schema_name)
+    return redirect('portal_dashboard', schema_name=request.tenant.schema_name)
 
 @login_required
 def generate_transcript(request, order_id, **kwargs):
