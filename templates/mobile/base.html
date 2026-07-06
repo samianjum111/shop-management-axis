@@ -351,16 +351,16 @@
             <span>Dashboard</span>
         </a>
         <a href="/portal/{{ tenant.schema_name }}/chakki/" class="nav-item {% if request.path|slice:'0:24' == '/portal/'|add:tenant.schema_name|add:'/chakki/' %}active{% endif %}">
-            <i class="fas fa-wheat-awn"></i>
+            <i class="fas fa-wheat-alt"></i>   <!-- ya koi doosra -->
             <span>Chakki</span>
         </a>
         <a href="/portal/{{ tenant.schema_name }}/expenses/" class="nav-item {% if request.path|slice:'0:25' == '/portal/'|add:tenant.schema_name|add:'/expenses/' %}active{% endif %}">
             <i class="fas fa-money-bill-wave"></i>
             <span>Expenses</span>
         </a>
-        <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="nav-item {% if request.path|slice:'0:29' == '/portal/'|add:tenant.schema_name|add:'/chakki/settings/' %}active{% endif %}">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
+                <a href="/portal/{{ tenant.schema_name }}/more/" class="nav-item {% if request.path == '/portal/'|add:tenant.schema_name|add:'/more/' %}active{% endif %}">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>More</span>
         </a>
     </nav>
 

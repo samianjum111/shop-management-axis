@@ -359,3 +359,209 @@ def get_transcript_modal(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id)
     context = {'order': order, 'tenant': request.tenant}
     return render(request, 'mobile/transcript_modal_content.html', context)
+
+
+
+@login_required
+def customer_list(request, **kwargs):
+    tenant = request.tenant
+    q = request.GET.get('q', '').strip()
+    customers = ChakkiCustomer.objects.all().order_by('name')
+    if q:
+        customers = customers.filter(
+            Q(name__icontains=q) | Q(phone__icontains=q)
+        )
+    # Annotate total pending
+    for customer in customers:
+        orders = ChakkiOrder.objects.filter(customer=customer)
+        customer.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
+    context = {'customers': customers, 'tenant': tenant}
+    template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
+    return render(request, template, context)
+
+
+@login_required
+def customer_profile(request, customer_id, **kwargs):
+    customer = get_object_or_404(ChakkiCustomer, id=customer_id)
+    orders = ChakkiOrder.objects.filter(customer=customer).order_by('-created_at')
+    total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
+    total_spent = sum(o.total_amount for o in orders if o.status == 'completed')
+    context = {
+        'customer': customer,
+        'orders': orders,
+        'total_pending': total_pending,
+        'total_spent': total_spent,
+        'total_orders': orders.count(),
+        'tenant': request.tenant,
+    }
+    template = 'mobile/customer_profile.html' if request.mobile else 'desktop/customer_profile.html'
+    return render(request, template, context)
+
+
+@login_required
+def add_order(request, **kwargs):
+    setting, _ = ChakkiSetting.objects.get_or_create(id=1)
+    categories = ChakkiCategory.objects.all()
+    tenant = request.tenant
+
+    # Step 1: Customer selection
+    customer_id = request.GET.get('customer_id')
+    walkin = request.GET.get('walkin') == '1'
+    select = request.GET.get('select') == '1'
+
+    if not customer_id and not walkin and not select:
+        # Show selection page (two boxes)
+        context = {'tenant': tenant}
+        template = 'mobile/add_order_select.html' if request.mobile else 'desktop/add_order_select.html'
+        return render(request, template, context)
+
+    if select:
+        # Show customer list for selection
+        q = request.GET.get('q', '').strip()
+        customers = ChakkiCustomer.objects.all().order_by('name')
+        if q:
+            customers = customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
+        for c in customers:
+            orders = ChakkiOrder.objects.filter(customer=c)
+            c.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
+        context = {'customers': customers, 'tenant': tenant}
+        template = 'mobile/add_order_customer_list.html' if request.mobile else 'desktop/add_order_customer_list.html'
+        return render(request, template, context)
+
+    customer = None
+    if customer_id:
+        customer = get_object_or_404(ChakkiCustomer, id=customer_id)
+        # Get total pending for display
+        orders = ChakkiOrder.objects.filter(customer=customer)
+        customer.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
+
+    # Step 2: Order form submission
+    if request.method == 'POST':
+        # Process order
+        payment_type = request.POST.get('payment_type', 'full')
+        payment_amount = Decimal(request.POST.get('payment_amount', 0))
+
+        # Customer: either existing or new (walk-in)
+        if customer:
+            cust = customer
+        else:
+            name = request.POST.get('name', '').strip()
+            phone = request.POST.get('phone', '').strip()
+            address = request.POST.get('address', '').strip()
+            if not name:
+                messages.error(request, "Name is required for walk-in customer.")
+                return redirect('add_order', schema_name=tenant.schema_name)
+            # For partial, phone is mandatory (enforced by JS, but double-check)
+            if payment_type == 'partial' and not phone:
+                messages.error(request, "Phone is required for partial payment.")
+                return redirect('add_order', schema_name=tenant.schema_name)
+            cust = ChakkiCustomer.objects.create(
+                name=name,
+                phone=phone,
+                address=address
+            )
+
+        # Ready time
+        time_type = request.POST.get('time_type')
+        time_value = int(request.POST.get('time_value', 0))
+        ready_time = timezone.now()
+        if time_type == 'minutes':
+            ready_time += timezone.timedelta(minutes=time_value)
+        elif time_type == 'hours':
+            ready_time += timezone.timedelta(hours=time_value)
+        elif time_type == 'days':
+            ready_time += timezone.timedelta(days=time_value)
+
+        # Create order
+        order = ChakkiOrder.objects.create(
+            customer=cust,
+            ready_time=ready_time,
+            status='pending'
+        )
+        item_count = int(request.POST.get('item_count', 0))
+        for i in range(1, item_count + 1):
+            category_id = request.POST.get(f'category_{i}')
+            kg = request.POST.get(f'total_kg_{i}')
+            cleaning = request.POST.get(f'cleaning_{i}') == 'on'
+            if category_id and kg:
+                kg = Decimal(kg)
+                item = ChakkiOrderItem.objects.create(
+                    order=order,
+                    category_id=category_id,
+                    total_kg=kg,
+                    is_cleaning_done=cleaning
+                )
+                item.save()
+        # Recalculate totals
+        order.save()
+
+        # Apply payment
+        if payment_type == 'full':
+            order.amount_paid = order.total_amount
+        else:
+            order.amount_paid = min(payment_amount, order.total_amount)
+        order.save()
+        messages.success(request, f"Order #{order.id} created! Ready at {ready_time.strftime('%I:%M %p')}")
+
+        # If walk-in, redirect to confirmation page with option to add to regulars
+        if not customer:
+            return redirect('order_confirmation', schema_name=tenant.schema_name, order_id=order.id)
+        else:
+            return redirect('portal_dashboard', schema_name=tenant.schema_name)
+
+    # GET with customer_id or walkin: show form
+    context = {
+        'setting': setting,
+        'categories': categories,
+        'customer': customer,
+        'walkin': walkin,
+        'tenant': tenant,
+    }
+    template = 'mobile/add_order_form.html' if request.mobile else 'desktop/add_order_form.html'
+    return render(request, template, context)
+
+
+@login_required
+def order_confirmation(request, order_id, **kwargs):
+    order = get_object_or_404(ChakkiOrder, id=order_id)
+    can_add_to_regulars = (order.customer.phone and not order.customer.name) or True  # always show if walk-in? We'll check if customer is not regular? Actually we can just show the button always, but we check if customer already has a phone and name. For walk-in we created with whatever user provided, so we can allow editing.
+    context = {
+        'order': order,
+        'can_add_to_regulars': True,  # for now, always allow
+        'tenant': request.tenant,
+    }
+    template = 'mobile/order_confirmation.html' if request.mobile else 'mobile/order_confirmation.html'
+    return render(request, template, context)
+
+
+@login_required
+def add_customer_from_order(request, order_id, **kwargs):
+    order = get_object_or_404(ChakkiOrder, id=order_id)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        address = request.POST.get('address', '').strip()
+        if name and phone:
+            # Check if customer with this phone already exists (maybe duplicate)
+            existing = ChakkiCustomer.objects.filter(phone=phone).first()
+            if existing:
+                # Merge? For simplicity, we'll just update the order's customer to existing one
+                # But we already have a customer, so we can update its details
+                cust = order.customer
+                cust.name = name
+                cust.phone = phone
+                cust.address = address
+                cust.save()
+                messages.success(request, f"Customer updated and added to regulars.")
+            else:
+                # Update the existing customer (which was created as walk-in)
+                cust = order.customer
+                cust.name = name
+                cust.phone = phone
+                cust.address = address
+                cust.save()
+                messages.success(request, f"Customer {name} added to regulars.")
+            return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=cust.id)
+        else:
+            messages.error(request, "Name and Phone are required.")
+    return redirect('order_confirmation', schema_name=request.tenant.schema_name, order_id=order_id)

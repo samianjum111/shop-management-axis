@@ -1,0 +1,140 @@
+{% extends "mobile/base.html" %}
+{% block title %}More | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .more-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  .more-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 0.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .more-card:active {
+    transform: scale(0.96);
+  }
+  .more-card .icon {
+    font-size: 1.8rem;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+  }
+  .more-card .label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    display: block;
+  }
+  .more-card .desc {
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+  .section-title {
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 1rem 0 0.4rem;
+    color: var(--text-secondary);
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<h5 class="fw-bold mb-2">More</h5>
+<p class="text-muted" style="font-size:0.8rem;">Quick access to all parts of the portal</p>
+
+
+<div class="section-title">👥 Customers</div>
+<div class="more-grid">
+  <a href="/portal/{{ tenant.schema_name }}/customers/" class="more-card">
+    <div class="icon"><i class="fas fa-users"></i></div>
+    <span class="label">Customers</span>
+    <span class="desc">Manage your customers</span>
+  </a>
+</div>
+
+
+<div class="section-title">⚡ Quick Actions</div>
+<div class="more-grid">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="more-card">
+    <div class="icon"><i class="fas fa-plus-circle"></i></div>
+    <span class="label">New Order</span>
+    <span class="desc">Create a new order</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="more-card">
+    <div class="icon"><i class="fas fa-clock"></i></div>
+    <span class="label">Pending Orders</span>
+    <span class="desc">{{ pending_count }} pending</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="more-card">
+    <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+    <span class="label">Ready Orders</span>
+    <span class="desc">{{ ready_count }} ready</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/" class="more-card">
+    <div class="icon"><i class="fas fa-check-circle"></i></div>
+    <span class="label">Completed Orders</span>
+    <span class="desc">{{ completed_count }} done</span>
+  </a>
+</div>
+
+<div class="section-title">💰 Finance & Expenses</div>
+<div class="more-grid">
+  <a href="/portal/{{ tenant.schema_name }}/expenses/" class="more-card">
+    <div class="icon"><i class="fas fa-money-bill-wave"></i></div>
+    <span class="label">Expenses Dashboard</span>
+    <span class="desc">Overview</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="more-card">
+    <div class="icon"><i class="fas fa-receipt"></i></div>
+    <span class="label">Daily Expenses</span>
+    <span class="desc">Add & view daily</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="more-card">
+    <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
+    <span class="label">Loans Given</span>
+    <span class="desc">Udhaar</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="more-card">
+    <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
+    <span class="label">Loans Taken</span>
+    <span class="desc">Borrowed</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="more-card">
+    <div class="icon"><i class="fas fa-bell"></i></div>
+    <span class="label">Reminders</span>
+    <span class="desc">Pending</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="more-card">
+    <div class="icon"><i class="fas fa-users"></i></div>
+    <span class="label">Workers</span>
+    <span class="desc">Manage staff</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="more-card">
+    <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+    <span class="label">Attendance</span>
+    <span class="desc">Daily attendance</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/workers/payments/" class="more-card">
+    <div class="icon"><i class="fas fa-credit-card"></i></div>
+    <span class="label">Pending Payments</span>
+    <span class="desc">Due salaries</span>
+  </a>
+</div>
+
+<div class="section-title">⚙️ Settings</div>
+<div class="more-grid">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="more-card">
+    <div class="icon"><i class="fas fa-cog"></i></div>
+    <span class="label">Settings</span>
+    <span class="desc">Rates & categories</span>
+  </a>
+</div>
+{% endblock %}

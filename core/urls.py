@@ -9,4 +9,8 @@ urlpatterns = [
     path('portal/<slug:schema_name>/logout/', views.portal_logout, name='portal_logout'),
     path('portal/<slug:schema_name>/chakki/', include('chakki.urls')),
     path('portal/<slug:schema_name>/expenses/', include('expenses.urls')),
+
+    path('portal/<slug:schema_name>/more/', views.more_view, name='more_view'),
+
+    path('portal/<slug:schema_name>/customers/', views.customers_view, name='customers_view'),
 ]

@@ -1,0 +1,29 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}New Order - Customer Selection | {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h2 class="mb-3">New Order</h2>
+        <p class="text-muted">Select customer type</p>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <a href="?walkin=1" class="card text-decoration-none h-100 p-4 text-center shadow-sm">
+                    <i class="fas fa-user-plus fa-3x text-warning mb-2"></i>
+                    <h5>Walk-in Customer</h5>
+                    <p class="text-muted small">New customer, no profile</p>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a href="?select=1" class="card text-decoration-none h-100 p-4 text-center shadow-sm">
+                    <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                    <h5>Regular Customer</h5>
+                    <p class="text-muted small">Select existing customer</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
