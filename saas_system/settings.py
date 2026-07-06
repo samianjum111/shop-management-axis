@@ -73,7 +73,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-DATABASE_ROUTERS = ['core.router.TenantRouter']
+# DATABASE_ROUTERS = ['core.router.TenantRouter']
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
