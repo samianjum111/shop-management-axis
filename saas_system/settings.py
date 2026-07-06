@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
@@ -71,16 +72,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'saas_system.wsgi.application'
 
 # Database – use django-tenants backend
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
+    'default': dj_database_url.config(default='postgresql://localhost:5432/dbname')
 }
+# Ensure the correct engine for django-tenants
+DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
+
 
 DATABASE_ROUTERS = [
     'django_tenants.routers.TenantSyncRouter',
