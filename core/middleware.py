@@ -20,12 +20,8 @@ class TenantMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
     def __call__(self, request):
-        # Create a dummy tenant (hardcoded)
-        dummy_tenant = Tenant(
-            name='My Shop',
-            schema_name='default',
-            db_name='default'
-        )
+        from tenants.models import Tenant
+        dummy_tenant = Tenant(name='My Shop', schema_name='default', db_name='default')
         request.tenant = dummy_tenant
         response = self.get_response(request)
         return response
