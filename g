@@ -1,47 +1,50 @@
 #!/usr/bin/env python3
 import os
-import re
+import sys
+import django
 
-VIEWS_FILE = 'chakki/views.py'
+# Django environment setup
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'saas_system.settings')
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+django.setup()
 
-def fix_redirects():
-    if not os.path.exists(VIEWS_FILE):
-        print(f"❌ File not found: {VIEWS_FILE}")
-        return False
+from django.db import connection
 
-    with open(VIEWS_FILE, 'r') as f:
-        content = f.read()
+def add_column_if_not_exists(table, column, definition):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = %s AND column_name = %s
+        """, [table, column])
+        if not cursor.fetchone():
+            print(f"➕ Adding column '{column}' to {table}...")
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+            print(f"✅ {column} added.")
+            return True
+        else:
+            print(f"ℹ️ {column} already exists in {table}.")
+            return False
 
-    # Replace 'chakki_dashboard' with 'portal_dashboard' in redirect calls
-    new_content = content.replace("redirect('chakki_dashboard',", "redirect('portal_dashboard',")
-    new_content = new_content.replace('redirect("chakki_dashboard",', 'redirect("portal_dashboard",')
+def main():
+    print("🔍 Checking local database for missing columns...\n")
 
-    if new_content == content:
-        print("ℹ️ No changes needed – 'chakki_dashboard' not found.")
-        return True
+    # ---------- ChakkiOrder ----------
+    add_column_if_not_exists('chakki_chakkiorder', 'payment_status', "varchar(20) DEFAULT 'unpaid'")
+    add_column_if_not_exists('chakki_chakkiorder', 'amount_paid', "decimal(10,2) DEFAULT 0")
 
-    with open(VIEWS_FILE, 'w') as f:
-        f.write(new_content)
+    # ---------- Expense ----------
+    add_column_if_not_exists('expenses_expense', 'expense_date', "date DEFAULT now()")
+    add_column_if_not_exists('expenses_expense', 'is_repaid', "boolean DEFAULT false")
+    add_column_if_not_exists('expenses_expense', 'phone', "varchar(20) DEFAULT ''")
+    add_column_if_not_exists('expenses_expense', 'address', "text DEFAULT ''")
+    add_column_if_not_exists('expenses_expense', 'notes', "text DEFAULT ''")
+    add_column_if_not_exists('expenses_expense', 'reason', "varchar(200) DEFAULT ''")
 
-    print("✅ Updated chakki/views.py – redirects now use 'portal_dashboard'.")
-    return True
+    # ---------- (Optional) If future columns needed, add here ----------
 
-def push_changes():
-    import subprocess
-    response = input("\n📤 Do you want to commit and push changes to GitHub? (y/n): ").strip().lower()
-    if response == 'y':
-        subprocess.run("git add .", shell=True)
-        subprocess.run('git commit -m "Fix: Redirect to portal_dashboard instead of missing chakki_dashboard"', shell=True)
-        subprocess.run("git push origin main", shell=True)
-        print("✅ Push completed. Railway will auto-deploy.")
-    else:
-        print("⏩ Skipping push. Please commit and push manually.")
+    print("\n✅ All missing columns added (if any).")
+    print("🚀 Now you can run `python manage.py runserver` and it should work.")
 
 if __name__ == "__main__":
-    print("="*60)
-    print("🔧 Fixing dashboard redirect in chakki/views.py")
-    print("="*60)
-    if fix_redirects():
-        push_changes()
-    else:
-        print("❌ Fix failed.")
+    main()
