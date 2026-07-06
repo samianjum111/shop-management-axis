@@ -1,1 +1,1 @@
-web: gunicorn saas_system.wsgi
+web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn saas_system.wsgi
