@@ -366,7 +366,7 @@ def get_transcript_modal(request, order_id, **kwargs):
 def customer_list(request, **kwargs):
     tenant = request.tenant
     q = request.GET.get('q', '').strip()
-    customers = ChakkiCustomer.objects.all().order_by('name')
+    customers = ChakkiCustomer.objects.filter(is_regular=True).order_by('name')
     if q:
         customers = customers.filter(
             Q(name__icontains=q) | Q(phone__icontains=q)
@@ -418,7 +418,7 @@ def add_order(request, **kwargs):
     if select:
         # Show customer list for selection
         q = request.GET.get('q', '').strip()
-        customers = ChakkiCustomer.objects.all().order_by('name')
+        customers = ChakkiCustomer.objects.filter(is_regular=True).order_by('name')
         if q:
             customers = customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
         for c in customers:
@@ -542,23 +542,21 @@ def add_customer_from_order(request, order_id, **kwargs):
         phone = request.POST.get('phone', '').strip()
         address = request.POST.get('address', '').strip()
         if name and phone:
-            # Check if customer with this phone already exists (maybe duplicate)
             existing = ChakkiCustomer.objects.filter(phone=phone).first()
             if existing:
-                # Merge? For simplicity, we'll just update the order's customer to existing one
-                # But we already have a customer, so we can update its details
                 cust = order.customer
                 cust.name = name
                 cust.phone = phone
                 cust.address = address
+                cust.is_regular = True
                 cust.save()
                 messages.success(request, f"Customer updated and added to regulars.")
             else:
-                # Update the existing customer (which was created as walk-in)
                 cust = order.customer
                 cust.name = name
                 cust.phone = phone
                 cust.address = address
+                cust.is_regular = True
                 cust.save()
                 messages.success(request, f"Customer {name} added to regulars.")
             return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=cust.id)
