@@ -211,8 +211,9 @@
     
     
     
-    <!-- PWA Install Button – DIAGNOSTIC VERSION -->
-    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:999999; background:red; border:5px solid yellow; padding:5px; border-radius:10px;">
+    
+    <!-- PWA Install Button -->
+    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:9999;">
         <button onclick="installApp()" style="
             background: #E67E22;
             color: white;
@@ -239,50 +240,60 @@
     <script>
     (function() {
         'use strict';
-        const installBtn = document.getElementById('pwa-install-btn');
-        console.log('PWA Diagnostic: installBtn found?', installBtn);
-        if (installBtn) {
-            console.log('PWA Diagnostic: current display style:', window.getComputedStyle(installBtn).display);
-        }
 
         let deferredPrompt = null;
+        const installBtn = document.getElementById('pwa-install-btn');
+
+        // Hide if already installed (standalone mode)
         if (window.matchMedia('(display-mode: standalone)').matches) {
-            if (installBtn) installBtn.style.display = 'none';
+            installBtn.style.display = 'none';
             console.log('PWA: Already installed (standalone).');
         }
 
+        // Listen for beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            installBtn.style.display = 'block';
             console.log('PWA: beforeinstallprompt fired.');
         });
 
+        // Install function
         window.installApp = function() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    console.log('PWA: User choice:', choiceResult.outcome);
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('PWA: User accepted the install prompt');
+                    } else {
+                        console.log('PWA: User dismissed the install prompt');
+                    }
                     deferredPrompt = null;
                 });
             } else {
-                console.log('PWA: No deferredPrompt, showing manual hint.');
+                console.log('PWA: No deferredPrompt, showing manual install hint.');
                 alert('You can install this app by clicking the "Install" icon in the browser address bar.');
             }
         };
 
+        // Hide after installation
         window.addEventListener('appinstalled', () => {
-            if (installBtn) installBtn.style.display = 'none';
+            installBtn.style.display = 'none';
             deferredPrompt = null;
             console.log('PWA: App installed.');
         });
 
+        // Register service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/sw.js')
                 .then(reg => console.log('PWA: SW registered:', reg))
                 .catch(err => console.log('PWA: SW registration failed:', err));
+        } else {
+            console.log('PWA: Service workers not supported.');
         }
     })();
     </script>
+
 
 
 
