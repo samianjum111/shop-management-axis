@@ -5,18 +5,15 @@ from django.contrib.auth.models import User
 from .models import Tenant
 
 class TenantAdminForm(forms.ModelForm):
-    admin_username = forms.CharField(max_length=150, required=True, label="Admin Username")
-    admin_password = forms.CharField(widget=forms.PasswordInput, required=True, label="Admin Password")
-
     class Meta:
         model = Tenant
         fields = ['name', 'schema_name', 'category']
-        exclude = ['owner', 'db_name', 'db_user', 'db_password']
 
     def save(self, commit=True):
         tenant = super().save(commit=False)
         if not tenant.pk:
             # Single-tenant mode: don't create a new database.
+            # Use default values for db_name, db_user, db_password.
             tenant.db_name = 'default'
             tenant.db_user = 'default_user'
             tenant.db_password = 'dummy_password'
@@ -32,7 +29,6 @@ class TenantAdmin(admin.ModelAdmin):
     readonly_fields = ('db_name', 'db_user', 'db_password')
     fieldsets = (
         (None, {'fields': ('name', 'schema_name', 'category')}),
-        ('Portal Credentials', {'fields': ('admin_username', 'admin_password')}),
     )
 
     def save_model(self, request, obj, form, change):
