@@ -58,7 +58,7 @@ class Worker(models.Model):
     ]
     name = models.CharField(max_length=100)
     father_name = models.CharField(max_length=100, blank=True)
-    cnic = models.CharField(max_length=15, blank=True)
+    cnic = models.CharField(max_length=15, blank=True, unique=True)
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     joining_date = models.DateField()
@@ -68,8 +68,43 @@ class Worker(models.Model):
     salary_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     category = models.ForeignKey(WorkerCategory, on_delete=models.SET_NULL, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    role = models.CharField(max_length=100, blank=True, help_text="What they do in the shop")
+    alternative_phone = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
+
+
+# ---------- Worker Management Additions ----------
+class WorkerAttendance(models.Model):
+    STATUS_CHOICES = [
+        ('present', 'Present'),
+        ('absent', 'Absent'),
+    ]
+    worker = models.ForeignKey('Worker', on_delete=models.CASCADE, related_name='attendances')
+    date = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='present')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['worker', 'date']
+
+    def __str__(self):
+        return f"{self.worker.name} - {self.date} ({self.status})"
+
+
+class WorkerPayment(models.Model):
+    worker = models.ForeignKey('Worker', on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateField()
+    period_start = models.DateField()
+    period_end = models.DateField()
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.worker.name} - {self.amount} on {self.payment_date}"

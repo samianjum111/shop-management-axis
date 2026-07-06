@@ -74,6 +74,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.tenant_processor',
                 'core.context_processors.chakki_counts',
+                'core.context_processors.today_context',
             ],
         },
     },

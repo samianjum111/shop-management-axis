@@ -17,4 +17,13 @@ urlpatterns = [
     path('workers/add/', views.add_worker, name='add_worker'),
     path('workers/edit/<int:worker_id>/', views.edit_worker, name='edit_worker'),
     path('workers/category/add/', views.add_worker_category, name='add_worker_category'),
+
+    path('workers/<int:worker_id>/', views.worker_profile, name='worker_profile'),
+    path('workers/attendance/', views.worker_attendance, name='worker_attendance'),
+    path('workers/pay/<int:worker_id>/', views.worker_pay, name='worker_pay'),
+
+    path('workers/category/edit/', views.edit_worker_category, name='edit_worker_category'),
+    path('workers/category/delete/<int:category_id>/', views.delete_worker_category, name='delete_worker_category'),
+
+
 ]

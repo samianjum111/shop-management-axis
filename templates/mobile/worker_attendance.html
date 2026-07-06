@@ -1,0 +1,70 @@
+{% extends "mobile/base.html" %}
+{% load custom_filters %}
+{% block title %}Daily Attendance | {{ tenant.name }}{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="fw-bold">📋 Daily Attendance</h5>
+    <form method="get" class="d-flex">
+        <input type="date" name="date" class="form-control form-control-sm" value="{{ selected_date|date:'Y-m-d' }}" style="width:140px;">
+        <button type="submit" class="btn btn-primary-custom btn-sm ms-1">Go</button>
+    </form>
+    <!-- History -->
+    <div class="mt-4">
+        <h6 class="fw-bold">Attendance History</h6>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <a href="?date={{ today|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">Today</a>
+            <a href="?week=1" class="btn btn-sm btn-outline-secondary">This Week</a>
+            <a href="?month=1" class="btn btn-sm btn-outline-secondary">This Month</a>
+            <form method="get" class="d-flex gap-1">
+                <input type="date" name="start_date" class="form-control form-control-sm" style="width:120px;">
+                <input type="date" name="end_date" class="form-control form-control-sm" style="width:120px;">
+                <button type="submit" class="btn btn-sm btn-primary">Go</button>
+            </form>
+        </div>
+        <div class="attendance-history">
+            {% if history %}
+                <div class="list-group list-group-flush">
+                {% for att in history %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-1">
+                        <span>{{ att.worker.name }}</span>
+                        <span>{{ att.date|date:"d M" }}</span>
+                        <span class="badge {% if att.status == 'present' %}bg-success{% else %}bg-danger{% endif %}">{{ att.status|title }}</span>
+                    </div>
+                {% empty %}
+                    <div class="text-muted">No records for this period.</div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">Select a filter to view history.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+<div class="alert alert-info">{{ selected_date|date:"l, d M Y" }}</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="workers-list">
+        {% for worker in workers %}
+        <div class="attendance-row d-flex justify-content-between align-items-center border-bottom py-2">
+            <span>{{ worker.name }}</span>
+            <div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="attendance_{{ worker.id }}" id="present_{{ worker.id }}" value="present" {% if attendance_dict|get_item:worker.id == 'present' %}checked{% endif %}>
+                    <label class="form-check-label" for="present_{{ worker.id }}">Present</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="attendance_{{ worker.id }}" id="absent_{{ worker.id }}" value="absent" {% if attendance_dict|get_item:worker.id == 'absent' %}checked{% endif %}>
+                    <label class="form-check-label" for="absent_{{ worker.id }}">Absent</label>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted">No active workers.</div>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary-custom w-100 mt-3">Save Attendance</button>
+</form>
+{% endblock %}

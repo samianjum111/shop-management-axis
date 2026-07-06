@@ -1,0 +1,139 @@
+{% extends "desktop/base.html" %}
+{% block title %}{{ worker.name }} | {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>{{ worker.name }}</h4>
+                <span class="badge bg-{% if worker.status == 'active' %}success{% elif worker.status == 'suspended' %}warning{% else %}secondary{% endif %}">{{ worker.status|title }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6"><strong>Father:</strong> {{ worker.father_name|default:"-" }}</div>
+                    <div class="col-md-6"><strong>CNIC:</strong> {{ worker.cnic|default:"-" }}</div>
+                    <div class="col-md-6"><strong>Phone:</strong> {{ worker.phone|default:"-" }}</div>
+                    <div class="col-md-6"><strong>Alt. Phone:</strong> {{ worker.alternative_phone|default:"-" }}</div>
+                    <div class="col-12"><strong>Address:</strong> {{ worker.address|default:"-" }}</div>
+                    <div class="col-md-6"><strong>Joining Date:</strong> {{ worker.joining_date|date:"d M Y" }}</div>
+                    <div class="col-md-6"><strong>Salary:</strong> ₹{{ worker.salary_amount }}/{{ worker.salary_type }}</div>
+                    <div class="col-md-6"><strong>Category:</strong> {{ worker.category.name|default:"-" }}</div>
+                    <div class="col-md-6"><strong>Role:</strong> {{ worker.role|default:"-" }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="border p-3 rounded">
+                            <h6>Next Payment Due</h6>
+                            {% if next_due %}
+                                <p>
+                                    {% if next_due <= today %}
+                                        <span class="text-danger">Due Today!</span>
+                                    {% else %}
+                                        In {{ next_due|timeuntil }}
+                                    {% endif %}
+                                </p>
+                                <p>Amount: ₹{{ next_amount|floatformat:2 }}</p>
+                            {% else %}
+                                <p class="text-muted">Not applicable</p>
+                            {% endif %}
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#payModal">Pay Now</button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border p-3 rounded">
+                            <h6>Total Paid</h6>
+                            <p class="h4">₹{{ total_paid|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border p-3 rounded">
+                            <h6>Days Present</h6>
+                            <p class="h4">{{ total_present }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance -->
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between">
+                <h5>Attendance (Last 30 days)</h5>
+                <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="btn btn-sm btn-outline-secondary">Mark Today</a>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead><tr><th>Date</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for att in attendances %}
+                        <tr><td>{{ att.date|date:"d M Y" }}</td><td><span class="badge bg-{% if att.status == 'present' %}success{% else %}danger{% endif %}">{{ att.status|title }}</span></td></tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-muted">No records</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Payments -->
+        <div class="card mt-3">
+            <div class="card-header"><h5>Payment History</h5></div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead><tr><th>Date</th><th>Amount</th><th>Period</th><th>Notes</th></tr></thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr><td>{{ p.payment_date|date:"d M Y" }}</td><td>₹{{ p.amount|floatformat:2 }}</td><td>{{ p.period_start|date:"d M" }} - {{ p.period_end|date:"d M" }}</td><td>{{ p.notes|default:"-" }}</td></tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-muted">No payments</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal fade" id="payModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/pay/{{ worker.id }}/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Pay {{ worker.name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label>Amount (₹)</label>
+            <input type="number" name="amount" class="form-control" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label>Payment Date</label>
+            <input type="date" name="payment_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+          </div>
+          <div class="mb-3">
+            <label>Period Start</label>
+            <input type="date" name="period_start" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label>Period End</label>
+            <input type="date" name="period_end" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label>Notes</label>
+            <textarea name="notes" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Record Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

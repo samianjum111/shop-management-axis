@@ -1,0 +1,82 @@
+{% extends "desktop/base.html" %}
+{% load custom_filters %}
+{% block title %}Daily Attendance | {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Daily Attendance</h2>
+    <form method="get" class="d-flex">
+        <input type="date" name="date" class="form-control" value="{{ selected_date|date:'Y-m-d' }}" style="width:180px;">
+        <button type="submit" class="btn btn-primary ms-2">Go</button>
+    </form>
+    <!-- History -->
+    <div class="mt-4">
+        <h6 class="fw-bold">Attendance History</h6>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <a href="?date={{ today|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">Today</a>
+            <a href="?week=1" class="btn btn-sm btn-outline-secondary">This Week</a>
+            <a href="?month=1" class="btn btn-sm btn-outline-secondary">This Month</a>
+            <form method="get" class="d-flex gap-1">
+                <input type="date" name="start_date" class="form-control form-control-sm" style="width:130px;">
+                <input type="date" name="end_date" class="form-control form-control-sm" style="width:130px;">
+                <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+            </form>
+        </div>
+        <div class="attendance-history">
+            {% if history %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Worker</th><th>Date</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for att in history %}
+                            <tr>
+                                <td>{{ att.worker.name }}</td>
+                                <td>{{ att.date|date:"d M Y" }}</td>
+                                <td><span class="badge {% if att.status == 'present' %}bg-success{% else %}bg-danger{% endif %}">{{ att.status|title }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3" class="text-muted">No records for this period.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Select a filter to view history.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+<div class="alert alert-info">{{ selected_date|date:"l, d M Y" }}</div>
+
+<form method="post">
+    {% csrf_token %}
+    <table class="table table-hover">
+        <thead>
+            <tr><th>Worker</th><th>Present</th><th>Absent</th></tr>
+        </thead>
+        <tbody>
+            {% for worker in workers %}
+            <tr>
+                <td>{{ worker.name }}</td>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="attendance_{{ worker.id }}" id="present_{{ worker.id }}" value="present" {% if attendance_dict|get_item:worker.id == 'present' %}checked{% endif %}>
+                        <label class="form-check-label" for="present_{{ worker.id }}">Present</label>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="attendance_{{ worker.id }}" id="absent_{{ worker.id }}" value="absent" {% if attendance_dict|get_item:worker.id == 'absent' %}checked{% endif %}>
+                        <label class="form-check-label" for="absent_{{ worker.id }}">Absent</label>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-muted">No active workers.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">Save Attendance</button>
+</form>
+{% endblock %}

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q, Sum
 from django.http import JsonResponse
-from .models import Expense, Reminder, Worker, WorkerCategory
+from .models import Expense, Reminder, Worker, WorkerCategory, WorkerAttendance, WorkerPayment
 import json
 
 @login_required
@@ -36,8 +36,6 @@ def expense_dashboard(request, **kwargs):
     }
     template = 'mobile/expenses.html' if request.mobile else 'desktop/expenses.html'
     return render(request, template, context)
-
-@login_required
 def daily_expense_list(request, **kwargs):
     """Enhanced daily expenses page with analytics, search, filters, and pagination."""
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -97,8 +95,6 @@ def daily_expense_list(request, **kwargs):
     }
     template = 'mobile/daily_expenses.html' if request.mobile else 'desktop/daily_expenses.html'
     return render(request, template, context)
-
-@login_required
 def daily_expense_detail(request, expense_id, **kwargs):
     """Return expense data as JSON for modal."""
     expense = get_object_or_404(Expense, id=expense_id)
@@ -161,15 +157,11 @@ def loan_list(request, loan_type, **kwargs):
     context = {'expenses': expenses, 'title': title, 'loan_type': loan_type, 'tenant': request.tenant}
     template = 'mobile/expense_list.html' if request.mobile else 'desktop/expense_list.html'
     return render(request, template, context)
-
-@login_required
 def reminder_list(request, **kwargs):
     reminders = Reminder.objects.all().order_by('remind_date')
     context = {'reminders': reminders, 'tenant': request.tenant}
     template = 'mobile/reminder_list.html' if request.mobile else 'desktop/reminder_list.html'
     return render(request, template, context)
-
-@login_required
 def add_reminder(request, **kwargs):
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -201,15 +193,36 @@ def worker_list(request, **kwargs):
     context = {'workers': workers, 'categories': categories, 'tenant': request.tenant}
     template = 'mobile/worker_list.html' if request.mobile else 'desktop/worker_list.html'
     return render(request, template, context)
-
-@login_required
 def add_worker(request, **kwargs):
     categories = WorkerCategory.objects.all()
+    template = 'mobile/add_worker.html' if request.mobile else 'desktop/add_worker.html'
     if request.method == 'POST':
         name = request.POST.get('name')
         if not name:
             messages.error(request, "Name is required.")
             return redirect('add_worker', schema_name=request.tenant.schema_name)
+        # Check for duplicate CNIC
+        cnic = request.POST.get('cnic', '')
+        if cnic and Worker.objects.filter(cnic=cnic).exists():
+            existing_worker = Worker.objects.get(cnic=cnic)
+            messages.error(request, mark_safe(f"A worker with CNIC '{cnic}' already exists. <a href='/portal/{request.tenant.schema_name}/expenses/workers/{existing_worker.id}/'>View Profile</a>"))
+            # Re-render form with submitted data
+            context = {
+                'categories': categories,
+                'tenant': request.tenant,
+                'name': request.POST.get('name'),
+                'father_name': request.POST.get('father_name'),
+                'cnic': cnic,
+                'phone': request.POST.get('phone'),
+                'address': request.POST.get('address'),
+                'joining_date': request.POST.get('joining_date'),
+                'status': request.POST.get('status'),
+                'salary_type': request.POST.get('salary_type'),
+                'salary_amount': request.POST.get('salary_amount'),
+                'category_id': request.POST.get('category'),
+            }
+            return render(request, template, context)
+
         Worker.objects.create(
             name=name,
             father_name=request.POST.get('father_name', ''),
@@ -226,23 +239,22 @@ def add_worker(request, **kwargs):
         messages.success(request, f"Worker {name} added!")
         return redirect('worker_list', schema_name=request.tenant.schema_name)
     context = {'categories': categories, 'tenant': request.tenant}
-    template = 'mobile/add_worker.html' if request.mobile else 'desktop/add_worker.html'
-    return render(request, template)
-
+    return render(request, template, context)
 @login_required
 def add_worker_category(request, **kwargs):
     if request.method == 'POST':
         name = request.POST.get('name')
+        description = request.POST.get('description', '')
         if name:
-            WorkerCategory.objects.create(name=name, description=request.POST.get('description', ''))
+            WorkerCategory.objects.create(name=name, description=description)
             messages.success(request, f"Category '{name}' added.")
         else:
-            messages.error(request, "Category name required.")
+            messages.error(request, "Category name is required.")
         return redirect('worker_list', schema_name=request.tenant.schema_name)
-    template = 'mobile/add_worker_category.html' if request.mobile else 'desktop/add_worker_category.html'
-    return render(request, template)
+    # GET request: redirect with info message
+    messages.info(request, "Category management is now on the Workers page.")
+    return redirect('worker_list', schema_name=request.tenant.schema_name)
 
-@login_required
 def edit_worker(request, worker_id, **kwargs):
     worker = get_object_or_404(Worker, id=worker_id)
     categories = WorkerCategory.objects.all()
@@ -297,3 +309,176 @@ def repay_loan(request, expense_id, **kwargs):
     else:
         messages.error(request, "This is not a loan entry.")
     return redirect('expense_dashboard', schema_name=request.tenant.schema_name)
+
+# ---------- Worker Management Views ----------
+from django.utils import timezone
+from decimal import Decimal
+from django.db.models import Sum, Count, Q
+from datetime import timedelta, date
+from django.utils.safestring import mark_safe
+
+@login_required
+def worker_profile(request, worker_id, **kwargs):
+    worker = get_object_or_404(Worker, id=worker_id)
+    attendances = worker.attendances.all().order_by('-date')
+    payments = worker.payments.all().order_by('-payment_date')
+    total_paid = payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    total_present = worker.attendances.filter(status='present').count()
+
+    # Next payment due logic
+    last_payment = payments.first()
+    if last_payment:
+        last_period_end = last_payment.period_end
+    else:
+        last_period_end = worker.joining_date
+
+    today = date.today()
+    next_due = None
+    next_amount = Decimal('0.00')
+    if worker.salary_type == 'daily':
+        today_attendance = worker.attendances.filter(date=today).first()
+        if today_attendance and today_attendance.status == 'present':
+            next_due = today
+            next_amount = worker.salary_amount
+        else:
+            next_due = None
+            next_amount = Decimal('0.00')
+    elif worker.salary_type == 'weekly':
+        next_due = last_period_end + timedelta(days=7)
+        if next_due <= today:
+            next_due = today
+        next_amount = worker.salary_amount
+    else:  # monthly
+        next_due = last_period_end + timedelta(days=30)
+        if next_due <= today:
+            next_due = today
+        next_amount = worker.salary_amount
+
+    context = {
+        'worker': worker,
+        'attendances': attendances[:30],
+        'payments': payments[:20],
+        'total_paid': total_paid,
+        'total_present': total_present,
+        'next_due': next_due,
+        'next_amount': next_amount,
+        'tenant': request.tenant,
+    }
+    template = 'mobile/worker_profile.html' if request.mobile else 'desktop/worker_profile.html'
+    return render(request, template, context)
+def worker_attendance(request, **kwargs):
+    today = date.today()
+    selected_date = request.GET.get('date')
+    if selected_date:
+        try:
+            selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = today
+    else:
+        selected_date = today
+
+    # Get all active workers
+    all_workers = Worker.objects.filter(is_active=True, status='active').order_by('name')
+
+    # Get workers who already have attendance for today
+    today_attendances = WorkerAttendance.objects.filter(date=selected_date)
+    today_worker_ids = today_attendances.values_list('worker_id', flat=True)
+
+    # Workers without today's attendance
+    workers = all_workers.exclude(id__in=today_worker_ids)
+
+    if request.method == 'POST':
+        for worker in workers:
+            status = request.POST.get(f'attendance_{worker.id}')
+            if status in ['present', 'absent']:
+                att, created = WorkerAttendance.objects.get_or_create(
+                    worker=worker,
+                    date=selected_date,
+                    defaults={'status': status}
+                )
+                if not created:
+                    att.status = status
+                    att.save()
+        messages.success(request, f"Attendance for {selected_date} saved.")
+        return redirect('worker_attendance', schema_name=request.tenant.schema_name)
+
+    # History: build queryset based on filters
+    history = WorkerAttendance.objects.filter(worker__in=all_workers).order_by('-date', 'worker__name')
+    # Apply filters
+    if request.GET.get('week'):
+        # This week
+        week_start = today - timedelta(days=today.weekday())
+        history = history.filter(date__gte=week_start)
+    elif request.GET.get('month'):
+        # This month
+        month_start = today.replace(day=1)
+        history = history.filter(date__gte=month_start)
+    elif request.GET.get('start_date') and request.GET.get('end_date'):
+        try:
+            start = datetime.strptime(request.GET.get('start_date'), '%Y-%m-%d').date()
+            end = datetime.strptime(request.GET.get('end_date'), '%Y-%m-%d').date()
+            history = history.filter(date__range=[start, end])
+        except ValueError:
+            pass
+    else:
+        # Default: show today's history
+        history = history.filter(date=today)
+
+    history = history[:100]  # limit
+
+    context = {
+        'workers': workers,
+        'selected_date': selected_date,
+        'attendance_dict': {att.worker_id: att.status for att in today_attendances},
+        'history': history,
+        'tenant': request.tenant,
+    }
+    template = 'mobile/worker_attendance.html' if request.mobile else 'desktop/worker_attendance.html'
+    return render(request, template, context)
+def worker_pay(request, worker_id, **kwargs):
+    worker = get_object_or_404(Worker, id=worker_id)
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount', '0'))
+        payment_date = request.POST.get('payment_date')
+        period_start = request.POST.get('period_start')
+        period_end = request.POST.get('period_end')
+        notes = request.POST.get('notes', '')
+        if amount > 0 and payment_date and period_start and period_end:
+            WorkerPayment.objects.create(
+                worker=worker,
+                amount=amount,
+                payment_date=payment_date,
+                period_start=period_start,
+                period_end=period_end,
+                notes=notes
+            )
+            messages.success(request, f"Payment of {amount} recorded for {worker.name}.")
+        else:
+            messages.error(request, "Invalid payment data.")
+        return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)
+    return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)
+
+
+@login_required
+def edit_worker_category(request, **kwargs):
+    if request.method == 'POST':
+        category_id = request.POST.get('category_id')
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        if category_id and name:
+            category = get_object_or_404(WorkerCategory, id=category_id)
+            category.name = name
+            category.description = description
+            category.save()
+            messages.success(request, f"Category '{name}' updated.")
+        else:
+            messages.error(request, "Invalid data.")
+        return redirect('worker_list', schema_name=request.tenant.schema_name)
+    return redirect('worker_list', schema_name=request.tenant.schema_name)
+
+@login_required
+def delete_worker_category(request, category_id, **kwargs):
+    category = get_object_or_404(WorkerCategory, id=category_id)
+    category.delete()
+    messages.success(request, "Category deleted.")
+    return redirect('worker_list', schema_name=request.tenant.schema_name)

@@ -16,3 +16,7 @@ def chakki_counts(request):
         'completed_count': completed_count,
         'ready_orders': ready_orders,
     }
+
+from django.utils import timezone
+def today_context(request):
+    return {'today': timezone.now().date()}

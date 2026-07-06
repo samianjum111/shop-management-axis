@@ -1,0 +1,217 @@
+{% extends "mobile/base.html" %}
+{% block title %}{{ worker.name }} | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-header {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+    .profile-header .name {
+        font-size: 1.4rem;
+        font-weight: 700;
+    }
+    .profile-header .role {
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 0.8rem;
+        border: 1px solid var(--border);
+        margin-bottom: 1rem;
+    }
+    .info-grid .item {
+        font-size: 0.8rem;
+    }
+    .info-grid .item .label {
+        color: var(--muted);
+        font-weight: 500;
+        display: block;
+        font-size: 0.6rem;
+        text-transform: uppercase;
+    }
+    .info-grid .item .value {
+        font-weight: 600;
+        color: var(--text);
+    }
+    .section-title {
+        font-weight: 700;
+        margin: 1rem 0 0.5rem;
+        font-size: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .attendance-list, .payment-list {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .attendance-item, .payment-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0.8rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+    }
+    .attendance-item:last-child, .payment-item:last-child {
+        border-bottom: none;
+    }
+    .status-badge {
+        padding: 0.1rem 0.6rem;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .status-badge.present { background: #d4edda; color: #155724; }
+    .status-badge.absent { background: #f8d7da; color: #721c24; }
+    .pay-now-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 2rem;
+        padding: 0.4rem 1.2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .due-card {
+        background: var(--accent-light);
+        border-left: 4px solid var(--accent);
+        padding: 0.8rem;
+        border-radius: var(--radius);
+        margin: 0.5rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="profile-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <div class="name">{{ worker.name }}</div>
+            <div class="role">{{ worker.role|default:"Worker" }}</div>
+        </div>
+        <span class="badge bg-{% if worker.status == 'active' %}success{% elif worker.status == 'suspended' %}warning{% else %}secondary{% endif %}">
+            {{ worker.status|title }}
+        </span>
+    </div>
+</div>
+
+<div class="info-grid">
+    <div class="item"><span class="label">Father</span><span class="value">{{ worker.father_name|default:"-" }}</span></div>
+    <div class="item"><span class="label">CNIC</span><span class="value">{{ worker.cnic|default:"-" }}</span></div>
+    <div class="item"><span class="label">Phone</span><span class="value">{{ worker.phone|default:"-" }}</span></div>
+    <div class="item"><span class="label">Alt. Phone</span><span class="value">{{ worker.alternative_phone|default:"-" }}</span></div>
+    <div class="item"><span class="label">Address</span><span class="value">{{ worker.address|default:"-" }}</span></div>
+    <div class="item"><span class="label">Joining</span><span class="value">{{ worker.joining_date|date:"d M Y" }}</span></div>
+    <div class="item"><span class="label">Salary</span><span class="value">₹{{ worker.salary_amount }}/{{ worker.salary_type }}</span></div>
+    <div class="item"><span class="label">Category</span><span class="value">{{ worker.category.name|default:"-" }}</span></div>
+</div>
+
+<!-- Next Payment Due -->
+<div class="due-card">
+    <div>
+        <strong>Next payment due</strong>
+        <div style="font-size:0.8rem; color:var(--text-secondary);">
+            {% if next_due %}
+                {% if next_due <= today %}
+                    <span class="text-danger">Due Today!</span>
+                {% else %}
+                    In {{ next_due|timeuntil }}
+                {% endif %}
+            {% else %}
+                Not applicable
+            {% endif %}
+        </div>
+    </div>
+    <div>
+        <span style="font-weight:700;">₹{{ next_amount|floatformat:2 }}</span>
+        <button class="pay-now-btn" data-bs-toggle="modal" data-bs-target="#payModal">Pay Now</button>
+    </div>
+</div>
+
+<div class="section-title">
+    <span>Attendance (Last 30 days)</span>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="btn btn-sm btn-outline-secondary">Mark Today</a>
+</div>
+<div class="attendance-list">
+    {% for att in attendances %}
+    <div class="attendance-item">
+        <span>{{ att.date|date:"d M Y" }}</span>
+        <span class="status-badge {{ att.status }}">{{ att.status|title }}</span>
+    </div>
+    {% empty %}
+    <div class="p-2 text-muted">No attendance records.</div>
+    {% endfor %}
+</div>
+
+<div class="section-title">
+    <span>Payment History</span>
+    <span class="text-muted" style="font-weight:normal; font-size:0.8rem;">Total Paid: ₹{{ total_paid|floatformat:2 }}</span>
+</div>
+<div class="payment-list">
+    {% for p in payments %}
+    <div class="payment-item">
+        <span>{{ p.payment_date|date:"d M Y" }}</span>
+        <span>₹{{ p.amount|floatformat:2 }}</span>
+    </div>
+    {% empty %}
+    <div class="p-2 text-muted">No payments yet.</div>
+    {% endfor %}
+</div>
+
+<!-- Pay Modal -->
+<div class="modal fade" id="payModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/pay/{{ worker.id }}/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Pay {{ worker.name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label>Amount (₹)</label>
+            <input type="number" name="amount" class="form-control" step="0.01" required>
+          </div>
+          <div class="mb-2">
+            <label>Payment Date</label>
+            <input type="date" name="payment_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+          </div>
+          <div class="mb-2">
+            <label>Period Start</label>
+            <input type="date" name="period_start" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label>Period End</label>
+            <input type="date" name="period_end" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label>Notes</label>
+            <textarea name="notes" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Record Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

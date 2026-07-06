@@ -317,7 +317,7 @@
     {% if messages %}
         <div style="padding:0 16px; max-width:480px; margin:0 auto;">
             {% for m in messages %}
-                <div class="message {% if m.tags %}{{ m.tags }}{% endif %}">{{ m }}</div>
+                <div class="message {% if m.tags %}{{ m.tags }}{% endif %}">{{ m|safe }}</div>
             {% endfor %}
         </div>
     {% endif %}

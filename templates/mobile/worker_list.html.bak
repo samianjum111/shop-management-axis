@@ -5,7 +5,7 @@
     <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="btn btn-outline-secondary btn-sm">📋 Attendance</a>
     <h5 class="fw-bold">Workers</h5>
     <div>
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#categoryModal">+ Category</button>
+        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/category/add/" class="btn btn-outline-secondary btn-sm">+ Category</a>
         <a href="/portal/{{ tenant.schema_name }}/expenses/workers/add/" class="btn btn-primary-custom btn-sm">+ Worker</a>
     </div>
 </div>
@@ -26,49 +26,34 @@
 {% empty %}
 <div class="empty-state">No workers</div>
 {% endfor %}
-    
-
-    <!-- Edit Category Modal -->
-    
-    <!-- Category Management Modal -->
-    <div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Manage Categories</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <!-- Add Category Form -->
-            <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/category/add/" class="d-flex gap-2 mb-3">
-              {% csrf_token %}
-              <input type="text" name="name" class="form-control form-control-sm" placeholder="New category" required>
-              <button type="submit" class="btn btn-primary btn-sm">Add</button>
-            </form>
-            <!-- Category List -->
-            <div class="category-list">
-              {% for cat in categories %}
-              <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+    <!-- Category Management -->
+    <div class="mt-4">
+        <h6 class="fw-bold">Categories</h6>
+        <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/category/add/" class="d-flex gap-2 mb-2">
+            {% csrf_token %}
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="New category" required>
+            <button type="submit" class="btn btn-primary-custom btn-sm">Add</button>
+        </form>
+        <div class="category-list">
+            {% for cat in categories %}
+            <div class="d-flex justify-content-between align-items-center border-bottom py-1">
                 <span>{{ cat.name }}</span>
                 <div>
-                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="editCategory({{ cat.id }}, '{{ cat.name }}', '{{ cat.description|default:'' }}')">Edit</button>
-                  <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/category/delete/{{ cat.id }}/" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this category?')">Delete</button>
-                  </form>
+                    <button class="btn btn-sm btn-outline-secondary me-1" onclick="editCategory({{ cat.id }}, '{{ cat.name }}', '{{ cat.description|default:'' }}')">Edit</button>
+                    <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/category/delete/{{ cat.id }}/" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this category?')">Delete</button>
+                    </form>
                 </div>
-              </div>
-              {% empty %}
-              <div class="text-muted">No categories yet.</div>
-              {% endfor %}
             </div>
-          </div>
+            {% empty %}
+            <div class="text-muted">No categories yet.</div>
+            {% endfor %}
         </div>
-      </div>
     </div>
 
-
-<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <!-- Edit Category Modal -->
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/category/edit/">
