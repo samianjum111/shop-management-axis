@@ -1,0 +1,81 @@
+{% extends "mobile/base.html" %}
+{% block title %}Customers | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .search-box {
+        margin-bottom: 1rem;
+    }
+    .customer-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.6rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: var(--shadow);
+        text-decoration: none;
+        color: var(--text);
+    }
+    .customer-card:active {
+        transform: scale(0.98);
+    }
+    .customer-info .name {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .customer-info .phone {
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+    .customer-info .badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.5rem;
+        border-radius: 30px;
+        margin-left: 0.3rem;
+    }
+    .badge-pending { background: #fef3e2; color: #d35400; }
+    .badge-none { background: #e8f8f0; color: #1e7e34; }
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--muted);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="fw-bold">👥 Customers</h5>
+</div>
+
+<div class="search-box">
+    <form method="get" class="search-input-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="search" name="q" placeholder="Search by name or phone..." value="{{ request.GET.q|default:'' }}">
+    </form>
+</div>
+
+{% for customer in customers %}
+<a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ customer.id }}/" class="customer-card">
+    <div class="customer-info">
+        <div class="name">{{ customer.name }}
+            {% if customer.total_pending > 0 %}
+                <span class="badge badge-pending">₹{{ customer.total_pending|floatformat:2 }} pending</span>
+            {% else %}
+                <span class="badge badge-none">No due</span>
+            {% endif %}
+        </div>
+        <div class="phone">{{ customer.phone|default:"No phone" }}</div>
+    </div>
+    <i class="fas fa-chevron-right" style="color:var(--muted);"></i>
+</a>
+{% empty %}
+<div class="empty-state">
+    <i class="fas fa-users fa-2x mb-2"></i>
+    <p>No customers found.</p>
+</div>
+{% endfor %}
+{% endblock %}

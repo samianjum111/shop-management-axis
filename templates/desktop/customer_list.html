@@ -1,0 +1,42 @@
+{% extends "desktop/base.html" %}
+{% block title %}Customers | {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>👥 Customers</h2>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Search by name or phone..." value="{{ request.GET.q|default:'' }}">
+        <button class="btn btn-outline-secondary" type="submit">Search</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Total Pending</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.phone|default:"-" }}</td>
+                <td>{{ customer.address|default:"-" }}</td>
+                <td>{% if customer.total_pending > 0 %}₹{{ customer.total_pending|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td><a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ customer.id }}/" class="btn btn-sm btn-primary">View Profile</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No customers found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

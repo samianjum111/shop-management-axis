@@ -1,0 +1,332 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}{% if customer %}Order for {{ customer.name }}{% else %}New Order{% endif %} | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .customer-summary {
+        background: #f8f9fa;
+        border-left: 4px solid #e67e22;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0.25rem;
+    }
+    .customer-summary .name { font-weight: 700; font-size: 1.2rem; }
+    .customer-summary .phone { color: #6c757d; }
+    .customer-summary .pending { color: #d35400; font-weight: 600; }
+    .payment-toggle .btn-option {
+        flex: 1;
+        padding: 0.4rem 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        background: #fff;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+    .payment-toggle .btn-option.active {
+        border-color: #e67e22;
+        background: #fef3e2;
+        color: #d35400;
+    }
+    .amount-input {
+        display: none;
+        margin-top: 0.5rem;
+    }
+    .amount-input.show { display: block; }
+    .total-pending-row {
+        background: #fef3e2;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>{% if customer %}Order for {{ customer.name }}{% else %}New Order (Walk-in){% endif %}</h2>
+
+{% if customer %}
+<div class="customer-summary">
+    <div class="name">{{ customer.name }}</div>
+    <div class="phone">{{ customer.phone|default:"No phone" }}</div>
+    <div class="address">{{ customer.address|default:"No address" }}</div>
+    <div class="pending">Pending: ₹{{ customer.total_pending|floatformat:2 }}</div>
+</div>
+{% endif %}
+
+<form method="post" id="orderForm">
+    {% csrf_token %}
+    <input type="hidden" name="customer_id" value="{{ customer.id|default:'' }}">
+    <input type="hidden" name="walkin" value="{% if walkin %}1{% else %}0{% endif %}">
+
+    <div class="row">
+        {% if not customer %}
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Name *</label>
+                <input type="text" name="name" id="walkin_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Phone *</label>
+                <input type="text" name="phone" id="walkin_phone" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <textarea name="address" id="walkin_address" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+        {% endif %}
+        <div class="{% if not customer %}col-md-6{% else %}col-md-12{% endif %}">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label">Ready in</label>
+                    <input type="number" name="time_value" class="form-control" placeholder="e.g. 2" value="1">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">&nbsp;</label>
+                    <select name="time_type" class="form-control">
+                        <option value="minutes">Minutes</option>
+                        <option value="hours" selected>Hours</option>
+                        <option value="days">Days</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="mt-4">Items</h5>
+    <div id="itemsContainer">
+        <div class="row item-row g-2 mb-2">
+            <div class="col-md-4">
+                <select name="category_1" class="form-select category-select">
+                    <option value="">Select Category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="number" name="total_kg_1" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+            </div>
+            <div class="col-md-2">
+                <div class="form-check">
+                    <input type="checkbox" name="cleaning_1" value="on" class="form-check-input">
+                    <label class="form-check-label">Cleaning</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm mt-2" id="addItemBtn">+ Add Item</button>
+
+    <!-- Payment Type -->
+    <div class="mt-3">
+        <label class="fw-bold">Payment Type</label>
+        <div class="d-flex gap-2 payment-toggle">
+            <div class="btn-option active" data-value="full" onclick="setPayment('full')">Full Payment</div>
+            <div class="btn-option" data-value="partial" onclick="setPayment('partial')">Partial Payment</div>
+        </div>
+        <input type="hidden" name="payment_type" id="payment_type" value="full">
+        <div class="amount-input" id="partial_amount_div">
+            <label class="form-label">Amount Received (₹)</label>
+            <input type="number" name="payment_amount" id="payment_amount" step="0.01" class="form-control" value="0">
+            <div class="text-muted small" id="remaining_display">Remaining: ₹0.00</div>
+        </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="row mt-4">
+        <div class="col-md-4"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
+        <div class="col-md-4"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
+        <div class="col-md-4"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
+    </div>
+    <div class="total-pending-row" id="pending_row" style="display:{% if customer and customer.total_pending > 0 %}flex{% else %}none{% endif %};">
+        <span>Customer Pending</span>
+        <span>₹{{ customer.total_pending|floatformat:2|default:"0.00" }}</span>
+    </div>
+
+    <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#confirmModal" id="previewBtn">Preview & Confirm</button>
+    <input type="hidden" name="item_count" id="item_count" value="1">
+</form>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmit">Confirm Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let itemCount = 1;
+const container = document.getElementById('itemsContainer');
+const addBtn = document.getElementById('addItemBtn');
+const totalGrindingDisplay = document.getElementById('total_grinding_display');
+const totalCleaningDisplay = document.getElementById('total_cleaning_display');
+const grandTotalDisplay = document.getElementById('grand_total_display');
+const previewBtn = document.getElementById('previewBtn');
+const modalBody = document.getElementById('modalBody');
+const confirmSubmit = document.getElementById('confirmSubmit');
+const itemCountInput = document.getElementById('item_count');
+const paymentTypeInput = document.getElementById('payment_type');
+const partialAmountDiv = document.getElementById('partial_amount_div');
+const paymentAmountInput = document.getElementById('payment_amount');
+const remainingDisplay = document.getElementById('remaining_display');
+const pendingRow = document.getElementById('pending_row');
+const walkinName = document.getElementById('walkin_name');
+const walkinPhone = document.getElementById('walkin_phone');
+const grindRate = {{ setting.grinding_rate }};
+const cleanRate = {{ setting.cleaning_rate }};
+
+function updateTotals() {
+    let totalGrinding = 0, totalCleaning = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+        const cleaning = row.querySelector('input[type="checkbox"]').checked;
+        totalGrinding += kg * grindRate;
+        if (cleaning) totalCleaning += kg * cleanRate;
+    });
+    const grandTotal = totalGrinding + totalCleaning;
+    totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
+    totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
+    grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+    window._totals = { grinding: totalGrinding, cleaning: totalCleaning, grand: grandTotal };
+    updateRemaining();
+}
+
+function updateRemaining() {
+    const grand = window._totals ? window._totals.grand : 0;
+    const paid = parseFloat(paymentAmountInput.value) || 0;
+    const remaining = Math.max(0, grand - paid);
+    remainingDisplay.textContent = 'Remaining: ₹' + remaining.toFixed(2);
+}
+
+function setPayment(type) {
+    document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.payment-toggle .btn-option[data-value="${type}"]`).classList.add('active');
+    paymentTypeInput.value = type;
+    if (type === 'partial') {
+        partialAmountDiv.classList.add('show');
+        if (walkinPhone) walkinPhone.required = true;
+        if (walkinName) walkinName.required = true;
+    } else {
+        partialAmountDiv.classList.remove('show');
+        if (walkinPhone) walkinPhone.required = false;
+        if (walkinName) walkinName.required = true;
+    }
+    updateRemaining();
+}
+
+function addItemRow() {
+    itemCount++;
+    const newRow = document.createElement('div');
+    newRow.className = 'row item-row g-2 mb-2';
+    newRow.innerHTML = `
+        <div class="col-md-4">
+            <select name="category_${itemCount}" class="form-select category-select">
+                <option value="">Select Category</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+        </div>
+        <div class="col-md-2">
+            <div class="form-check">
+                <input type="checkbox" name="cleaning_${itemCount}" value="on" class="form-check-input">
+                <label class="form-check-label">Cleaning</label>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    itemCountInput.value = itemCount;
+    newRow.querySelector('.total-kg').addEventListener('input', updateTotals);
+    newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateTotals);
+    newRow.querySelector('.remove-item').addEventListener('click', function() {
+        if (container.children.length > 1) {
+            newRow.remove();
+            itemCount--;
+            itemCountInput.value = itemCount;
+            updateTotals();
+        }
+    });
+}
+
+document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
+document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
+document.querySelector('.remove-item')?.addEventListener('click', function() {
+    const row = this.closest('.item-row');
+    if (container.children.length > 1) {
+        row.remove();
+        itemCount--;
+        itemCountInput.value = itemCount;
+        updateTotals();
+    }
+});
+
+addBtn.addEventListener('click', addItemRow);
+paymentAmountInput.addEventListener('input', updateRemaining);
+updateTotals();
+
+previewBtn.addEventListener('click', function() {
+    const totals = window._totals || { grinding: 0, cleaning: 0, grand: 0 };
+    const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
+    const customerPhone = document.querySelector('input[name="phone"]')?.value || '{{ customer.phone|default:"N/A" }}';
+    const paymentType = paymentTypeInput.value;
+    let paymentAmount = 0;
+    if (paymentType === 'partial') {
+        paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+    } else {
+        paymentAmount = totals.grand;
+    }
+    let itemsHtml = '';
+    document.querySelectorAll('.item-row').forEach(row => {
+        const category = row.querySelector('.category-select').options[row.querySelector('.category-select').selectedIndex]?.text || 'N/A';
+        const kg = row.querySelector('.total-kg').value || 0;
+        const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
+        itemsHtml += `<p><strong>${category}</strong> - ${kg}kg, Cleaning: ${cleaning}</p>`;
+    });
+    modalBody.innerHTML = `
+        <p><strong>Customer:</strong> ${customerName} (${customerPhone})</p>
+        <hr>
+        <h6>Items:</h6>
+        ${itemsHtml}
+        <hr>
+        <p><strong>Grinding Total:</strong> ₹${totals.grinding.toFixed(2)}</p>
+        <p><strong>Cleaning Total:</strong> ₹${totals.cleaning.toFixed(2)}</p>
+        <h5><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</h5>
+        <p><strong>Payment Type:</strong> ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</p>
+        <p><strong>Amount Paid:</strong> ₹${paymentAmount.toFixed(2)}</p>
+        <p><strong>Remaining:</strong> ₹${(totals.grand - paymentAmount).toFixed(2)}</p>
+        {% if not customer %}
+        <p class="text-muted small">After order, you can add this customer to regulars.</p>
+        {% endif %}
+    `;
+});
+
+confirmSubmit.addEventListener('click', function() {
+    document.getElementById('orderForm').submit();
+});
+</script>
+{% endblock %}

@@ -56,3 +56,19 @@ def portal_dashboard(request, schema_name):
 def root_redirect(request):
     """Serve a simple HTML page that redirects via JavaScript."""
     return render(request, 'root.html')
+
+@login_required
+def more_view(request, schema_name):
+    from tenants.models import Tenant
+    tenant = get_object_or_404(Tenant, schema_name=schema_name)
+    request.tenant = tenant
+    context = {'tenant': tenant}
+    template = 'mobile/more.html' if request.mobile else 'desktop/more.html'
+    return render(request, template, context)
+
+
+@login_required
+def customers_view(request, schema_name):
+    # Redirect to chakki customer list
+    return redirect('customer_list', schema_name=schema_name)
+

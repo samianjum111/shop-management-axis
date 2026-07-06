@@ -13,4 +13,12 @@ urlpatterns = [
     path('settings/', views.settings_view, name='chakki_settings'),
     path('search/', views.search, name='chakki_search'),
     path('transcript-modal/<int:order_id>/', views.get_transcript_modal, name='get_transcript_modal'),
+
+
+    path('customers/', views.customer_list, name='customer_list'),
+    path('customer/<int:customer_id>/', views.customer_profile, name='customer_profile'),
+    path('order/add/', views.add_order, name='add_order'),
+    path('order/confirmation/<int:order_id>/', views.order_confirmation, name='order_confirmation'),
+    path('customer/add-from-order/<int:order_id>/', views.add_customer_from_order, name='add_customer_from_order'),
+
 ]

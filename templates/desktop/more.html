@@ -1,0 +1,90 @@
+{% extends "desktop/base.html" %}
+{% block title %}More | {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>More</h2>
+</div>
+<p class="text-muted">Quick access to all portal sections.</p>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-plus-circle fa-2x text-warning"></i>
+            <h6 class="mt-2">New Order</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-clock fa-2x text-secondary"></i>
+            <h6 class="mt-2">Pending Orders</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-hourglass-half fa-2x text-warning"></i>
+            <h6 class="mt-2">Ready Orders</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-check-circle fa-2x text-success"></i>
+            <h6 class="mt-2">Completed</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
+            <h6 class="mt-2">Expenses</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-receipt fa-2x text-info"></i>
+            <h6 class="mt-2">Daily Expenses</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-hand-holding-usd fa-2x text-success"></i>
+            <h6 class="mt-2">Loans Given</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-hand-holding-heart fa-2x text-danger"></i>
+            <h6 class="mt-2">Loans Taken</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-bell fa-2x text-warning"></i>
+            <h6 class="mt-2">Reminders</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-users fa-2x text-primary"></i>
+            <h6 class="mt-2">Workers</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-clipboard-list fa-2x text-secondary"></i>
+            <h6 class="mt-2">Attendance</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/payments/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-credit-card fa-2x text-success"></i>
+            <h6 class="mt-2">Pending Payments</h6>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="card text-decoration-none h-100 p-3 text-center">
+            <i class="fas fa-cog fa-2x text-secondary"></i>
+            <h6 class="mt-2">Settings</h6>
+        </a>
+    </div>
+</div>
+{% endblock %}

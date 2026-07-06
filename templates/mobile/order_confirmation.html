@@ -1,0 +1,63 @@
+{% extends "mobile/base.html" %}
+{% block title %}Order Confirmation | {{ tenant.name }}{% endblock %}
+
+{% block body %}
+<div class="text-center mb-4">
+    <i class="fas fa-check-circle fa-4x text-success"></i>
+    <h4>Order #{{ order.id }} confirmed!</h4>
+    <p class="text-muted">Ready at {{ order.ready_time|date:"d M Y H:i" }}</p>
+</div>
+
+<div class="card p-3">
+    <h5>Order Summary</h5>
+    <p><strong>Customer:</strong> {{ order.customer.name }}</p>
+    <p><strong>Total:</strong> ₹{{ order.total_amount }}</p>
+    <p><strong>Paid:</strong> ₹{{ order.amount_paid }}</p>
+    <p><strong>Remaining:</strong> ₹{{ order.remaining_amount }}</p>
+    <p><strong>Status:</strong> {{ order.status|title }}</p>
+</div>
+
+{% if can_add_to_regulars %}
+<div class="mt-3">
+    <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#addRegularModal">Add this customer to regulars</button>
+</div>
+{% endif %}
+
+<a href="/portal/{{ tenant.schema_name }}/dashboard/" class="btn btn-secondary w-100 mt-2">Go to Dashboard</a>
+
+<!-- Modal for adding to regulars -->
+{% if can_add_to_regulars %}
+<div class="modal fade" id="addRegularModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/portal/{{ tenant.schema_name }}/chakki/customer/add-from-order/{{ order.id }}/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Add to Regulars</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Add this customer to regulars? They will be identified by phone number.</p>
+          <div class="mb-2">
+            <label>Name</label>
+            <input type="text" name="name" class="form-control" value="{{ order.customer.name }}" required>
+          </div>
+          <div class="mb-2">
+            <label>Phone</label>
+            <input type="text" name="phone" class="form-control" value="{{ order.customer.phone }}" required>
+          </div>
+          <div class="mb-2">
+            <label>Address</label>
+            <textarea name="address" class="form-control">{{ order.customer.address }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add to Regulars</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
