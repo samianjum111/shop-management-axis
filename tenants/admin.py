@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django import forms
+from django.utils.html import format_html
 from django.contrib.auth.models import User
 from .models import Tenant
 
@@ -15,13 +16,10 @@ class TenantAdminForm(forms.ModelForm):
     def save(self, commit=True):
         tenant = super().save(commit=False)
         if not tenant.pk:
-            # In single-tenant mode, we don't create a new database.
-            # Use default values for db_name, db_user, db_password.
+            # Single-tenant mode: don't create a new database.
             tenant.db_name = 'default'
             tenant.db_user = 'default_user'
             tenant.db_password = 'dummy_password'
-            # We also skip creating a superuser in a new database.
-            # The admin_username/password are not used.
         if commit:
             tenant.save()
         return tenant
