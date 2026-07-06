@@ -12,6 +12,12 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*']  # Railway par sab allow
 
+# CSRF Trusted Origins – add your Railway domain
+CSRF_TRUSTED_ORIGINS = [
+    'https://shop-management-axis-production.up.railway.app',
+    'https://*.railway.app',  # if you use other railway subdomains
+]
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -31,7 +37,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  # CSRF enabled
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -113,5 +119,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
+# CSRF cookie secure – if using HTTPS, set True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
