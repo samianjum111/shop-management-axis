@@ -6,11 +6,10 @@ from tenants.models import Tenant
 
 def portal_login(request, schema_name):
     tenant = get_object_or_404(Tenant, schema_name=schema_name)
-    request.tenant = tenant   # context processor ke liye
+    request.tenant = tenant
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        # authenticate against tenant DB
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
@@ -22,7 +21,6 @@ def portal_login(request, schema_name):
 def portal_logout(request, schema_name):
     logout(request)
     return redirect('portal_login', schema_name=schema_name)
-
 
 def redirect_to_portal_login(request):
     next_url = request.GET.get('next', '')
@@ -37,13 +35,12 @@ def redirect_to_portal_login(request):
     else:
         from django.shortcuts import redirect
         return redirect('/admin/')
+
 @login_required
 def portal_dashboard(request, schema_name):
     tenant = get_object_or_404(Tenant, schema_name=schema_name)
     if request.user != tenant.owner and not request.user.is_superuser:
-        # Agar tenant owner nahi hai to access deny
         raise Http404("Access denied")
     request.tenant = tenant
-    # yahan chakki ka dashboard render karein
     from chakki.views import dashboard as chakki_dashboard
     return chakki_dashboard(request)

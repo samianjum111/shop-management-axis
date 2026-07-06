@@ -1,48 +1,51 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-
 load_dotenv()
-import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['*']  # Railway par sab allow
+ALLOWED_HOSTS = ['*']
 
-# CSRF Trusted Origins – add your Railway domain
 CSRF_TRUSTED_ORIGINS = [
     'https://shop-management-axis-production.up.railway.app',
-    'https://*.railway.app',  # if you use other railway subdomains
+    'https://*.railway.app',
 ]
 
-# Application definition
-INSTALLED_APPS = [
+# ---------- django-tenants settings ----------
+SHARED_APPS = (
+    'django_tenants',  # must be first
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tenants',
+    'tenants',         # this app holds the Tenant model
+)
+
+TENANT_APPS = (
     'core',
     'chakki',
     'expenses',
-]
+)
+
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 MIDDLEWARE = [
+    'django_tenants.middleware.main.TenantMainMiddleware',  # must be first
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',  # CSRF enabled
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.DeviceMiddleware',
-    'core.middleware.TenantMiddleware',
+    'core.middleware.TenantFromPathMiddleware',
 ]
 
 ROOT_URLCONF = 'saas_system.urls'
@@ -67,24 +70,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'saas_system.wsgi.application'
 
-# Database – uses DATABASE_URL from Railway
+# Database – use django-tenants backend
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        engine='django.db.backends.postgresql'
-    )
+    'default': {
+        'ENGINE': 'django_tenants.postgresql_backend',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+    }
 }
 
-# Authentication backends – single tenant, use default
+DATABASE_ROUTERS = [
+    'django_tenants.routers.TenantSyncRouter',
+]
+
+TENANT_MODEL = "tenants.Tenant"   # app.Model
+
+# Authentication – use default backend
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Multi-tenant router disabled – single tenant mode
-# DATABASE_ROUTERS = ['core.router.TenantRouter']
-
-# Password validation
+# Password validation (unchanged)
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -92,33 +101,25 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Karachi'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Login URLs
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Security settings (for production)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-# CSRF cookie secure – if using HTTPS, set True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True

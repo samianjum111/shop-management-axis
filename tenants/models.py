@@ -1,18 +1,17 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django_tenants.models import TenantMixin, DomainMixin
 
-class Tenant(models.Model):
+class Tenant(TenantMixin):
     name = models.CharField(max_length=100)
-    CATEGORY_CHOICES = [('chakki', 'Atta Chakki')]
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='chakki')
-    schema_name = models.CharField(max_length=100, unique=True)
-    db_name = models.CharField(max_length=100, unique=True)
-    db_user = models.CharField(max_length=100, blank=True)
-    db_password = models.CharField(max_length=100, blank=True)
-    db_host = models.CharField(max_length=100, default='localhost')
-    db_port = models.CharField(max_length=10, default='5432')
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    schema_name = models.CharField(max_length=63, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    category = models.CharField(max_length=20, default='chakki')
+
+    auto_create_schema = True
+    auto_drop_schema = False
 
     def __str__(self):
         return self.name
+
+class Domain(DomainMixin):
+    pass

@@ -1,7 +1,5 @@
 def tenant_processor(request):
-    from tenants.models import Tenant
-    dummy_tenant = Tenant(name='My Shop', schema_name='default', db_name='default')
-    return {'tenant': getattr(request, 'tenant', dummy_tenant)}
+    return {'tenant': getattr(request, 'tenant', None)}
 
 from chakki.models import ChakkiOrder
 def chakki_counts(request):

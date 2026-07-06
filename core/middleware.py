@@ -1,4 +1,6 @@
 from tenants.models import Tenant
+from django_tenants.utils import get_tenant_model, get_public_schema_name, schema_context
+from django.http import Http404
 
 class DeviceMiddleware:
     def __init__(self, get_response):
@@ -16,12 +18,26 @@ class DeviceMiddleware:
                 request.mobile = True
         return self.get_response(request)
 
-class TenantMiddleware:
+class TenantFromPathMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+
     def __call__(self, request):
-        from tenants.models import Tenant
-        dummy_tenant = Tenant(name='My Shop', schema_name='default', db_name='default')
-        request.tenant = dummy_tenant
+        path = request.path_info
+        if path.startswith('/portal/'):
+            parts = path.split('/')
+            if len(parts) >= 3:
+                schema_name = parts[2]
+                try:
+                    tenant = Tenant.objects.get(schema_name=schema_name)
+                    request.tenant = tenant
+                    from django.db import connection
+                    connection.set_tenant(tenant)
+                except Tenant.DoesNotExist:
+                    raise Http404("Tenant not found")
+        else:
+            request.tenant = None
+            from django.db import connection
+            connection.set_schema_to_public()
         response = self.get_response(request)
         return response
