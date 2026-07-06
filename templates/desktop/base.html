@@ -208,8 +208,10 @@
 })();
 </script>
 
+    
+    
     <!-- PWA Install Button & Service Worker -->
-    <div id="pwa-install-btn" style="display:none; position:fixed; bottom:80px; right:16px; z-index:9999;">
+    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:9999;">
         <button onclick="installApp()" style="
             background: #E67E22;
             color: white;
@@ -243,13 +245,15 @@
         // Hide if already installed (standalone mode)
         if (window.matchMedia('(display-mode: standalone)').matches) {
             installBtn.style.display = 'none';
+            console.log('PWA: Already installed (standalone).');
         }
 
         // Listen for beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.style.display = 'block';
+            // Keep the button visible (already visible)
+            console.log('PWA: beforeinstallprompt fired.');
         });
 
         // Install function
@@ -258,12 +262,16 @@
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
+                        console.log('PWA: User accepted the install prompt');
                     } else {
-                        console.log('User dismissed the install prompt');
+                        console.log('PWA: User dismissed the install prompt');
                     }
                     deferredPrompt = null;
                 });
+            } else {
+                // If no deferredPrompt, try to use the browser's native install (Chrome only)
+                console.log('PWA: No deferredPrompt, showing manual install hint.');
+                alert('You can install this app by clicking the "Install" icon in the browser address bar.');
             }
         };
 
@@ -271,16 +279,21 @@
         window.addEventListener('appinstalled', () => {
             installBtn.style.display = 'none';
             deferredPrompt = null;
+            console.log('PWA: App installed.');
         });
 
         // Register service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/sw.js')
-                .then(reg => console.log('SW registered:', reg))
-                .catch(err => console.log('SW registration failed:', err));
+                .then(reg => console.log('PWA: SW registered:', reg))
+                .catch(err => console.log('PWA: SW registration failed:', err));
+        } else {
+            console.log('PWA: Service workers not supported.');
         }
     })();
     </script>
+
+
 
 </body>
 
