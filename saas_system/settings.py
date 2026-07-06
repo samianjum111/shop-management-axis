@@ -36,7 +36,7 @@ TENANT_APPS = (
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 MIDDLEWARE = [
-    'django_tenants.middleware.main.TenantMainMiddleware',  # must be first
+    # 'django_tenants.middleware.main.TenantMainMiddleware',  # disabled for single-tenant
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -80,11 +80,9 @@ DATABASES = {
 DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
 
 
-DATABASE_ROUTERS = [
-    'django_tenants.routers.TenantSyncRouter',
-]
 
-TENANT_MODEL = "tenants.Tenant"   # app.Model
+
+# TENANT_MODEL = 'tenants.Tenant'  # disabled   # app.Model
 
 # Authentication – use default backend
 AUTHENTICATION_BACKENDS = [
