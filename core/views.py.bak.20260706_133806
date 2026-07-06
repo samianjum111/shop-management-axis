@@ -14,12 +14,8 @@ def portal_login(request, schema_name):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            # Only owner or superuser can login to this tenant
-            if user == tenant.owner or user.is_superuser:
-                login(request, user)
-                return redirect('portal_dashboard', schema_name=schema_name)
-            else:
-                return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Access denied for this tenant'})
+            login(request, user)
+            return redirect('portal_dashboard', schema_name=schema_name)
         else:
             return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Invalid credentials'})
     return render(request, 'desktop/login.html', {'tenant': tenant})
