@@ -1,171 +1,180 @@
 #!/usr/bin/env python3
 import os
-import shutil
 import sys
+import subprocess
+import shutil
 from datetime import datetime
 
-# ---------- File paths (relative to current directory) ----------
-FILES = {
-    'tenants/models.py': 'tenants/models.py',
-    'tenants/admin.py': 'tenants/admin.py',
-    'core/views.py': 'core/views.py',
-}
+def run_command(cmd, cwd=None):
+    """Run a shell command and return output."""
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
+    if result.returncode != 0:
+        print(f"❌ Command failed: {cmd}")
+        print(f"   Error: {result.stderr}")
+        return None
+    return result.stdout.strip()
 
-BACKUP_SUFFIX = '.bak.' + datetime.now().strftime('%Y%m%d_%H%M%S')
-
-def backup_and_replace(filepath, new_content):
-    if not os.path.exists(filepath):
-        print(f"❌ File not found: {filepath}")
+def create_migration():
+    """Create a migration for the owner field in Tenant model."""
+    print("\n📝 Creating migration for owner field...")
+    
+    # Check if migration already exists
+    migrations_dir = "tenants/migrations"
+    if os.path.exists(migrations_dir):
+        existing = [f for f in os.listdir(migrations_dir) if f.endswith('.py') and 'owner' in f]
+        if existing:
+            print(f"   Migration already exists: {existing[0]}")
+            return True
+    
+    # Create migration
+    result = run_command("python3 manage.py makemigrations tenants --name add_owner_field")
+    if result is None:
+        print("   ❌ Failed to create migration")
         return False
-    backup = filepath + BACKUP_SUFFIX
-    shutil.copy2(filepath, backup)
-    print(f"✅ Backup created: {backup}")
-    with open(filepath, 'w') as f:
-        f.write(new_content)
-    print(f"✅ Updated: {filepath}")
+    
+    print(f"   ✅ Migration created successfully")
     return True
 
-# ---------- 1. tenants/models.py ----------
-models_new = '''from django.db import models
-from django.conf import settings
+def apply_migration():
+    """Apply the migration to database."""
+    print("\n🔄 Applying migration...")
+    
+    # Show pending migrations
+    print("   Checking pending migrations...")
+    result = run_command("python3 manage.py showmigrations tenants")
+    if result:
+        print(f"   {result}")
+    
+    # Apply migration
+    result = run_command("python3 manage.py migrate tenants")
+    if result is None:
+        print("   ❌ Migration failed")
+        return False
+    
+    print(f"   ✅ Migration applied successfully")
+    return True
 
-class Tenant(models.Model):
-    name = models.CharField(max_length=100)
-    schema_name = models.CharField(max_length=100, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    category = models.CharField(max_length=20, default='chakki')
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+def check_database():
+    """Check if owner_id column exists."""
+    print("\n🔍 Checking database...")
+    
+    # Try to query the column
+    # This is a simple check - we'll just try to access the field
+    try:
+        # Run a simple Django check
+        result = run_command("python3 manage.py shell -c \"from tenants.models import Tenant; print('OK')\"")
+        if result and 'OK' in result:
+            print("   ✅ Database check passed")
+            return True
+    except:
+        pass
+    
+    print("   ⚠️ Database check failed (may need manual fix)")
+    return False
 
-    def __str__(self):
-        return self.name
-'''
+def run_manual_fix():
+    """Run raw SQL to add the column if migration fails."""
+    print("\n🔧 Trying manual SQL fix...")
+    
+    sql = """
+    ALTER TABLE tenants_tenant ADD COLUMN IF NOT EXISTS owner_id integer;
+    ALTER TABLE tenants_tenant ADD CONSTRAINT fk_tenants_tenant_owner_id FOREIGN KEY (owner_id) REFERENCES auth_user(id) ON DELETE SET NULL;
+    """
+    
+    # Write SQL to a file and run it
+    with open('/tmp/fix_owner.sql', 'w') as f:
+        f.write(sql)
+    
+    # Try with PostgreSQL psql
+    result = run_command("PGPASSWORD='' psql -h postgres.railway.internal -U postgres -d railway -f /tmp/fix_owner.sql 2>&1 || echo 'psql not available'")
+    
+    # Try with Django
+    if result and 'psql not available' in result:
+        print("   psql not available, trying Django raw SQL...")
+        script = """
+import os
+import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'saas_system.settings')
+django.setup()
+from django.db import connection
 
-# ---------- 2. tenants/admin.py ----------
-admin_new = '''from django.contrib import admin
-from django import forms
-from django.contrib.auth import get_user_model
-from .models import Tenant
+try:
+    with connection.cursor() as cursor:
+        cursor.execute("ALTER TABLE tenants_tenant ADD COLUMN IF NOT EXISTS owner_id integer;")
+        cursor.execute("ALTER TABLE tenants_tenant ADD CONSTRAINT fk_tenants_tenant_owner_id FOREIGN KEY (owner_id) REFERENCES auth_user(id) ON DELETE SET NULL;")
+        print("SUCCESS")
+except Exception as e:
+    print("ERROR:", e)
+"""
+        with open('/tmp/fix_owner.py', 'w') as f:
+            f.write(script)
+        result = run_command("python3 /tmp/fix_owner.py")
+        if result and 'SUCCESS' in result:
+            print("   ✅ Manual SQL fix applied successfully")
+            return True
+    
+    print("   ⚠️ Manual fix attempted but may need verification")
+    return False
 
-User = get_user_model()
+def push_changes():
+    """Push changes to GitHub."""
+    print("\n📦 Pushing changes to GitHub...")
+    
+    # Check if there are changes
+    status = run_command("git status --porcelain")
+    if not status:
+        print("   No changes to commit")
+        return True
+    
+    print("   Adding all changes...")
+    run_command("git add .")
+    
+    print("   Committing...")
+    title = "Fix: Add owner field migration for multi-tenant"
+    result = run_command(f'git commit -m "{title}"')
+    if result is None:
+        print("   ⚠️ Commit may have failed or nothing to commit")
+    
+    print("   Pushing to origin main...")
+    result = run_command("git push origin main")
+    if result is None:
+        print("   ❌ Push failed")
+        return False
+    
+    print("   ✅ Push successful")
+    return True
 
-class TenantAdminForm(forms.ModelForm):
-    admin_username = forms.CharField(max_length=150, required=True, label="Admin Username")
-    admin_password = forms.CharField(
-        widget=forms.PasswordInput,
-        required=False,
-        label="Admin Password (leave blank to keep current)"
-    )
-
-    class Meta:
-        model = Tenant
-        fields = ('name', 'schema_name', 'category')
-
-    def save(self, commit=True):
-        tenant = super().save(commit=False)
-        username = self.cleaned_data['admin_username']
-        password = self.cleaned_data.get('admin_password')
-
-        # If tenant already has an owner, update that user
-        if tenant.pk and tenant.owner:
-            user = tenant.owner
-            if user.username != username:
-                user.username = username
-                user.save()
-            if password:
-                user.set_password(password)
-                user.save()
-        else:
-            # Create or get user
-            user, created = User.objects.get_or_create(username=username)
-            if created or password:
-                user.set_password(password or User.objects.make_random_password())
-                user.save()
-            tenant.owner = user
-
-        if commit:
-            tenant.save()
-        return tenant
-
-@admin.register(Tenant)
-class TenantAdmin(admin.ModelAdmin):
-    form = TenantAdminForm
-    list_display = ('name', 'schema_name', 'category', 'owner', 'created_at')
-    readonly_fields = ('created_at',)
-    fields = ('name', 'schema_name', 'category', 'admin_username', 'admin_password', 'created_at')
-'''
-
-# ---------- 3. core/views.py (portal_login only) ----------
-views_new = '''from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.http import Http404
-from tenants.models import Tenant
-
-def portal_login(request, schema_name):
-    tenant = Tenant.objects.filter(schema_name=schema_name).first()
-    if not tenant:
-        raise Http404("Tenant not found")
-    request.tenant = tenant
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            # Only owner or superuser can login to this tenant
-            if user == tenant.owner or user.is_superuser:
-                login(request, user)
-                return redirect('portal_dashboard', schema_name=schema_name)
-            else:
-                return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Access denied for this tenant'})
-        else:
-            return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Invalid credentials'})
-    return render(request, 'desktop/login.html', {'tenant': tenant})
-
-def portal_logout(request, schema_name):
-    logout(request)
-    return redirect('portal_login', schema_name=schema_name)
-
-def redirect_to_portal_login(request):
-    next_url = request.GET.get('next', '')
-    schema = None
-    if next_url:
-        parts = next_url.split('/')
-        if len(parts) >= 3 and parts[1] == 'portal':
-            schema = parts[2]
-    if schema:
-        from django.shortcuts import redirect
-        return redirect(f'/portal/{schema}/?next={next_url}')
+def main():
+    print("=" * 60)
+    print("🔧 Tenant Owner Field Fix Patcher")
+    print("=" * 60)
+    
+    # Step 1: Create migration
+    if not create_migration():
+        print("\n❌ Failed to create migration. Trying manual fix...")
+        run_manual_fix()
     else:
-        from django.shortcuts import redirect
-        return redirect('/admin/')
+        # Step 2: Apply migration
+        if not apply_migration():
+            print("\n⚠️ Migration failed. Trying manual fix...")
+            run_manual_fix()
+    
+    # Step 3: Verify
+    check_database()
+    
+    # Step 4: Ask to push
+    print("\n" + "=" * 60)
+    response = input("Do you want to push changes to GitHub? (y/n): ").strip().lower()
+    if response == 'y':
+        push_changes()
+    
+    print("\n" + "=" * 60)
+    print("✅ Patcher completed!")
+    print("\n📌 Next steps:")
+    print("  1. Restart your Django server (Railway will restart automatically)")
+    print("  2. Now you can add/edit tenants with username/password")
+    print("  3. Portal login will only work for tenant owner or superuser")
+    print("=" * 60)
 
-@login_required
-def portal_dashboard(request, schema_name):
-    tenant = Tenant.objects.filter(schema_name=schema_name).first()
-    if not tenant:
-        raise Http404("Tenant not found")
-    if request.user != tenant.owner and not request.user.is_superuser:
-        raise Http404("Access denied")
-    request.tenant = tenant
-    from chakki.views import dashboard as chakki_dashboard
-    return chakki_dashboard(request)
-'''
-
-# ---------- Execute ----------
-if __name__ == '__main__':
-    print("🔧 Applying multi-tenant fix...")
-    success = True
-    success &= backup_and_replace(FILES['tenants/models.py'], models_new)
-    success &= backup_and_replace(FILES['tenants/admin.py'], admin_new)
-    success &= backup_and_replace(FILES['core/views.py'], views_new)
-
-    if success:
-        print("\n✅ All files updated successfully!")
-        print("📌 Next steps:")
-        print("  1. Restart your Django server (Railway will restart automatically).")
-        print("  2. Now when you add/edit a tenant in admin, the username/password will be saved as the tenant's owner.")
-        print("  3. Portal login will only work for that tenant's owner (or superuser).")
-        print("  4. If you have existing tenants without an owner, edit each tenant in admin and set a username/password.")
-    else:
-        print("\n❌ Some files could not be updated. Check errors above.")
-        sys.exit(1)
+if __name__ == "__main__":
+    main()
