@@ -368,6 +368,8 @@ def worker_profile(request, worker_id, **kwargs):
     }
     template = 'mobile/worker_profile.html' if request.mobile else 'desktop/worker_profile.html'
     return render(request, template, context)
+
+
 def worker_attendance(request, **kwargs):
     today = date.today()
     selected_date = request.GET.get('date')
@@ -379,14 +381,9 @@ def worker_attendance(request, **kwargs):
     else:
         selected_date = today
 
-    # Get all active workers
     all_workers = Worker.objects.filter(is_active=True, status='active').order_by('name')
-
-    # Get workers who already have attendance for today
     today_attendances = WorkerAttendance.objects.filter(date=selected_date)
     today_worker_ids = today_attendances.values_list('worker_id', flat=True)
-
-    # Workers without today's attendance
     workers = all_workers.exclude(id__in=today_worker_ids)
 
     if request.method == 'POST':
@@ -404,29 +401,34 @@ def worker_attendance(request, **kwargs):
         messages.success(request, f"Attendance for {selected_date} saved.")
         return redirect('worker_attendance', schema_name=request.tenant.schema_name)
 
-    # History: build queryset based on filters
+    # ----- History filtering -----
     history = WorkerAttendance.objects.filter(worker__in=all_workers).order_by('-date', 'worker__name')
-    # Apply filters
+    filter_label = "Today"  # default
+
     if request.GET.get('week'):
-        # This week
         week_start = today - timedelta(days=today.weekday())
         history = history.filter(date__gte=week_start)
+        filter_label = f"This Week (from {week_start.strftime('%d %b')})"
     elif request.GET.get('month'):
-        # This month
         month_start = today.replace(day=1)
         history = history.filter(date__gte=month_start)
+        filter_label = f"This Month (from {month_start.strftime('%b %Y')})"
     elif request.GET.get('start_date') and request.GET.get('end_date'):
         try:
             start = datetime.strptime(request.GET.get('start_date'), '%Y-%m-%d').date()
             end = datetime.strptime(request.GET.get('end_date'), '%Y-%m-%d').date()
             history = history.filter(date__range=[start, end])
+            filter_label = f"{start.strftime('%d %b')} – {end.strftime('%d %b')}"
         except ValueError:
             pass
     else:
-        # Default: show today's history
         history = history.filter(date=today)
 
     history = history[:100]  # limit
+
+    total_workers = all_workers.count()
+    present_count = today_attendances.filter(status='present').count()
+    absent_count = today_attendances.filter(status='absent').count()
 
     context = {
         'workers': workers,
@@ -434,9 +436,15 @@ def worker_attendance(request, **kwargs):
         'attendance_dict': {att.worker_id: att.status for att in today_attendances},
         'history': history,
         'tenant': request.tenant,
+        'total_workers': total_workers,
+        'present_count': present_count,
+        'absent_count': absent_count,
+        'filter_label': filter_label,
+        'today': today,
     }
     template = 'mobile/worker_attendance.html' if request.mobile else 'desktop/worker_attendance.html'
     return render(request, template, context)
+
 def worker_pay(request, worker_id, **kwargs):
     worker = get_object_or_404(Worker, id=worker_id)
     if request.method == 'POST':

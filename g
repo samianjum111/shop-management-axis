@@ -1,4 +1,13 @@
-{% extends "mobile/base.html" %}
+#!/usr/bin/env python3
+"""
+Patcher: Replace pending_payments mobile template with a premium UI/UX design.
+"""
+
+import os
+
+TEMPLATE_PATH = "templates/mobile/pending_payments.html"
+
+NEW_TEMPLATE = '''{% extends "mobile/base.html" %}
 {% load static %}
 
 {% block title %}Pending Payments | {{ tenant.name }}{% endblock %}
@@ -569,3 +578,26 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 {% endblock %}
+'''
+
+def patch_template():
+    if not os.path.isfile(TEMPLATE_PATH):
+        print(f"❌ Template file not found: {TEMPLATE_PATH}")
+        return False
+
+    with open(TEMPLATE_PATH, 'w', encoding='utf-8') as f:
+        f.write(NEW_TEMPLATE)
+
+    print(f"✅ Replaced {TEMPLATE_PATH} with premium UI design.")
+    return True
+
+def main():
+    print("🔧 Applying premium UI to pending payments page...")
+    if patch_template():
+        print("\n🎉 Patch applied successfully!")
+        print("👉 Restart your Django server to see the new design.")
+    else:
+        print("\n❌ Patch failed. Please check the file path.")
+
+if __name__ == "__main__":
+    main()

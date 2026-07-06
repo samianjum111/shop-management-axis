@@ -1,70 +1,434 @@
 {% extends "mobile/base.html" %}
 {% load custom_filters %}
-{% block title %}Daily Attendance | {{ tenant.name }}{% endblock %}
+
+{% block title %}Attendance | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Page Header ===== */
+  .attendance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .attendance-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .date-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .date-picker input[type="date"] {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+    outline: none;
+    width: 140px;
+  }
+  .date-picker input[type="date"]:focus {
+    border-color: var(--accent);
+  }
+  .date-picker .btn-go {
+    padding: 0.3rem 1rem;
+    background: var(--accent);
+    border: none;
+    border-radius: 2rem;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .date-picker .btn-go:active {
+    transform: scale(0.96);
+  }
+
+  /* ===== Stats Row ===== */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.3rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .number {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-card .label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .stat-card .label svg {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 2px;
+    vertical-align: middle;
+    stroke: currentColor;
+    fill: none;
+  }
+
+  /* ===== Worker List ===== */
+  .worker-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+  }
+  .worker-item .info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .worker-item .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .worker-item .name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .worker-item .attendance-toggle {
+    display: flex;
+    gap: 0.3rem;
+  }
+  .worker-item .attendance-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.15rem 0.4rem;
+    border-radius: 1.5rem;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .worker-item .attendance-toggle input[type="radio"] {
+    display: none;
+  }
+  .worker-item .attendance-toggle input[type="radio"]:checked + label {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .worker-item .attendance-toggle input[type="radio"]:checked + label.present {
+    background: #22c55e;
+    border-color: #22c55e;
+  }
+  .worker-item .attendance-toggle input[type="radio"]:checked + label.absent {
+    background: #ef4444;
+    border-color: #ef4444;
+  }
+  .worker-item .attendance-toggle label svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+  }
+
+  /* ===== Save Button ===== */
+  .save-btn {
+    width: 100%;
+    padding: 0.6rem;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 0.5rem;
+  }
+  .save-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* ===== History Section ===== */
+  .history-section {
+    margin-top: 1.5rem;
+  }
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+  }
+  .history-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+  .history-filters {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .history-filters a {
+    padding: 0.2rem 0.6rem;
+    border-radius: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .history-filters a:hover {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .history-filters a.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .history-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+  .history-item:last-child {
+    border-bottom: none;
+  }
+  .history-item .worker-name {
+    font-weight: 500;
+    color: var(--text);
+  }
+  .history-item .date {
+    color: var(--muted);
+  }
+  .history-item .status-badge {
+    padding: 0.1rem 0.5rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .status-badge.present {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .status-badge.absent {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .empty-history {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .empty-history svg {
+    width: 40px;
+    height: 40px;
+    stroke: var(--muted);
+    fill: none;
+    margin-bottom: 0.3rem;
+  }
+
+  /* ===== Custom Date Range (inline) ===== */
+  .custom-range {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    margin-top: 0.3rem;
+  }
+  .custom-range input[type="date"] {
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.7rem;
+    width: 110px;
+  }
+  .custom-range button {
+    padding: 0.2rem 0.6rem;
+    background: var(--accent);
+    border: none;
+    border-radius: 0.3rem;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
+  /* ===== Responsive tweaks ===== */
+  @media (max-width: 400px) {
+    .date-picker input[type="date"] { width: 110px; }
+    .worker-item { padding: 0.4rem 0.6rem; }
+    .worker-item .attendance-toggle label { font-size: 0.65rem; padding: 0.1rem 0.3rem; }
+  }
+</style>
+{% endblock %}
 
 {% block body %}
-<div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="fw-bold">📋 Daily Attendance</h5>
-    <form method="get" class="d-flex">
-        <input type="date" name="date" class="form-control form-control-sm" value="{{ selected_date|date:'Y-m-d' }}" style="width:140px;">
-        <button type="submit" class="btn btn-primary-custom btn-sm ms-1">Go</button>
-    </form>
-    <!-- History -->
-    <div class="mt-4">
-        <h6 class="fw-bold">Attendance History</h6>
-        <div class="d-flex flex-wrap gap-2 mb-2">
-            <a href="?date={{ today|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">Today</a>
-            <a href="?week=1" class="btn btn-sm btn-outline-secondary">This Week</a>
-            <a href="?month=1" class="btn btn-sm btn-outline-secondary">This Month</a>
-            <form method="get" class="d-flex gap-1">
-                <input type="date" name="start_date" class="form-control form-control-sm" style="width:120px;">
-                <input type="date" name="end_date" class="form-control form-control-sm" style="width:120px;">
-                <button type="submit" class="btn btn-sm btn-primary">Go</button>
-            </form>
-        </div>
-        <div class="attendance-history">
-            {% if history %}
-                <div class="list-group list-group-flush">
-                {% for att in history %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-1">
-                        <span>{{ att.worker.name }}</span>
-                        <span>{{ att.date|date:"d M" }}</span>
-                        <span class="badge {% if att.status == 'present' %}bg-success{% else %}bg-danger{% endif %}">{{ att.status|title }}</span>
-                    </div>
-                {% empty %}
-                    <div class="text-muted">No records for this period.</div>
-                {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-muted">Select a filter to view history.</p>
-            {% endif %}
-        </div>
-    </div>
 
+<!-- Header -->
+<div class="attendance-header">
+  <h1>Attendance</h1>
+  <form method="get" class="date-picker">
+    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" required>
+    <button type="submit" class="btn-go">Go</button>
+  </form>
 </div>
-<div class="alert alert-info">{{ selected_date|date:"l, d M Y" }}</div>
 
-<form method="post">
-    {% csrf_token %}
-    <div class="workers-list">
-        {% for worker in workers %}
-        <div class="attendance-row d-flex justify-content-between align-items-center border-bottom py-2">
-            <span>{{ worker.name }}</span>
-            <div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="attendance_{{ worker.id }}" id="present_{{ worker.id }}" value="present" {% if attendance_dict|get_item:worker.id == 'present' %}checked{% endif %}>
-                    <label class="form-check-label" for="present_{{ worker.id }}">Present</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="attendance_{{ worker.id }}" id="absent_{{ worker.id }}" value="absent" {% if attendance_dict|get_item:worker.id == 'absent' %}checked{% endif %}>
-                    <label class="form-check-label" for="absent_{{ worker.id }}">Absent</label>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="text-muted">No active workers.</div>
-        {% endfor %}
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="number">{{ total_workers }}</div>
+    <div class="label">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Total
     </div>
-    <button type="submit" class="btn btn-primary-custom w-100 mt-3">Save Attendance</button>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ present_count }}</div>
+    <div class="label">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Present
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ absent_count }}</div>
+    <div class="label">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Absent
+    </div>
+  </div>
+</div>
+
+<!-- Worker list for today -->
+<form method="post">
+  {% csrf_token %}
+  <div class="workers-list">
+    {% for worker in workers %}
+    <div class="worker-item">
+      <div class="info">
+        <div class="avatar" style="background: {% cycle '#E67E22' '#2E86AB' '#A23B72' '#F18F01' '#6A4C93' '#3D5A80' %};">{{ worker.name|slice:":1"|upper }}</div>
+        <span class="name">{{ worker.name }}</span>
+      </div>
+      <div class="attendance-toggle">
+        <input type="radio" name="attendance_{{ worker.id }}" id="present_{{ worker.id }}" value="present" {% if attendance_dict|get_item:worker.id == 'present' %}checked{% endif %}>
+        <label for="present_{{ worker.id }}" class="present">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          Present
+        </label>
+        <input type="radio" name="attendance_{{ worker.id }}" id="absent_{{ worker.id }}" value="absent" {% if attendance_dict|get_item:worker.id == 'absent' %}checked{% endif %}>
+        <label for="absent_{{ worker.id }}" class="absent">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Absent
+        </label>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-history">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <p>All workers have been marked for today.</p>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="submit" class="save-btn">Save Attendance</button>
 </form>
+
+<!-- History Section -->
+
+<div class="history-section">
+  <div class="history-header">
+    <h3>History</h3>
+    <span class="filter-label" style="font-size:0.75rem; color:var(--muted);">{{ filter_label }}</span>
+  </div>
+  <div class="history-filters">
+    <a href="?date={{ today|date:'Y-m-d' }}" class="{% if request.GET.date == today|date:'Y-m-d' or not request.GET.date %}active{% endif %}">Today</a>
+    <a href="?week=1">Week</a>
+    <a href="?month=1">Month</a>
+    <a href="#" onclick="document.getElementById('customRange').style.display='flex'; return false;">Custom</a>
+  </div>
+  <div id="customRange" class="custom-range" style="display:none;">
+    <form method="get" class="d-flex gap-1">
+      <input type="date" name="start_date" value="{{ request.GET.start_date|default:'' }}">
+      <input type="date" name="end_date" value="{{ request.GET.end_date|default:'' }}">
+      <button type="submit">Filter</button>
+    </form>
+  </div>
+  <div class="history-list">
+    {% if history %}
+      {% for att in history %}
+      <div class="history-item">
+        <span class="worker-name">{{ att.worker.name }}</span>
+        <span class="date">{{ att.date|date:"d M Y" }}</span>
+        <span class="status-badge {{ att.status }}">{{ att.status }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-history">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p>No attendance records for {{ filter_label|lower }}.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+
+<script>
+  // Toggle custom range visibility
+  document.querySelectorAll('.history-filters a').forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (this.textContent.trim() !== 'Custom') {
+        document.getElementById('customRange').style.display = 'none';
+      }
+    });
+  });
+</script>
+
 {% endblock %}
