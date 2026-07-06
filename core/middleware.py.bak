@@ -13,26 +13,11 @@ def set_current_tenant_db(db_alias):
 class DeviceMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
-
     def __call__(self, request):
-        # Check cookie or GET parameter first
-        device = request.GET.get('device', '')
-        if not device:
-            device = request.COOKIES.get('device', '')
-
-        # Default: False (desktop)
         request.mobile = False
-
-        if device.lower() == 'mobile':
+        ua = request.META.get('HTTP_USER_AGENT', '')
+        if any(x in ua for x in ['Mobile', 'Android', 'iPhone', 'iPad']):
             request.mobile = True
-        elif device.lower() == 'desktop':
-            request.mobile = False
-        else:
-            # fallback to user-agent
-            ua = request.META.get('HTTP_USER_AGENT', '')
-            if any(x in ua for x in ['Mobile', 'Android', 'iPhone', 'iPad']):
-                request.mobile = True
-
         return self.get_response(request)
 
 class TenantMiddleware:
@@ -49,7 +34,9 @@ class TenantMiddleware:
                 try:
                     tenant = Tenant.objects.get(schema_name=schema)
                     if tenant.db_name:
+                        # Ensure the database connection exists
                         if tenant.db_name not in settings.DATABASES:
+                            # Copy default DB settings and set NAME
                             default_db = settings.DATABASES['default'].copy()
                             default_db['NAME'] = tenant.db_name
                             settings.DATABASES[tenant.db_name] = default_db
