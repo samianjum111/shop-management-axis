@@ -1,9 +1,21 @@
 {
   "name": "Chakki SaaS",
   "short_name": "Chakki",
-  "start_url": "/",
+  "start_url": "/portal/2/dashboard/",
   "display": "standalone",
   "theme_color": "#343a40",
   "background_color": "#ffffff",
-  "icons": [{"src": "/static/icon.png", "sizes": "192x192", "type": "image/png"}]
+  "icons": [
+    {
+      "src": "/static/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "apple-touch-icon": "/static/apple-touch-icon.png"
 }
