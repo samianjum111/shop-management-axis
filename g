@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-Force the PWA install button to be always visible (unless already installed).
+Diagnostic patch – makes the PWA install button highly visible and logs its status.
 """
-
 import re
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 TEMPLATES = PROJECT_ROOT / 'templates'
 
-# The new install button HTML – we'll replace the old one entirely.
-NEW_BUTTON_HTML = '''
-    <!-- PWA Install Button & Service Worker -->
-    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:9999;">
+# New button HTML with diagnostic styling and logging
+DIAGNOSTIC_BUTTON = '''
+    <!-- PWA Install Button – DIAGNOSTIC VERSION -->
+    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:999999; background:red; border:5px solid yellow; padding:5px; border-radius:10px;">
         <button onclick="installApp()" style="
             background: #E67E22;
             color: white;
@@ -39,57 +38,47 @@ NEW_BUTTON_HTML = '''
     <script>
     (function() {
         'use strict';
+        const installBtn = document.getElementById('pwa-install-btn');
+        console.log('PWA Diagnostic: installBtn found?', installBtn);
+        if (installBtn) {
+            console.log('PWA Diagnostic: current display style:', window.getComputedStyle(installBtn).display);
+        }
 
         let deferredPrompt = null;
-        const installBtn = document.getElementById('pwa-install-btn');
-
-        // Hide if already installed (standalone mode)
         if (window.matchMedia('(display-mode: standalone)').matches) {
-            installBtn.style.display = 'none';
+            if (installBtn) installBtn.style.display = 'none';
             console.log('PWA: Already installed (standalone).');
         }
 
-        // Listen for beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Keep the button visible (already visible)
             console.log('PWA: beforeinstallprompt fired.');
         });
 
-        // Install function
         window.installApp = function() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('PWA: User accepted the install prompt');
-                    } else {
-                        console.log('PWA: User dismissed the install prompt');
-                    }
+                    console.log('PWA: User choice:', choiceResult.outcome);
                     deferredPrompt = null;
                 });
             } else {
-                // If no deferredPrompt, try to use the browser's native install (Chrome only)
-                console.log('PWA: No deferredPrompt, showing manual install hint.');
+                console.log('PWA: No deferredPrompt, showing manual hint.');
                 alert('You can install this app by clicking the "Install" icon in the browser address bar.');
             }
         };
 
-        // Hide after installation
         window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
+            if (installBtn) installBtn.style.display = 'none';
             deferredPrompt = null;
             console.log('PWA: App installed.');
         });
 
-        // Register service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/sw.js')
                 .then(reg => console.log('PWA: SW registered:', reg))
                 .catch(err => console.log('PWA: SW registration failed:', err));
-        } else {
-            console.log('PWA: Service workers not supported.');
         }
     })();
     </script>
@@ -100,12 +89,10 @@ def patch_file(filepath):
         print(f"⚠️  {filepath} not found, skipping.")
         return
     content = filepath.read_text(encoding='utf-8')
-    # Find the existing install button block (from <!-- PWA Install Button --> to its closing </script>)
-    # We'll replace everything between the markers.
-    import re
-    pattern = r'<!-- PWA Install Button & Service Worker -->.*?</script>'
+    # Replace the entire install button block
+    pattern = r'<!-- PWA Install Button.*?</script>'
     if re.search(pattern, content, re.DOTALL):
-        content = re.sub(pattern, NEW_BUTTON_HTML, content, flags=re.DOTALL)
+        content = re.sub(pattern, DIAGNOSTIC_BUTTON, content, flags=re.DOTALL)
         filepath.write_text(content, encoding='utf-8')
         print(f"✅ Patched {filepath}")
     else:
@@ -117,9 +104,12 @@ def main():
 
     print("\n📌 Next steps:")
     print("1. Run: python3 manage.py collectstatic --noinput")
-    print("2. Restart your server (Ctrl+C then run again)")
-    print("3. Open the page and the button should be visible at the bottom-right.")
-    print("   If it's still not visible, check the browser console for errors.")
+    print("2. Restart your server")
+    print("3. Open your site in the browser")
+    print("4. Look at the bottom-right corner – you should see a RED box with an orange button.")
+    print("5. Open the browser console (F12) and check the logs for diagnostic messages.")
+    print("   - If the console says 'installBtn found? null', the button is not in the DOM.")
+    print("   - If it says 'installBtn found? [object HTMLDivElement]' but you don't see it, it's hidden/covered.")
 
 if __name__ == '__main__':
     main()
