@@ -1,12 +1,7 @@
 from django.contrib import admin
 from django import forms
-from django.conf import settings
-from django.core.management import call_command
-from django.utils.html import format_html
 from django.contrib.auth.models import User
 from .models import Tenant
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 class TenantAdminForm(forms.ModelForm):
     admin_username = forms.CharField(max_length=150, required=True, label="Admin Username")
@@ -20,39 +15,13 @@ class TenantAdminForm(forms.ModelForm):
     def save(self, commit=True):
         tenant = super().save(commit=False)
         if not tenant.pk:
-            import secrets
-            tenant.db_name = f"shop_{secrets.token_hex(4)}"
-            tenant.db_user = f"user_{secrets.token_hex(4)}"
-            tenant.db_password = secrets.token_urlsafe(16)
-
-            # Create database
-            conn = psycopg2.connect(
-                dbname='postgres',
-                user=settings.DATABASES['default']['USER'],
-                password=settings.DATABASES['default']['PASSWORD'],
-                host=settings.DATABASES['default']['HOST'],
-                port=settings.DATABASES['default']['PORT']
-            )
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            cur = conn.cursor()
-            cur.execute(f"CREATE DATABASE {tenant.db_name} OWNER {settings.DATABASES['default']['USER']};")
-            cur.close()
-            conn.close()
-
-            # Add DB connection
-            default_db = settings.DATABASES['default'].copy()
-            default_db['NAME'] = tenant.db_name
-            settings.DATABASES[tenant.db_name] = default_db
-
-            # Run migrations on new DB (all apps except 'tenants')
-            call_command('migrate', database=tenant.db_name, verbosity=2, interactive=False)
-
-            # Create superuser in tenant DB using db_manager
-            User.objects.db_manager(tenant.db_name).create_superuser(
-                username=self.cleaned_data['admin_username'],
-                password=self.cleaned_data['admin_password'],
-                email=''
-            )
+            # In single-tenant mode, we don't create a new database.
+            # Use default values for db_name, db_user, db_password.
+            tenant.db_name = 'default'
+            tenant.db_user = 'default_user'
+            tenant.db_password = 'dummy_password'
+            # We also skip creating a superuser in a new database.
+            # The admin_username/password are not used.
         if commit:
             tenant.save()
         return tenant
