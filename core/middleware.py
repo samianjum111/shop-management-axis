@@ -28,16 +28,13 @@ class TenantFromPathMiddleware:
             parts = path.split('/')
             if len(parts) >= 3:
                 schema_name = parts[2]
+                from tenants.models import Tenant
                 try:
                     tenant = Tenant.objects.get(schema_name=schema_name)
                     request.tenant = tenant
-                    from django.db import connection
-                    connection.set_tenant(tenant)
                 except Tenant.DoesNotExist:
                     raise Http404("Tenant not found")
         else:
             request.tenant = None
-            from django.db import connection
-            connection.set_schema_to_public()
         response = self.get_response(request)
         return response

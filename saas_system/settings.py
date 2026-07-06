@@ -17,14 +17,13 @@ CSRF_TRUSTED_ORIGINS = [
 
 # ---------- django-tenants settings ----------
 SHARED_APPS = (
-    'django_tenants',  # must be first
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tenants',         # this app holds the Tenant model
+    'tenants',         # simple tenant model
 )
 
 TENANT_APPS = (
@@ -33,10 +32,21 @@ TENANT_APPS = (
     'expenses',
 )
 
-INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'tenants',
+    'core',
+    'chakki',
+    'expenses',
+]
 
 MIDDLEWARE = [
-    # 'django_tenants.middleware.main.TenantMainMiddleware',  # disabled for single-tenant
+    #   # disabled for single-tenant
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -82,7 +92,7 @@ DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
 
 
 
-TENANT_MODEL = 'tenants.Tenant'
+# TENANT_MODEL removed
 
 # Authentication – use default backend
 AUTHENTICATION_BACKENDS = [

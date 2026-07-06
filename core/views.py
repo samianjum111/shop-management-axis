@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
-from tenants.models import Tenant
+# from tenants.models import Tenant
 
 def portal_login(request, schema_name):
-    tenant = get_object_or_404(Tenant, schema_name=schema_name)
+    tenant = Tenant.objects.filter(schema_name=schema_name).first()
+    if not tenant:
+        raise Http404("Tenant not found")
     request.tenant = tenant
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -38,7 +40,9 @@ def redirect_to_portal_login(request):
 
 @login_required
 def portal_dashboard(request, schema_name):
-    tenant = get_object_or_404(Tenant, schema_name=schema_name)
+    tenant = Tenant.objects.filter(schema_name=schema_name).first()
+    if not tenant:
+        raise Http404("Tenant not found")
     if request.user != tenant.owner and not request.user.is_superuser:
         raise Http404("Access denied")
     request.tenant = tenant
