@@ -2,20 +2,20 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models import Q, Sum
+from django.http import JsonResponse
 from .models import Expense, Reminder, Worker, WorkerCategory
-from django.db.models import Q
+import json
 
 @login_required
 def expense_dashboard(request, **kwargs):
     """Expense dashboard with cards and summary."""
-    # Summary
     expenses = Expense.objects.all().order_by('-date')
     total_expenses = sum(e.amount for e in expenses)
     total_given = sum(e.amount for e in expenses if e.is_credit and not e.is_repaid)
     total_taken = sum(e.amount for e in expenses if e.category == 'taken_loan' and not e.is_repaid)
     net_balance = total_given - total_taken
 
-    # Counts for cards
     daily_expenses = expenses.filter(category__in=['general','food','medicine','utility','other']).count()
     loans_given = expenses.filter(category='given_loan').count()
     loans_taken = expenses.filter(category='taken_loan').count()
@@ -39,15 +39,119 @@ def expense_dashboard(request, **kwargs):
 
 @login_required
 def daily_expense_list(request, **kwargs):
-    """List daily expenses (non-loan categories)."""
-    expenses = Expense.objects.filter(category__in=['general','food','medicine','utility','other']).order_by('-date')
-    context = {'expenses': expenses, 'title': 'Daily Expenses', 'tenant': request.tenant}
-    template = 'mobile/expense_list.html' if request.mobile else 'desktop/expense_list.html'
+    """Enhanced daily expenses page with analytics, search, filters, and pagination."""
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+    expenses = Expense.objects.filter(
+        category__in=['general','food','medicine','utility','other']
+    ).order_by('-expense_date')
+
+    # Search
+    search_q = request.GET.get('q', '').strip()
+    if search_q:
+        expenses = expenses.filter(
+            Q(title__icontains=search_q) |
+            Q(description__icontains=search_q) |
+            Q(notes__icontains=search_q)
+        )
+
+    # Date range filter
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date:
+        expenses = expenses.filter(expense_date__gte=start_date)
+    if end_date:
+        expenses = expenses.filter(expense_date__lte=end_date)
+
+    # Analytics (based on filtered queryset)
+    today = timezone.now().date()
+    today_total = expenses.filter(expense_date=today).aggregate(Sum('amount'))['amount__sum'] or 0
+    week_start = today - timezone.timedelta(days=today.weekday())
+    week_total = expenses.filter(expense_date__gte=week_start).aggregate(Sum('amount'))['amount__sum'] or 0
+    month_start = today.replace(day=1)
+    month_total = expenses.filter(expense_date__gte=month_start).aggregate(Sum('amount'))['amount__sum'] or 0
+    overall_total = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+    count = expenses.count()
+
+    # Pagination (15 per page)
+    paginator = Paginator(expenses, 15)
+    page = request.GET.get('page')
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    context = {
+        'page_obj': page_obj,
+        'search_q': search_q,
+        'start_date': start_date,
+        'end_date': end_date,
+        'today_total': today_total,
+        'week_total': week_total,
+        'month_total': month_total,
+        'overall_total': overall_total,
+        'count': count,
+        'tenant': request.tenant,
+    }
+    template = 'mobile/daily_expenses.html' if request.mobile else 'desktop/daily_expenses.html'
     return render(request, template, context)
 
 @login_required
+def daily_expense_detail(request, expense_id, **kwargs):
+    """Return expense data as JSON for modal."""
+    expense = get_object_or_404(Expense, id=expense_id)
+    data = {
+        'id': expense.id,
+        'title': expense.title,
+        'description': expense.description,
+        'amount': str(expense.amount),
+        'expense_date': expense.expense_date.strftime('%Y-%m-%d'),
+        'notes': expense.notes,
+    }
+    return JsonResponse(data)
+
+@login_required
+def daily_expense_add(request, **kwargs):
+    """Create a new daily expense via AJAX."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            expense = Expense.objects.create(
+                title=data.get('title'),
+                description=data.get('description', ''),
+                amount=data.get('amount'),
+                expense_date=data.get('expense_date'),
+                notes=data.get('notes', ''),
+                category='general',   # default category for daily expenses
+            )
+            return JsonResponse({'success': True, 'id': expense.id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+@login_required
+def daily_expense_edit(request, expense_id, **kwargs):
+    """Update an existing daily expense via AJAX."""
+    if request.method == 'POST':
+        expense = get_object_or_404(Expense, id=expense_id)
+        try:
+            data = json.loads(request.body)
+            expense.title = data.get('title', expense.title)
+            expense.description = data.get('description', expense.description)
+            expense.amount = data.get('amount', expense.amount)
+            expense.expense_date = data.get('expense_date', expense.expense_date)
+            expense.notes = data.get('notes', expense.notes)
+            expense.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+# ---- The following views are unchanged ----
+@login_required
 def loan_list(request, loan_type, **kwargs):
-    """List loans (given or taken)."""
     if loan_type == 'given':
         expenses = Expense.objects.filter(category='given_loan').order_by('-date')
         title = 'Loans Given'
@@ -58,7 +162,6 @@ def loan_list(request, loan_type, **kwargs):
     template = 'mobile/expense_list.html' if request.mobile else 'desktop/expense_list.html'
     return render(request, template, context)
 
-# ---- Reminder Views ----
 @login_required
 def reminder_list(request, **kwargs):
     reminders = Reminder.objects.all().order_by('remind_date')
@@ -91,7 +194,6 @@ def complete_reminder(request, reminder_id, **kwargs):
     messages.success(request, "Reminder marked as done.")
     return redirect('reminder_list', schema_name=request.tenant.schema_name)
 
-# ---- Worker Views ----
 @login_required
 def worker_list(request, **kwargs):
     workers = Worker.objects.all().order_by('-created_at')
@@ -163,11 +265,8 @@ def edit_worker(request, worker_id, **kwargs):
     template = 'mobile/edit_worker.html' if request.mobile else 'desktop/edit_worker.html'
     return render(request, template)
 
-# Keep the old add_expense and repay_loan for now, but we can redirect them.
 @login_required
 def add_expense(request, **kwargs):
-    # Redirect to a unified add page or keep as is.
-    # For simplicity, we'll keep the old add expense.
     if request.method == 'POST':
         expense = Expense(
             title=request.POST.get('title'),

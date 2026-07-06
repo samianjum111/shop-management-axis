@@ -28,3 +28,48 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.amount}"
+
+class Reminder(models.Model):
+    title = models.CharField(max_length=200)
+    notes = models.TextField(blank=True)
+    remind_date = models.DateTimeField()
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+class WorkerCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Worker(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('suspended', 'Suspended'),
+        ('resigned', 'Resigned'),
+    ]
+    SALARY_TYPE_CHOICES = [
+        ('daily', 'Daily'),
+        ('monthly', 'Monthly'),
+    ]
+    name = models.CharField(max_length=100)
+    father_name = models.CharField(max_length=100, blank=True)
+    cnic = models.CharField(max_length=15, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    joining_date = models.DateField()
+    resignation_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    salary_type = models.CharField(max_length=10, choices=SALARY_TYPE_CHOICES, default='monthly')
+    salary_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    category = models.ForeignKey(WorkerCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
