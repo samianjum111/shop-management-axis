@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 class Expense(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     CATEGORY_CHOICES = [
         ('general', 'General'),
         ('medicine', 'Medicine'),
@@ -30,6 +31,7 @@ class Expense(models.Model):
         return f"{self.title} - {self.amount}"
 
 class Reminder(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=200)
     notes = models.TextField(blank=True)
     remind_date = models.DateTimeField()
@@ -40,6 +42,7 @@ class Reminder(models.Model):
         return self.title
 
 class WorkerCategory(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
 
@@ -47,6 +50,7 @@ class WorkerCategory(models.Model):
         return self.name
 
 class Worker(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('suspended', 'Suspended'),
@@ -80,6 +84,7 @@ class Worker(models.Model):
 
 # ---------- Worker Management Additions ----------
 class WorkerAttendance(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = [
         ('present', 'Present'),
         ('absent', 'Absent'),
@@ -98,6 +103,7 @@ class WorkerAttendance(models.Model):
 
 
 class WorkerPayment(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
     worker = models.ForeignKey('Worker', on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateField()
