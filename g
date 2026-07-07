@@ -1,99 +1,81 @@
 #!/usr/bin/env python3
-import os
-import shutil
+"""
+Fix "Add to Regulars" functionality.
+When the phone number matches the existing walk‑in customer, we should convert them to regular.
+"""
+
 import re
-import sys
-import django
+from pathlib import Path
 
-# ---- 1. Patch context processor ----
-def patch_context_processor():
-    cp_file = 'core/context_processors.py'
-    backup = cp_file + '.bak'
-    shutil.copy2(cp_file, backup)
-    print(f"✅ Backup: {backup}")
+BASE_DIR = Path(__file__).resolve().parent
 
-    with open(cp_file, 'r') as f:
+def replace_in_file_regex(filepath, pattern, replacement):
+    path = BASE_DIR / filepath
+    if not path.exists():
+        print(f"⚠️  File not found: {filepath}")
+        return
+    with open(path, 'r', encoding='utf-8') as f:
         content = f.read()
+    new_content, count = re.subn(pattern, replacement, content, flags=re.DOTALL)
+    if count == 0:
+        print(f"⚠️  No matches for pattern in {filepath}, skipping.")
+        return
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(new_content)
+    print(f"✅ Updated {filepath} ({count} replacements)")
 
-    # Replace the chakki_counts function to filter by tenant
-    new_func = """
-def chakki_counts(request):
-    from chakki.models import ChakkiOrder
-    # Filter by tenant if available
-    if hasattr(request, 'tenant') and request.tenant:
-        orders = ChakkiOrder.objects.filter(tenant=request.tenant)
-    else:
-        orders = ChakkiOrder.objects.all()
-    pending_count = orders.filter(status='pending').count()
-    ready_count = orders.filter(status='ready').count()
-    partial_count = orders.filter(payment_status='partial').count()
-    completed_count = orders.filter(status='completed').count()
-    ready_orders = orders.filter(status='ready').order_by('-created_at')[:10]
-    return {
-        'pending_count': pending_count,
-        'ready_count': ready_count,
-        'partial_count': partial_count,
-        'completed_count': completed_count,
-        'ready_orders': ready_orders,
-    }
+def main():
+    print("🚀 Fixing 'Add to Regulars' functionality...")
+
+    new_add_customer = """@login_required
+def add_customer_from_order(request, order_id, **kwargs):
+    order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        address = request.POST.get('address', '').strip()
+        if name and phone:
+            existing = ChakkiCustomer.objects.filter(tenant=request.tenant, phone=phone).first()
+            if existing:
+                # If the existing customer is the same as the order's customer, just set is_regular=True
+                if existing == order.customer:
+                    existing.is_regular = True
+                    existing.name = name
+                    existing.address = address
+                    existing.save()
+                    messages.success(request, f"Customer {existing.name} added to regulars.")
+                    return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=existing.id)
+                else:
+                    # Different customer with same phone: link order to existing and delete old if empty
+                    old_customer = order.customer
+                    order.customer = existing
+                    order.save()
+                    if old_customer != existing and old_customer.chakkiorder_set.count() == 0:
+                        old_customer.delete()
+                    messages.success(request, f"Order linked to existing customer {existing.name}.")
+                    return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=existing.id)
+            else:
+                # New phone: update the order's customer to regular
+                cust = order.customer
+                cust.name = name
+                cust.phone = phone
+                cust.address = address
+                cust.is_regular = True
+                cust.save()
+                messages.success(request, f"Customer {name} added to regulars.")
+                return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=cust.id)
+        else:
+            messages.error(request, "Name and Phone are required.")
+    return redirect('order_confirmation', schema_name=request.tenant.schema_name, order_id=order_id)
 """
-    # Replace the existing function definition
-    pattern = r'def chakki_counts\(request\):.*?(?=\n\n|\Z)'
-    content = re.sub(pattern, new_func, content, flags=re.DOTALL)
 
-    with open(cp_file, 'w') as f:
-        f.write(content)
-    print("✅ Patched core/context_processors.py (tenant filtering)")
+    # Use regex to replace the entire function
+    pattern = r'(@login_required\s+def add_customer_from_order\(request, order_id, \*\*kwargs\):.*?)(?=\n@login_required|\Z)'
+    replace_in_file_regex('chakki/views.py', pattern, new_add_customer)
 
-# ---- 2. Add signal to delete walk-in customers ----
-def add_signal():
-    # We'll create a new file chakki/signals.py
-    signal_file = 'chakki/signals.py'
-    if not os.path.exists(signal_file):
-        signal_content = """from django.db.models.signals import post_save
-from django.dispatch import receiver
-from .models import ChakkiOrder, ChakkiCustomer
+    print("\n✅ Patch applied successfully!")
+    print("📌 Now when you click 'Add to Regulars' on the confirmation page, the walk‑in customer will be converted to a regular customer.")
+    print("🚀 Restart your server to apply the changes.")
 
-@receiver(post_save, sender=ChakkiOrder)
-def delete_walkin_customer(sender, instance, **kwargs):
-    # If order is completed and fully paid
-    if instance.status == 'completed' and instance.payment_status == 'paid':
-        customer = instance.customer
-        # Only if it's a walk-in (not regular) and this is its only order
-        if not customer.is_regular and customer.chakkiorder_set.count() == 1:
-            customer.delete()
-            print(f"🗑️ Deleted walk-in customer {customer.name} (no pending orders)")
-"""
-        with open(signal_file, 'w') as f:
-            f.write(signal_content)
-        print("✅ Created chakki/signals.py")
-    else:
-        print("ℹ️ chakki/signals.py already exists, skipping (check manually)")
-
-    # Ensure signals are loaded: add to chakki/apps.py
-    apps_file = 'chakki/apps.py'
-    with open(apps_file, 'r') as f:
-        content = f.read()
-    if 'import chakki.signals' not in content:
-        # Add import to ready method
-        new_ready = """
-    def ready(self):
-        import chakki.signals
-"""
-        # Find class definition and insert ready method
-        pattern = r'(class ChakkiConfig.*?:\s+)(name = .*?)(\s+)'
-        replacement = r'\1\2\n' + new_ready
-        content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-        with open(apps_file, 'w') as f:
-            f.write(content)
-        print("✅ Patched chakki/apps.py to load signals")
-    else:
-        print("ℹ️ Signals already loaded in apps.py")
-
-# ---- 3. Run the script ----
-if __name__ == '__main__':
-    patch_context_processor()
-    add_signal()
-    print("\n✅ All done! Restart your server for changes to take effect.")
-    print("📌 Now, walk-in customers with fully paid orders will be automatically deleted after completion.")
-    print("📌 Dashboard counts are now tenant-specific (no more data leakage).")
+if __name__ == "__main__":
+    main()

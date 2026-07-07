@@ -6,6 +6,42 @@
     .search-box {
         margin-bottom: 1rem;
     }
+    .tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.5rem;
+    }
+    .tabs a {
+        flex: 1;
+        text-align: center;
+        padding: 0.4rem 0;
+        border-radius: var(--radius);
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: 0.2s;
+        background: var(--surface);
+        border: 1px solid var(--border);
+    }
+    .tabs a.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+    .tabs a .badge {
+        margin-left: 0.3rem;
+        background: var(--muted);
+        color: white;
+        border-radius: 30px;
+        padding: 0.05rem 0.45rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+    .tabs a.active .badge {
+        background: rgba(255,255,255,0.3);
+    }
     .customer-card {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -51,10 +87,21 @@
     <h5 class="fw-bold">👥 Customers</h5>
 </div>
 
+<!-- Tabs -->
+<div class="tabs">
+    <a href="?tab=regular{% if search_q %}&q={{ search_q }}{% endif %}" class="{% if tab == 'regular' %}active{% endif %}">
+        Regular <span class="badge">{{ regular_count }}</span>
+    </a>
+    <a href="?tab=walk{% if search_q %}&q={{ search_q }}{% endif %}" class="{% if tab == 'walk' %}active{% endif %}">
+        Walk‑in Pending <span class="badge">{{ walk_count }}</span>
+    </a>
+</div>
+
 <div class="search-box">
     <form method="get" class="search-input-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="search" name="q" placeholder="Search by name or phone..." value="{{ request.GET.q|default:'' }}">
+        <input type="search" name="q" placeholder="Search by name or phone..." value="{{ search_q|default:'' }}">
+        <input type="hidden" name="tab" value="{{ tab }}">
     </form>
 </div>
 
@@ -69,13 +116,20 @@
             {% endif %}
         </div>
         <div class="phone">{{ customer.phone|default:"No phone" }}</div>
+        <div class="phone">{{ customer.total_orders }} order(s)</div>
     </div>
     <i class="fas fa-chevron-right" style="color:var(--muted);"></i>
 </a>
 {% empty %}
 <div class="empty-state">
     <i class="fas fa-users fa-2x mb-2"></i>
-    <p>No customers found.</p>
+    <p>
+        {% if tab == 'regular' %}
+            No regular customers found.
+        {% else %}
+            No walk‑in customers with pending balance.
+        {% endif %}
+    </p>
 </div>
 {% endfor %}
 {% endblock %}

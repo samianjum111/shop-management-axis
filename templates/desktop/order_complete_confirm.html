@@ -1,0 +1,14 @@
+{% extends "desktop/base.html" %}
+{% block content %}
+<div class="card p-4 text-center mx-auto" style="max-width:500px;">
+    <h4>Complete Order #{{ order.id }}</h4>
+    <p>This order is fully paid. Are you sure you want to mark it as <strong>Completed</strong>?</p>
+    <div class="mt-3">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Yes, I'm sure</button>
+        </form>
+        <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn btn-secondary mt-2">Cancel</a>
+    </div>
+</div>
+{% endblock %}

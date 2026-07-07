@@ -21,4 +21,10 @@ urlpatterns = [
     path('order/confirmation/<int:order_id>/', views.order_confirmation, name='order_confirmation'),
     path('customer/add-from-order/<int:order_id>/', views.add_customer_from_order, name='add_customer_from_order'),
 
+
+    path('complete-action/<int:order_id>/', views.complete_order_action, name='complete_order_action'),
+    path('complete-partial/<int:order_id>/', views.order_complete_partial, name='order_complete_partial'),
+    path('walk-profile/', views.walk_profile, name='walk_profile'),
+    path('convert-walk/<int:customer_id>/', views.convert_walk_to_regular, name='convert_walk_to_regular'),
+
 ]

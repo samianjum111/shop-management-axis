@@ -309,19 +309,52 @@ def get_transcript_modal(request, order_id, **kwargs):
 @login_required
 def customer_list(request, **kwargs):
     tenant = request.tenant
+    tab = request.GET.get('tab', 'regular')
     q = request.GET.get('q', '').strip()
-    customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=True).order_by('name')
+
+    # Regular customers (is_regular=True)
+    regular_customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=True).order_by('name')
     if q:
-        customers = customers.filter(
+        regular_customers = regular_customers.filter(
             Q(name__icontains=q) | Q(phone__icontains=q)
         )
-    for customer in customers:
+    for customer in regular_customers:
         orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer)
         customer.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
-    context = {'customers': customers, 'tenant': tenant}
+        customer.total_orders = orders.count()
+
+    # Walk-in customers with pending balance (is_regular=False and remaining_amount > 0)
+    walk_customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=False).order_by('name')
+    if q:
+        walk_customers = walk_customers.filter(
+            Q(name__icontains=q) | Q(phone__icontains=q)
+        )
+    walk_customers_with_pending = []
+    for customer in walk_customers:
+        orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer)
+        total_pending = sum(o.remaining_amount for o in orders if o.remaining_amount > 0)
+        if total_pending > 0:
+            customer.total_pending = total_pending
+            customer.total_orders = orders.count()
+            walk_customers_with_pending.append(customer)
+
+    # Decide which list to display based on tab
+    if tab == 'walk':
+        customers = walk_customers_with_pending
+    else:
+        customers = regular_customers
+        tab = 'regular'
+
+    context = {
+        'customers': customers,
+        'tenant': tenant,
+        'tab': tab,
+        'regular_count': regular_customers.count(),
+        'walk_count': len(walk_customers_with_pending),
+        'search_q': q,
+    }
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
-
 
 @login_required
 def customer_profile(request, customer_id, **kwargs):
@@ -394,8 +427,22 @@ def add_order(request, **kwargs):
             if phone:
                 existing = ChakkiCustomer.objects.filter(tenant=request.tenant, phone=phone).first()
                 if existing:
-                    messages.info(request, f"Phone number belongs to existing customer: {existing.name}.")
-                    return redirect(f'/portal/{tenant.schema_name}/chakki/order/add/?customer_id={existing.id}')
+                    # If existing is a regular customer, redirect to use that customer
+                    if existing.is_regular:
+                        messages.info(request, f"Phone number belongs to existing regular customer: {existing.name}.")
+                        return redirect(f'/portal/{tenant.schema_name}/chakki/order/add/?customer_id={existing.id}')
+                    else:
+                        # Existing is a walk-in customer. Check if they have any pending orders/balance.
+                        orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=existing)
+                        has_pending = any(o.remaining_amount > 0 for o in orders)
+                        if has_pending:
+                            # This walk-in still has pending balance, so we should not create a new one.
+                            messages.info(request, f"Walk-in customer {existing.name} has pending balance. Please complete their orders first.")
+                            return redirect(f'/portal/{tenant.schema_name}/chakki/order/add/?customer_id={existing.id}')
+                        else:
+                            # Walk-in with no pending, we can reuse and update details.
+                            customer = existing
+                            messages.info(request, f"Reusing existing walk-in customer {existing.name} (no pending balance).")
             cust = ChakkiCustomer.objects.create(tenant=request.tenant,
                 name=name,
                 phone=phone,
@@ -478,14 +525,25 @@ def add_customer_from_order(request, order_id, **kwargs):
         if name and phone:
             existing = ChakkiCustomer.objects.filter(tenant=request.tenant, phone=phone).first()
             if existing:
-                old_customer = order.customer
-                order.customer = existing
-                order.save()
-                if old_customer != existing and old_customer.chakkiorder_set.count() == 0:
-                    old_customer.delete()
-                messages.success(request, f"Order linked to existing customer {existing.name}.")
-                return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=existing.id)
+                # If the existing customer is the same as the order's customer, just set is_regular=True
+                if existing == order.customer:
+                    existing.is_regular = True
+                    existing.name = name
+                    existing.address = address
+                    existing.save()
+                    messages.success(request, f"Customer {existing.name} added to regulars.")
+                    return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=existing.id)
+                else:
+                    # Different customer with same phone: link order to existing and delete old if empty
+                    old_customer = order.customer
+                    order.customer = existing
+                    order.save()
+                    if old_customer != existing and old_customer.chakkiorder_set.count() == 0:
+                        old_customer.delete()
+                    messages.success(request, f"Order linked to existing customer {existing.name}.")
+                    return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=existing.id)
             else:
+                # New phone: update the order's customer to regular
                 cust = order.customer
                 cust.name = name
                 cust.phone = phone
@@ -497,3 +555,102 @@ def add_customer_from_order(request, order_id, **kwargs):
         else:
             messages.error(request, "Name and Phone are required.")
     return redirect('order_confirmation', schema_name=request.tenant.schema_name, order_id=order_id)
+
+@login_required
+def complete_order_action(request, order_id, **kwargs):
+    """Handle completion from pending list with confirmation and partial handling."""
+    order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
+    if order.status == 'completed':
+        messages.info(request, f"Order #{order.id} is already completed.")
+        return redirect('chakki_home', schema_name=request.tenant.schema_name)
+
+    # If fully paid, show confirmation page
+    if order.remaining_amount == 0:
+        if request.method == 'POST':
+            order.status = 'completed'
+            order.completed_at = timezone.now()
+            order.save()
+            messages.success(request, f"Order #{order.id} Completed!")
+            return redirect('chakki_home', schema_name=request.tenant.schema_name)
+        # GET: show confirmation template
+        context = {'order': order, 'tenant': request.tenant, 'partial': False}
+        template = 'mobile/order_complete_confirm.html' if request.mobile else 'desktop/order_complete_confirm.html'
+        return render(request, template, context)
+
+    # Partial payment: redirect to completion page with options
+    return redirect('order_complete_partial', schema_name=request.tenant.schema_name, order_id=order.id)
+
+@login_required
+def order_complete_partial(request, order_id, **kwargs):
+    """Page for partial paid orders to choose payment and complete."""
+    order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
+    if order.status == 'completed':
+        messages.info(request, "Order already completed.")
+        return redirect('chakki_home', schema_name=request.tenant.schema_name)
+    if order.remaining_amount == 0:
+        return redirect('complete_order_action', schema_name=request.tenant.schema_name, order_id=order.id)
+
+    if request.method == 'POST':
+        payment_choice = request.POST.get('payment_choice')  # 'full' or 'partial'
+        if payment_choice == 'full':
+            # Pay full remaining
+            order.amount_paid = order.total_amount
+            order.status = 'completed'
+            order.completed_at = timezone.now()
+            order.save()
+            messages.success(request, f"Order #{order.id} completed with full payment.")
+            return redirect('chakki_home', schema_name=request.tenant.schema_name)
+
+        elif payment_choice == 'partial':
+            receive_amount = Decimal(request.POST.get('receive_amount', 0))
+            if receive_amount > 0:
+                new_paid = order.amount_paid + receive_amount
+                if new_paid > order.total_amount:
+                    new_paid = order.total_amount
+                order.amount_paid = new_paid
+                # Complete order regardless of full payment
+                order.status = 'completed'
+                order.completed_at = timezone.now()
+                order.save()
+                messages.success(request, f"Order #{order.id} completed. Received ₹{receive_amount:.2f}. Remaining balance: ₹{order.remaining_amount:.2f}")
+                return redirect('chakki_home', schema_name=request.tenant.schema_name)
+            else:
+                messages.error(request, "Please enter a valid amount to receive.")
+        else:
+            messages.error(request, "Invalid payment choice.")
+
+    context = {
+        'order': order,
+        'remaining': order.remaining_amount,
+        'tenant': request.tenant,
+    }
+    template = 'mobile/order_complete_partial.html' if request.mobile else 'desktop/order_complete_partial.html'
+    return render(request, template, context)
+
+@login_required
+def walk_profile(request, **kwargs):
+    """List walk-in customers with any pending amount (unpaid balance)."""
+    # Get all walk-in customers (is_regular=False) who have orders with remaining_amount > 0
+    customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=False)
+    pending_customers = []
+    for c in customers:
+        orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=c)
+        total_pending = sum(o.remaining_amount for o in orders if o.remaining_amount > 0)
+        if total_pending > 0:
+            c.total_pending = total_pending
+            pending_customers.append(c)
+    context = {
+        'customers': pending_customers,
+        'tenant': request.tenant,
+    }
+    template = 'mobile/walk_profile.html' if request.mobile else 'desktop/walk_profile.html'
+    return render(request, template, context)
+
+@login_required
+def convert_walk_to_regular(request, customer_id, **kwargs):
+    """Convert a walk-in customer to regular."""
+    customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
+    customer.is_regular = True
+    customer.save()
+    messages.success(request, f"Customer {customer.name} is now a regular customer.")
+    return redirect('walk_profile', schema_name=request.tenant.schema_name)

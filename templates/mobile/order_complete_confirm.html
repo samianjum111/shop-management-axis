@@ -1,0 +1,15 @@
+{% extends "mobile/base.html" %}
+{% block title %}Confirm Complete Order #{{ order.id }} | {{ tenant.name }}{% endblock %}
+{% block body %}
+<div class="card p-4 text-center">
+    <h4>Complete Order #{{ order.id }}</h4>
+    <p>This order is fully paid. Are you sure you want to mark it as <strong>Completed</strong>?</p>
+    <div class="mt-3">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary-custom w-100">Yes, I'm sure</button>
+        </form>
+        <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn btn-secondary w-100 mt-2">Cancel</a>
+    </div>
+</div>
+{% endblock %}

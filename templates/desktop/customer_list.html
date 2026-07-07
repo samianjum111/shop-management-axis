@@ -6,9 +6,24 @@
     <h2>👥 Customers</h2>
 </div>
 
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'regular' %}active{% endif %}" href="?tab=regular{% if search_q %}&q={{ search_q }}{% endif %}">
+            Regular <span class="badge bg-secondary">{{ regular_count }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'walk' %}active{% endif %}" href="?tab=walk{% if search_q %}&q={{ search_q }}{% endif %}">
+            Walk‑in Pending <span class="badge bg-secondary">{{ walk_count }}</span>
+        </a>
+    </li>
+</ul>
+
 <form method="get" class="mb-3">
     <div class="input-group">
-        <input type="text" name="q" class="form-control" placeholder="Search by name or phone..." value="{{ request.GET.q|default:'' }}">
+        <input type="text" name="q" class="form-control" placeholder="Search by name or phone..." value="{{ search_q|default:'' }}">
+        <input type="hidden" name="tab" value="{{ tab }}">
         <button class="btn btn-outline-secondary" type="submit">Search</button>
     </div>
 </form>
@@ -21,6 +36,7 @@
                 <th>Phone</th>
                 <th>Address</th>
                 <th>Total Pending</th>
+                <th>Orders</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -31,10 +47,24 @@
                 <td>{{ customer.phone|default:"-" }}</td>
                 <td>{{ customer.address|default:"-" }}</td>
                 <td>{% if customer.total_pending > 0 %}₹{{ customer.total_pending|floatformat:2 }}{% else %}—{% endif %}</td>
-                <td><a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ customer.id }}/" class="btn btn-sm btn-primary">View Profile</a></td>
+                <td>{{ customer.total_orders|default:0 }}</td>
+                <td>
+                    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ customer.id }}/" class="btn btn-sm btn-primary">View Profile</a>
+                    {% if not customer.is_regular and customer.total_pending > 0 %}
+                        <a href="/portal/{{ tenant.schema_name }}/chakki/convert-walk/{{ customer.id }}/" class="btn btn-sm btn-success">Convert to Regular</a>
+                    {% endif %}
+                </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="text-center text-muted">No customers found.</td></tr>
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    {% if tab == 'regular' %}
+                        No regular customers found.
+                    {% else %}
+                        No walk‑in customers with pending balance.
+                    {% endif %}
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

@@ -33,7 +33,7 @@
                 {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
             </td>
             <td>{{ order.ready_time|date:"d M H:i" }}</td>
-            <td><a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn btn-sm btn-primary">View</a></td>
+            <td><a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn btn-sm btn-primary">Complete</a></td>
         </tr>
         {% empty %}
         <tr><td colspan="6" class="text-center">No orders</td></tr>
