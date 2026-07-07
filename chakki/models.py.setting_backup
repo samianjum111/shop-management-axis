@@ -41,7 +41,7 @@ class ChakkiOrderItem(models.Model):
     item_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def save(self, *args, **kwargs):
-        setting, _ = ChakkiSetting.objects.get_or_create(tenant=self.order.tenant)
+        setting, _ = ChakkiSetting.objects.get_or_create(id=1)
         self.grinding_charges = self.total_kg * setting.grinding_rate
         self.cleaning_charges = self.total_kg * setting.cleaning_rate if self.is_cleaning_done else 0
         self.item_total = self.grinding_charges + self.cleaning_charges

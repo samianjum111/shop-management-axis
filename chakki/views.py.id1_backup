@@ -125,7 +125,7 @@ def calculate_order(request, **kwargs):
     if request.method == 'POST':
         total_kg = Decimal(request.POST.get('total_kg', 0))
         cleaning = request.POST.get('cleaning') == 'true'
-        setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant)
+        setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant, id=1)
         grinding_charges = total_kg * setting.grinding_rate
         cleaning_charges = total_kg * setting.cleaning_rate if cleaning else 0
         total_amount = grinding_charges + cleaning_charges
@@ -221,7 +221,7 @@ def generate_transcript(request, order_id, **kwargs):
 
 @login_required
 def settings_view(request, **kwargs):
-    setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant)
+    setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant, id=1)
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
 
     if request.method == 'POST':
@@ -343,7 +343,7 @@ def customer_profile(request, customer_id, **kwargs):
 
 @login_required
 def add_order(request, **kwargs):
-    setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant)
+    setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant, id=1)
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
     tenant = request.tenant
 
