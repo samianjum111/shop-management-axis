@@ -191,7 +191,7 @@
         <span>₹{{ customer.total_pending|floatformat:2|default:"0.00" }}</span>
     </div>
 
-        <button type="button" class="btn btn-primary mt-3" id="previewBtn" onclick="showPreviewModal();">Preview & Confirm</button>
+    <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#confirmModal" id="previewBtn">Preview & Confirm</button>
     <input type="hidden" name="item_count" id="item_count" value="1">
 </form>
 
@@ -205,13 +205,12 @@
       </div>
       <div class="modal-body" id="modalBody"></div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" id="confirmSubmit">Confirm Order</button>
       </div>
     </div>
   </div>
 </div>
-
 
 <script>
 let itemCount = 1;
@@ -220,6 +219,7 @@ const addBtn = document.getElementById('addItemBtn');
 const totalGrindingDisplay = document.getElementById('total_grinding_display');
 const totalCleaningDisplay = document.getElementById('total_cleaning_display');
 const grandTotalDisplay = document.getElementById('grand_total_display');
+const previewBtn = document.getElementById('previewBtn');
 const modalBody = document.getElementById('modalBody');
 const confirmSubmit = document.getElementById('confirmSubmit');
 const itemCountInput = document.getElementById('item_count');
@@ -262,12 +262,13 @@ function setPayment(type) {
     paymentTypeInput.value = type;
     if (type === 'partial') {
         partialAmountDiv.classList.add('show');
+        // Make phone mandatory for walk-in
         if (walkinPhone) walkinPhone.required = true;
         if (walkinName) walkinName.required = true;
     } else {
         partialAmountDiv.classList.remove('show');
         if (walkinPhone) walkinPhone.required = false;
-        if (walkinName) walkinName.required = true;
+        if (walkinName) walkinName.required = true; // name still required
     }
     updateRemaining();
 }
@@ -275,32 +276,28 @@ function setPayment(type) {
 function addItemRow() {
     itemCount++;
     const newRow = document.createElement('div');
-    newRow.className = 'row item-row g-2 mb-2';
+    newRow.className = 'row item-row mb-2';
     newRow.innerHTML = `
-        <div class="col-md-4">
-            <select name="category_${itemCount}" class="form-select category-select">
+        <div class="col-4">
+            <select name="category_${itemCount}" class="form-control category-select">
                 <option value="">Select Category</option>
                 {% for cat in categories %}
                 <option value="{{ cat.id }}">{{ cat.name }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-3">
             <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
         </div>
-        <div class="col-md-2">
-            <div class="form-check">
-                <input type="checkbox" name="cleaning_${itemCount}" value="on" class="form-check-input">
-                <label class="form-check-label">Cleaning</label>
-            </div>
+        <div class="col-2">
+            <input type="checkbox" name="cleaning_${itemCount}" value="on"> Cleaning
         </div>
-        <div class="col-md-3">
+        <div class="col-3">
             <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
         </div>
     `;
     container.appendChild(newRow);
     itemCountInput.value = itemCount;
-    // Attach events for the new row
     newRow.querySelector('.total-kg').addEventListener('input', updateTotals);
     newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateTotals);
     newRow.querySelector('.remove-item').addEventListener('click', function() {
@@ -313,7 +310,24 @@ function addItemRow() {
     });
 }
 
-function showPreviewModal() {
+// Existing remove buttons
+document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
+document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
+document.querySelector('.remove-item')?.addEventListener('click', function() {
+    const row = this.closest('.item-row');
+    if (container.children.length > 1) {
+        row.remove();
+        itemCount--;
+        itemCountInput.value = itemCount;
+        updateTotals();
+    }
+});
+
+addBtn.addEventListener('click', addItemRow);
+paymentAmountInput.addEventListener('input', updateRemaining);
+updateTotals();
+
+previewBtn.addEventListener('click', function() {
     const totals = window._totals || { grinding: 0, cleaning: 0, grand: 0 };
     const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
     const customerPhone = document.querySelector('input[name="phone"]')?.value || '{{ customer.phone|default:"N/A" }}';
@@ -347,108 +361,10 @@ function showPreviewModal() {
         <p class="text-muted small">After order, you can add this customer to regulars.</p>
         {% endif %}
     `;
-    // Show modal
-    var modalEl = document.getElementById('confirmModal');
-    if (modalEl) {
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            var modal = new bootstrap.Modal(modalEl);
-            modal.show();
-        } else {
-            // Manual fallback
-            modalEl.style.display = 'block';
-            modalEl.classList.add('show');
-            document.body.classList.add('modal-open');
-            if (!document.querySelector('.modal-backdrop')) {
-                var backdrop = document.createElement('div');
-                backdrop.className = 'modal-backdrop fade show';
-                document.body.appendChild(backdrop);
-            }
-        }
-    } else {
-        alert('Modal element not found.');
-    }
-}
+});
 
-// ---- DOM Ready ----
-document.addEventListener('DOMContentLoaded', function() {
-    // Existing items
-    document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
-    document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
-    // Existing remove buttons
-    document.querySelectorAll('.remove-item').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const row = this.closest('.item-row');
-            if (row && container.children.length > 1) {
-                row.remove();
-                itemCount--;
-                itemCountInput.value = itemCount;
-                updateTotals();
-            }
-        });
-    });
-    // Cancel button
-    var cancelBtn = document.getElementById('cancelModalBtn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            var modalEl = document.getElementById('confirmModal');
-            if (modalEl) {
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    var modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                    else {
-                        modalEl.style.display = 'none';
-                        modalEl.classList.remove('show');
-                        document.body.classList.remove('modal-open');
-                        var backdrop = document.querySelector('.modal-backdrop');
-                        if (backdrop) backdrop.remove();
-                    }
-                } else {
-                    modalEl.style.display = 'none';
-                    modalEl.classList.remove('show');
-                    document.body.classList.remove('modal-open');
-                    var backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) backdrop.remove();
-                }
-            }
-        });
-    }
-    // Close button (X) in modal header
-    var closeBtn = document.querySelector('#confirmModal .btn-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            var modalEl = document.getElementById('confirmModal');
-            if (modalEl) {
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    var modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                    else {
-                        modalEl.style.display = 'none';
-                        modalEl.classList.remove('show');
-                        document.body.classList.remove('modal-open');
-                        var backdrop = document.querySelector('.modal-backdrop');
-                        if (backdrop) backdrop.remove();
-                    }
-                } else {
-                    modalEl.style.display = 'none';
-                    modalEl.classList.remove('show');
-                    document.body.classList.remove('modal-open');
-                    var backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) backdrop.remove();
-                }
-            }
-        });
-    }
-    // Add item button
-    addBtn.addEventListener('click', addItemRow);
-    // Payment amount input
-    paymentAmountInput.addEventListener('input', updateRemaining);
-    // Confirm submit
-    confirmSubmit.addEventListener('click', function() {
-        document.getElementById('orderForm').submit();
-    });
-    // Initial calculation
-    updateTotals();
+confirmSubmit.addEventListener('click', function() {
+    document.getElementById('orderForm').submit();
 });
 </script>
-
 {% endblock %}
