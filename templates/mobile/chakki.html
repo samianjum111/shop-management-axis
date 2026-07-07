@@ -435,7 +435,7 @@
         </div>
         <div class="actions">
             {% if order.status != 'completed' %}
-                <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn-action primary">💰 Collect</a>
+                <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action primary">✅ Complete</a>
             {% endif %}
             <button class="btn-action secondary view-transcript" data-order-id="{{ order.id }}">📄 Transcript</button>
         </div>

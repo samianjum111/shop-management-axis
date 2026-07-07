@@ -52,13 +52,6 @@
     <div class="mt-2" id="remaining_after_payment">
         <span class="text-muted">Remaining after payment: ₹<span id="new_remaining">{{ order.remaining_amount }}</span></span>
     </div>
-    <div class="mt-2">
-        {% if order.remaining_amount == 0 %}
-            <a href="/portal/{{ tenant.schema_name }}/chakki/complete/{{ order.id }}/" class="btn btn-primary">Complete Order</a>
-        {% else %}
-            <span class="text-muted">Complete order requires full payment (remaining: ₹{{ order.remaining_amount }})</span>
-        {% endif %}
-    </div>
     {% endif %}
 </div>
 <div class="mt-3">

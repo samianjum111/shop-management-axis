@@ -15,7 +15,15 @@
             {% if o.payment_status == 'partial' %}<span class="badge bg-info">Partial</span>{% endif %}
         </td>
         <td>{{ o.ready_time|date:"d M H:i" }}</td>
-        <td><a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-primary">View</a></td>
+        
+<td>
+    {% if o.status != 'completed' %}
+        <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn btn-sm btn-primary">Complete</a>
+    {% else %}
+        <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-secondary">View</a>
+    {% endif %}
+</td>
+
     </tr>
     {% empty %}
     <tr><td colspan="8">No orders found.</td></tr>
