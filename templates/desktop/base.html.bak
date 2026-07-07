@@ -308,10 +308,6 @@
                     {% endif %}
                 </ul>
             </div>
-            <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="global-new-order-btn" id="global-new-order-btn">
-                <i class="fas fa-plus-circle"></i> New Order
-            </a>
-    
         </div>
         <div class="main-content">
             {% if messages %}

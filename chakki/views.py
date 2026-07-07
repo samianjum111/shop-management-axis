@@ -70,7 +70,7 @@ def chakki_home(request, **kwargs):
 @login_required
 def dashboard(request, **kwargs):
     tenant = request.tenant
-    pending_orders = ChakkiOrder.objects.filter(tenant=request.tenant, status='pending', amount_paid=0)
+    pending_orders = ChakkiOrder.objects.filter(tenant=request.tenant, status='pending',)
     for order in pending_orders:
         if order.ready_time and order.ready_time <= timezone.now():
             order.status = 'ready'
@@ -654,3 +654,37 @@ def convert_walk_to_regular(request, customer_id, **kwargs):
     customer.save()
     messages.success(request, f"Customer {customer.name} is now a regular customer.")
     return redirect('walk_profile', schema_name=request.tenant.schema_name)
+
+
+@login_required
+def check_ready_orders(request, **kwargs):
+    """Check for pending unpaid orders whose ready_time has passed, update them to 'ready',
+       and return JSON with count and list of ready orders."""
+    from django.utils import timezone
+    from .models import ChakkiOrder
+
+    tenant = request.tenant
+    now = timezone.now()
+
+    # Find pending unpaid orders that are past ready_time
+    orders_to_update = ChakkiOrder.objects.filter(
+        tenant=tenant,
+        status='pending',
+        amount_paid=0,
+        ready_time__lte=now
+    )
+    updated_count = 0
+    for order in orders_to_update:
+        order.status = 'ready'
+        order.save()
+        updated_count += 1
+
+    # Get all ready orders for display (latest first)
+    ready_orders = ChakkiOrder.objects.filter(tenant=tenant, status='ready').order_by('-created_at')[:10]
+    ready_list = [{'id': o.id, 'customer_name': o.customer.name} for o in ready_orders]
+
+    return JsonResponse({
+        'count': ready_orders.count(),
+        'orders': ready_list,
+        'updated': updated_count
+    })
