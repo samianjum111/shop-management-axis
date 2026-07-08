@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
         ('tenants', '0005_remove_tenant_db_host_remove_tenant_db_name_and_more'),
     ]
 
-    operations = [
+        operations = [
         migrations.SeparateDatabaseAndState(
             state_operations=[
                 migrations.RemoveField(model_name='tenant', name='db_host'),
