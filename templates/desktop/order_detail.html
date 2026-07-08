@@ -1,96 +1,453 @@
-
 {% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Order #{{ order.id }} | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Order Detail ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .page-header .order-status {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.3rem 1.2rem;
+    border-radius: 40px;
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+  }
+  .page-header .order-status.completed {
+    background: #d4edda;
+    color: #155724;
+  }
+  .page-header .order-status.pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .page-header .order-status.ready {
+    background: #cce5ff;
+    color: #004085;
+  }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem 1.2rem;
+    box-shadow: var(--expense-shadow);
+    transition: box-shadow 0.3s ease;
+  }
+  .detail-card:hover {
+    box-shadow: var(--expense-hover-shadow);
+  }
+  .detail-card h5 {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+  .detail-card h5 i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+  .detail-card p {
+    margin-bottom: 0.3rem;
+    font-size: 0.95rem;
+  }
+  .detail-card p strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .detail-card .highlight {
+    background: var(--surface-alt);
+    padding: 0.2rem 0.6rem;
+    border-radius: 30px;
+    font-weight: 600;
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--text);
+    margin: 1.8rem 0 0.8rem;
+  }
+  .section-title i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+    margin-bottom: 1.2rem;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.6rem 0.8rem;
+    border: none;
+    border-radius: 12px 12px 0 0;
+  }
+  .table-premium tbody td {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium tbody tr:last-child td {
+    border-radius: 0 0 12px 12px;
+  }
+  .table-premium .empty-row td {
+    text-align: center;
+    color: var(--muted);
+    padding: 1.5rem 0;
+  }
+
+  .payment-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: var(--expense-shadow);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+  .payment-section .form-group {
+    flex: 1 1 200px;
+  }
+  .payment-section .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+  }
+  .payment-section .form-group .input-wrapper {
+    position: relative;
+  }
+  .payment-section .form-group .input-wrapper .currency {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .payment-section .form-group input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .payment-section .form-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+  }
+  .payment-section .remaining-preview {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding: 0.4rem 0;
+  }
+  .payment-section .remaining-preview strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .btn-premium-success {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(40,167,69,0.2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-premium-success:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(40,167,69,0.3);
+    color: #fff;
+  }
+
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+  }
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.5rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+  }
+  .btn-premium-danger {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.5rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(220,53,69,0.15);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  .btn-premium-danger:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(220,53,69,0.25);
+    color: #fff;
+  }
+
+  @media (max-width: 768px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .order-status { align-self: flex-start; }
+    .payment-section { flex-direction: column; align-items: stretch; }
+    .action-bar { flex-direction: column; }
+    .action-bar .btn { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .detail-card { padding: 1rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Order #{{ order.id }}</h2>
-<div class="row">
-    <div class="col-md-6">
-        <div class="card p-3">
-            <h5>Customer</h5>
-            <p><strong>Name:</strong> {{ order.customer.name }}</p>
-            <p><strong>Phone:</strong> {{ order.customer.phone }}</p>
-            <p><strong>Address:</strong> {{ order.customer.address }}</p>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card p-3">
-            <h5>Order Details</h5>
-            <p><strong>Total Amount:</strong> ₹{{ order.total_amount }}</p>
-            <p><strong>Amount Paid:</strong> ₹{{ order.amount_paid }}</p>
-            <p><strong>Remaining:</strong> <span id="remaining_display">₹{{ order.remaining_amount }}</span></p>
-            <p><strong>Status:</strong> {{ order.status }} | Payment: {{ order.payment_status }}</p>
-            <p><strong>Ready Time:</strong> {{ order.ready_time|date:"d M Y H:i" }}</p>
-        </div>
-    </div>
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-file-invoice"></i> Order #{{ order.id }}</h2>
+  <span class="order-status {% if order.status == 'completed' %}completed{% elif order.status == 'pending' %}pending{% elif order.status == 'ready' %}ready{% endif %}">
+    {{ order.status|title }} · {{ order.payment_status|title }}
+  </span>
 </div>
-<h5>Items</h5>
-<table class="table table-bordered">
-    <tr><th>Category</th><th>KG</th><th>Cleaning</th><th>Grinding</th><th>Cleaning Charges</th><th>Total</th></tr>
+
+<!-- ===== DETAIL GRID ===== -->
+<div class="detail-grid">
+  <div class="detail-card">
+    <h5><i class="fas fa-user"></i> Customer</h5>
+    <p><strong>Name:</strong> {{ order.customer.name }}</p>
+    <p><strong>Phone:</strong> {{ order.customer.phone|default:"—" }}</p>
+    <p><strong>Address:</strong> {{ order.customer.address|default:"—" }}</p>
+    <p class="mt-2"><strong>Customer Type:</strong> {% if order.customer.is_regular %}Regular{% else %}Walk‑in{% endif %}</p>
+  </div>
+  <div class="detail-card">
+    <h5><i class="fas fa-receipt"></i> Order Details</h5>
+    <p><strong>Total Amount:</strong> <span class="highlight">₹{{ order.total_amount|floatformat:2 }}</span></p>
+    <p><strong>Amount Paid:</strong> ₹{{ order.amount_paid|floatformat:2 }}</p>
+    <p><strong>Remaining:</strong> <span id="remaining_display" class="highlight" style="background:var(--accent);color:#fff;">₹{{ order.remaining_amount|floatformat:2 }}</span></p>
+    <p><strong>Ready Time:</strong> {{ order.ready_time|date:"d M Y H:i" }}</p>
+    {% if order.completed_at %}
+    <p><strong>Completed At:</strong> {{ order.completed_at|date:"d M Y H:i" }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ===== GRINDING ITEMS ===== -->
+<h5 class="section-title"><i class="fas fa-tools"></i> Grinding Items</h5>
+<table class="table-premium">
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th>KG</th>
+      <th>Cleaning</th>
+      <th>Grinding</th>
+      <th>Cleaning Charges</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
     {% for item in items %}
     <tr>
-        <td>{{ item.category.name }}</td>
-        <td>{{ item.total_kg }}</td>
-        <td>{{ item.is_cleaning_done|yesno:"Yes,No" }}</td>
-        <td>₹{{ item.grinding_charges }}</td>
-        <td>₹{{ item.cleaning_charges }}</td>
-        <td>₹{{ item.item_total }}</td>
+      <td>{{ item.category.name }}</td>
+      <td>{{ item.total_kg }}</td>
+      <td>{{ item.is_cleaning_done|yesno:"Yes,No" }}</td>
+      <td>₹{{ item.grinding_charges|floatformat:2 }}</td>
+      <td>₹{{ item.cleaning_charges|floatformat:2 }}</td>
+      <td>₹{{ item.item_total|floatformat:2 }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="6">No items</td></tr>
+    <tr class="empty-row"><td colspan="6">No grinding items</td></tr>
     {% endfor %}
+  </tbody>
 </table>
 
-<h5>Selling Items</h5>
-<table class="table table-bordered">
-    <tr><th>Item</th><th>Measurement</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
+<!-- ===== SELLING ITEMS ===== -->
+<h5 class="section-title"><i class="fas fa-shopping-cart"></i> Selling Items</h5>
+<table class="table-premium">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Measurement</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
     {% for item in selling_items %}
     <tr>
-        <td>{{ item.selling_price.category.name }}</td>
-        <td>{{ item.selling_price.get_measurement_display }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>₹{{ item.selling_price.price }}</td>
-        <td>₹{{ item.total }}</td>
+      <td>{{ item.selling_price.category.name }}</td>
+      <td>{{ item.selling_price.get_measurement_display }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>₹{{ item.selling_price.price|floatformat:2 }}</td>
+      <td>₹{{ item.total|floatformat:2 }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="5">No selling items</td></tr>
+    <tr class="empty-row"><td colspan="5">No selling items</td></tr>
     {% endfor %}
+  </tbody>
 </table>
 
-<div class="mt-3">
-    {% if order.status != 'completed' %}
-    <form method="post" class="row g-3" id="paymentForm">
-        {% csrf_token %}
-        <div class="col-auto">
-            <input type="number" name="payment_amount" id="payment_amount" step="0.01" class="form-control" placeholder="Payment amount" required>
-        </div>
-        <div class="col-auto">
-            <button class="btn btn-success">Add Payment</button>
-        </div>
-    </form>
-    <div class="mt-2" id="remaining_after_payment">
-        <span class="text-muted">Remaining after payment: ₹<span id="new_remaining">{{ order.remaining_amount }}</span></span>
+<!-- ===== PAYMENT SECTION ===== -->
+{% if order.status != 'completed' %}
+<div class="payment-section">
+  <form method="post" id="paymentForm" style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;width:100%;">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="payment_amount">Payment Amount</label>
+      <div class="input-wrapper">
+        <span class="currency">₹</span>
+        <input type="number" name="payment_amount" id="payment_amount" step="0.01" class="form-control" placeholder="0.00" required>
+      </div>
     </div>
-    {% endif %}
+    <button type="submit" class="btn-premium-success">
+      <i class="fas fa-plus-circle"></i> Add Payment
+    </button>
+    <div class="remaining-preview">
+      Remaining after payment: <strong>₹<span id="new_remaining">{{ order.remaining_amount|floatformat:2 }}</span></strong>
+    </div>
+  </form>
 </div>
-<div class="mt-3">
-    <a href="/portal/{{ tenant.schema_name }}/chakki/transcript/{{ order.id }}/" target="_blank" class="btn btn-secondary">📄 Transcript</a>
+{% endif %}
 
-    {% if order.can_cancel %}
-    <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn btn-danger" onclick="return confirm(\'Are you sure you want to cancel this order? This action cannot be undone.\')">Cancel Order</a>
-    {% endif %}
+<!-- ===== ACTION BAR ===== -->
+<div class="action-bar">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/transcript/{{ order.id }}/" target="_blank" class="btn-premium">
+    <i class="fas fa-file-pdf"></i> Transcript
+  </a>
+
+  {% if order.can_cancel %}
+  <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn-premium-danger" onclick="return confirm('Are you sure you want to cancel this order? This action cannot be undone.')">
+    <i class="fas fa-trash-alt"></i> Cancel Order
+  </a>
+  {% endif %}
+
+  <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-outline-premium" style="margin-left:auto;">
+    <i class="fas fa-arrow-left"></i> Back to Orders
+  </a>
 </div>
+
+<!-- ===== LIVE REMAINING UPDATE ===== -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const paymentInput = document.getElementById('payment_amount');
-    const remainingDisplay = document.getElementById('remaining_display');
-    const newRemainingSpan = document.getElementById('new_remaining');
-    const orderRemaining = {{ order.remaining_amount }};
-    if (paymentInput) {
-        paymentInput.addEventListener('input', function() {
-            const entered = parseFloat(this.value) || 0;
-            const newRemaining = Math.max(0, orderRemaining - entered);
-            newRemainingSpan.textContent = newRemaining.toFixed(2);
-        });
-    }
+  const paymentInput = document.getElementById('payment_amount');
+  const remainingDisplay = document.getElementById('remaining_display');
+  const newRemainingSpan = document.getElementById('new_remaining');
+  const orderRemaining = {{ order.remaining_amount|safe }};
+
+  if (paymentInput) {
+    paymentInput.addEventListener('input', function() {
+      const entered = parseFloat(this.value) || 0;
+      const newRemaining = Math.max(0, orderRemaining - entered);
+      newRemainingSpan.textContent = newRemaining.toFixed(2);
+      // Update the main remaining display as well
+      if (remainingDisplay) {
+        remainingDisplay.textContent = '₹' + newRemaining.toFixed(2);
+      }
+    });
+  }
 });
 </script>
 {% endblock %}

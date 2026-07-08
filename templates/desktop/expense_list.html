@@ -1,38 +1,366 @@
 {% extends "desktop/base.html" %}
+{% load static %}
 {% block title %}{{ title }} | {{ tenant.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+  /* ===== Premium Expense List Styles ===== */
+  :root {
+    --expense-card-radius: 16px;
+    --expense-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    --expense-hover-shadow: 0 8px 28px rgba(0,0,0,0.08);
+    --expense-border: #e9ecef;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.5rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.3rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-outline-premium.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .btn-sm-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.25rem 1rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .btn-sm-premium:hover {
+    background: var(--accent-hover);
+    color: #fff;
+    text-decoration: none;
+  }
+  .btn-sm-success {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.25rem 1rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .btn-sm-success:hover {
+    background: #1e7e34;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    background: var(--surface);
+    border-radius: var(--expense-card-radius);
+    border: 1px solid var(--border);
+    padding: 0.6rem 1.2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .filter-bar .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .filter-bar .filter-group .btn-outline-premium {
+    font-size: 0.8rem;
+    padding: 0.25rem 1rem;
+  }
+  .filter-bar .filter-group .btn-outline-premium.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* Loan items */
+  .loan-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--expense-card-radius);
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 0.6rem;
+    box-shadow: var(--expense-shadow);
+    transition: 0.25s ease;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+  .loan-item:hover {
+    border-color: var(--accent);
+    box-shadow: var(--expense-hover-shadow);
+    transform: translateY(-2px);
+  }
+  .loan-item .info {
+    display: flex;
+    flex-direction: column;
+    flex: 2 1 200px;
+    min-width: 140px;
+  }
+  .loan-item .info .title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text);
+  }
+  .loan-item .info .title i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+  .loan-item .info .meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.8rem;
+    margin-top: 0.1rem;
+  }
+  .loan-item .info .meta i {
+    margin-right: 0.2rem;
+  }
+  .loan-item .amount {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .loan-item .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .loan-item .badges .badge {
+    font-weight: 600;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 40px;
+  }
+  .loan-item .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .empty-state p {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .actions { justify-content: flex-start; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-bar .filter-group { justify-content: flex-start; }
+    .loan-item { flex-direction: column; align-items: stretch; }
+    .loan-item .amount { text-align: left; }
+    .loan-item .badges, .loan-item .actions { margin-top: 0.3rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>{{ title }}</h2>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="btn btn-primary">+ Add</a>
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-hand-holding-usd"></i> {{ title }}</h2>
+  <div class="actions">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="btn btn-premium">
+      <i class="fas fa-plus"></i> Add
+    </a>
+  </div>
 </div>
-<div class="row">
-    <div class="col-12">
-        {% for e in expenses %}
-        <div class="card mb-2">
-            <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">{{ e.title }}</h6>
-                    <div class="text-muted small">
-                        {{ e.category|title }}
-                        {% if e.person_name %} · {{ e.person_name }}{% endif %}
-                        · {{ e.date|date:"d M Y H:i" }}
-                    </div>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold text-warning">₹{{ e.amount|floatformat:2 }}</span>
-                    {% if e.is_credit %}<span class="badge bg-warning">Given</span>{% endif %}
-                    {% if e.category == 'taken_loan' %}<span class="badge bg-info">Taken</span>{% endif %}
-                    {% if e.is_repaid %}<span class="badge bg-success">Repaid</span>{% else %}{% if e.is_credit or e.category == 'taken_loan' %}<span class="badge bg-danger">Unpaid</span>{% endif %}{% endif %}
-                    {% if not e.is_repaid and e.is_credit or not e.is_repaid and e.category == 'taken_loan' %}
-                        <a href="/portal/{{ tenant.schema_name }}/expenses/repay/{{ e.id }}/" class="btn btn-sm btn-success">Mark Repaid</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="text-center text-muted py-4">No records found</div>
-        {% endfor %}
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="filter-group" id="statusFilter">
+    <button type="button" class="btn-outline-premium active" data-filter="all">All</button>
+    <button type="button" class="btn-outline-premium" data-filter="unpaid">Unpaid</button>
+    <button type="button" class="btn-outline-premium" data-filter="repaid">Repaid</button>
+  </div>
+  <div style="flex:1; min-width:120px;"></div>
+  <div>
+    <span class="text-muted small">Total: {{ expenses|length }}</span>
+  </div>
+</div>
+
+<!-- ===== EXPENSES LIST ===== -->
+<div id="expenseList">
+  {% for e in expenses %}
+  <div class="loan-item" data-repaid="{{ e.is_repaid|yesno:'repaid,unpaid' }}">
+    <div class="info">
+      <div class="title"><i class="fas fa-tag"></i> {{ e.title }}</div>
+      <div class="meta">
+        <span><i class="fas fa-folder-open"></i> {{ e.category|title }}</span>
+        {% if e.person_name %}
+        <span><i class="fas fa-user"></i> {{ e.person_name }}</span>
+        {% endif %}
+        <span><i class="far fa-calendar-alt"></i> {{ e.date|date:"d M Y H:i" }}</span>
+        {% if e.due_date %}
+        <span><i class="fas fa-hourglass-end"></i> Due: {{ e.due_date|date:"d M Y" }}</span>
+        {% endif %}
+        {% if e.notes %}
+        <span><i class="far fa-sticky-note"></i> {{ e.notes|truncatechars:20 }}</span>
+        {% endif %}
+      </div>
     </div>
+    <div class="amount">₹{{ e.amount|floatformat:2 }}</div>
+    <div class="badges">
+      {% if e.is_credit %}
+      <span class="badge bg-warning text-dark">Given</span>
+      {% endif %}
+      {% if e.category == 'taken_loan' %}
+      <span class="badge bg-info text-dark">Taken</span>
+      {% endif %}
+      {% if e.is_repaid %}
+      <span class="badge bg-success">Repaid</span>
+      {% else %}
+        {% if e.is_credit or e.category == 'taken_loan' %}
+        <span class="badge bg-danger">Unpaid</span>
+        {% endif %}
+      {% endif %}
+    </div>
+    <div class="actions">
+      {% if not e.is_repaid and e.is_credit or not e.is_repaid and e.category == 'taken_loan' %}
+      <a href="/portal/{{ tenant.schema_name }}/expenses/repay/{{ e.id }}/" class="btn-sm-success">
+        <i class="fas fa-check"></i> Mark Repaid
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state">
+    <i class="fas fa-inbox"></i>
+    <p>No records found.</p>
+  </div>
+  {% endfor %}
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Quick filter tabs (All / Unpaid / Repaid)
+  document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('#statusFilter .btn-outline-premium');
+    const items = document.querySelectorAll('#expenseList .loan-item');
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Update active button
+        filterButtons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const filter = this.dataset.filter;
+
+        items.forEach(item => {
+          if (filter === 'all') {
+            item.style.display = 'flex';
+          } else {
+            const repaid = item.dataset.repaid;
+            if (filter === 'repaid' && repaid === 'repaid') {
+              item.style.display = 'flex';
+            } else if (filter === 'unpaid' && repaid === 'unpaid') {
+              item.style.display = 'flex';
+            } else {
+              item.style.display = 'none';
+            }
+          }
+        });
+      });
+    });
+  });
+</script>
 {% endblock %}

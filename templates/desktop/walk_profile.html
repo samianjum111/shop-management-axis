@@ -1,28 +1,233 @@
 {% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Walk‑in Customers | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Walk‑in Profile Page ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+  .page-header .subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-top: 0.2rem;
+  }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--expense-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 600px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium .amount-highlight {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .table-premium .customer-name {
+    font-weight: 500;
+  }
+
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .btn-sm-premium {
+    padding: 0.25rem 1rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+  }
+  .btn-sm-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26,42,58,0.1);
+  }
+  .btn-sm-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    color: #fff;
+  }
+  .btn-sm-secondary {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+  }
+  .btn-sm-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+    transform: translateY(-2px);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .subtitle { margin-bottom: 0.5rem; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .action-btns { flex-direction: column; align-items: stretch; }
+    .action-btns .btn-sm-premium { justify-content: center; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Walk-in Customers with Pending Balance</h2>
-<p class="text-muted">Customers who have unpaid amounts after order completion.</p>
-{% if customers %}
-    <table class="table table-hover">
-        <thead>
-            <tr><th>Name</th><th>Phone</th><th>Address</th><th>Pending Amount</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        {% for c in customers %}
-            <tr>
-                <td>{{ c.name }}</td>
-                <td>{{ c.phone|default:"-" }}</td>
-                <td>{{ c.address|default:"-" }}</td>
-                <td><span class="badge bg-warning">₹{{ c.total_pending|floatformat:2 }}</span></td>
-                <td>
-                    <a href="/portal/{{ tenant.schema_name }}/chakki/convert-walk/{{ c.id }}/" class="btn btn-sm btn-primary">Convert to Regular</a>
-                    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn btn-sm btn-outline-secondary">Profile</a>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <div class="alert alert-info">No walk-in customers with pending balance.</div>
-{% endif %}
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-user-walk"></i> Walk‑in Customers</h2>
+    <div class="subtitle">Customers with pending balance after order completion</div>
+  </div>
+  <a href="{% url 'worker_list' schema_name=tenant.schema_name %}" class="btn-outline-premium">
+    <i class="fas fa-arrow-left"></i> Back to Workers
+  </a>
+</div>
+
+<!-- ===== TABLE ===== -->
+<div class="table-container">
+  <table class="table-premium">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>Pending Amount</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in customers %}
+      <tr>
+        <td class="customer-name">{{ c.name }}</td>
+        <td>{{ c.phone|default:"—" }}</td>
+        <td>{{ c.address|default:"—" }}</td>
+        <td><span class="badge-premium">₹{{ c.total_pending|floatformat:2 }}</span></td>
+        <td>
+          <div class="action-btns" style="display:flex;flex-wrap:wrap;gap:0.3rem;">
+            <a href="/portal/{{ tenant.schema_name }}/chakki/convert-walk/{{ c.id }}/" class="btn-sm-premium btn-sm-primary">
+              <i class="fas fa-user-plus"></i> Convert to Regular
+            </a>
+            <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn-sm-premium btn-sm-secondary">
+              <i class="fas fa-eye"></i> Profile
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">
+          <div class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <p>No walk‑in customers with pending balance.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}
