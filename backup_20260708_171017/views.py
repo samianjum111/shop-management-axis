@@ -17,7 +17,7 @@ def chakki_home(request, **kwargs):
     from django.db.models import Q
 
     tenant = request.tenant
-    orders = ChakkiOrder.objects.filter(tenant=request.tenant).exclude(status='cancelled').order_by('-created_at')
+    orders = ChakkiOrder.objects.filter(tenant=request.tenant).order_by('-created_at')
 
     status_filter = request.GET.get('status', 'all')
     if status_filter == 'pending':
@@ -44,7 +44,6 @@ def chakki_home(request, **kwargs):
     ready_count = orders.filter(status='ready').count()
     partial_count = orders.filter(payment_status='partial').count()
     completed_count = orders.filter(status='completed').count()
-    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status='cancelled').count()
 
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
@@ -63,7 +62,6 @@ def chakki_home(request, **kwargs):
         'ready_count': ready_count,
         'partial_count': partial_count,
         'completed_count': completed_count,
-        'cancelled_count': cancelled_count,
     }
 
     # ---- Added by patcher: chart & revenue stats ----
@@ -113,7 +111,6 @@ def dashboard(request, **kwargs):
     ready_count = ready.count()
     partial_count = partial_orders.count()
     completed_count = completed.count()
-    cancelled_count = orders.filter(status='cancelled').count()
     ready_orders = ready.order_by('-created_at')[:10]
 
     expenses = Expense.objects.filter(tenant=request.tenant)
@@ -133,7 +130,6 @@ def dashboard(request, **kwargs):
         'ready_count': ready_count,
         'partial_count': partial_count,
         'completed_count': completed_count,
-        'cancelled_count': cancelled_count,
         'ready_orders': ready_orders,
         'total_income': total_income,
         'total_expenses': total_expenses,
@@ -1008,29 +1004,3 @@ def selling_category_detail(request, category_id, **kwargs):
 }
     template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
     return render(request, template, context)
-
-
-@login_required
-def cancel_order(request, order_id, **kwargs):
-    from django.utils import timezone
-    from datetime import timedelta
-    order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
-    if order.status == 'completed':
-        messages.error(request, "Completed orders cannot be cancelled.")
-        return redirect('order_detail', schema_name=request.tenant.schema_name, order_id=order.id)
-    if order.status == 'cancelled':
-        messages.info(request, "Order already cancelled.")
-        return redirect('order_detail', schema_name=request.tenant.schema_name, order_id=order.id)
-    now = timezone.now()
-    if now - order.created_at > timedelta(minutes=30):
-        messages.error(request, "Order can only be cancelled within 30 minutes of creation.")
-        return redirect('order_detail', schema_name=request.tenant.schema_name, order_id=order.id)
-    order.status = 'cancelled'
-    order.save()
-    # Restore stock for selling items
-    for item in order.selling_items.all():
-        sp = item.selling_price
-        sp.stock += item.quantity
-        sp.save()
-    messages.success(request, f"Order #{order.id} cancelled successfully.")
-    return redirect('chakki_home', schema_name=request.tenant.schema_name)

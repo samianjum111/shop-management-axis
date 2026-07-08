@@ -59,13 +59,11 @@ class ChakkiOrder(models.Model):
         ('pending', 'Pending'),
         ('ready', 'Ready'),
         ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
     ]
     PAYMENT_STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('ready', 'Ready'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ('unpaid', 'Unpaid'),
+        ('partial', 'Partial'),
+        ('paid', 'Paid'),
     ]
     customer = models.ForeignKey(ChakkiCustomer, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)

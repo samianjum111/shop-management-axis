@@ -515,7 +515,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ----- Open modal on view transcript button click -----
     
     // ----- Additional transcript fix: ensure modal opens even on error -----
-    
     document.querySelectorAll('.view-transcript').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -545,9 +544,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalBody.innerHTML = '<div style="padding:20px;text-align:center;color:red;">Error loading transcript. Please try again.</div>';
                     modal.classList.add('open');
                 });
-        });
-    });
-
         });
     });
 

@@ -113,7 +113,6 @@ def dashboard(request, **kwargs):
     ready_count = ready.count()
     partial_count = partial_orders.count()
     completed_count = completed.count()
-    cancelled_count = orders.filter(status='cancelled').count()
     ready_orders = ready.order_by('-created_at')[:10]
 
     expenses = Expense.objects.filter(tenant=request.tenant)

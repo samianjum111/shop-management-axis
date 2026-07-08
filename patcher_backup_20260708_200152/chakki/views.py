@@ -17,7 +17,7 @@ def chakki_home(request, **kwargs):
     from django.db.models import Q
 
     tenant = request.tenant
-    orders = ChakkiOrder.objects.filter(tenant=request.tenant).exclude(status='cancelled').order_by('-created_at')
+    orders = ChakkiOrder.objects.filter(tenant=request.tenant).exclude(status=\'cancelled\').order_by(\'-created_at\')
 
     status_filter = request.GET.get('status', 'all')
     if status_filter == 'pending':
@@ -44,7 +44,7 @@ def chakki_home(request, **kwargs):
     ready_count = orders.filter(status='ready').count()
     partial_count = orders.filter(payment_status='partial').count()
     completed_count = orders.filter(status='completed').count()
-    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status='cancelled').count()
+    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status=\'cancelled\').count()
 
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
@@ -113,7 +113,6 @@ def dashboard(request, **kwargs):
     ready_count = ready.count()
     partial_count = partial_orders.count()
     completed_count = completed.count()
-    cancelled_count = orders.filter(status='cancelled').count()
     ready_orders = ready.order_by('-created_at')[:10]
 
     expenses = Expense.objects.filter(tenant=request.tenant)

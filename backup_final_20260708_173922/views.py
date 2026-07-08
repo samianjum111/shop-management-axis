@@ -44,7 +44,6 @@ def chakki_home(request, **kwargs):
     ready_count = orders.filter(status='ready').count()
     partial_count = orders.filter(payment_status='partial').count()
     completed_count = orders.filter(status='completed').count()
-    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status='cancelled').count()
 
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
@@ -63,7 +62,6 @@ def chakki_home(request, **kwargs):
         'ready_count': ready_count,
         'partial_count': partial_count,
         'completed_count': completed_count,
-        'cancelled_count': cancelled_count,
     }
 
     # ---- Added by patcher: chart & revenue stats ----
@@ -113,7 +111,6 @@ def dashboard(request, **kwargs):
     ready_count = ready.count()
     partial_count = partial_orders.count()
     completed_count = completed.count()
-    cancelled_count = orders.filter(status='cancelled').count()
     ready_orders = ready.order_by('-created_at')[:10]
 
     expenses = Expense.objects.filter(tenant=request.tenant)
@@ -133,7 +130,6 @@ def dashboard(request, **kwargs):
         'ready_count': ready_count,
         'partial_count': partial_count,
         'completed_count': completed_count,
-        'cancelled_count': cancelled_count,
         'ready_orders': ready_orders,
         'total_income': total_income,
         'total_expenses': total_expenses,
@@ -522,7 +518,7 @@ def customer_list(request, **kwargs):
 @login_required
 def customer_profile(request, customer_id, **kwargs):
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
-    orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer).order_by('-created_at')
+    orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer).exclude(status='cancelled').order_by('-created_at')
     total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
     total_spent = sum(o.total_amount for o in orders if o.status == 'completed')
     context = {

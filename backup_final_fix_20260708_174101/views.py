@@ -44,7 +44,6 @@ def chakki_home(request, **kwargs):
     ready_count = orders.filter(status='ready').count()
     partial_count = orders.filter(payment_status='partial').count()
     completed_count = orders.filter(status='completed').count()
-    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status='cancelled').count()
 
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
@@ -62,9 +61,8 @@ def chakki_home(request, **kwargs):
         'pending_count': pending_count,
         'ready_count': ready_count,
         'partial_count': partial_count,
-        'completed_count': completed_count,
-        'cancelled_count': cancelled_count,
-    }
+        'completed_count': completed_count,,
+        "cancelled_count": cancelled_count,}
 
     # ---- Added by patcher: chart & revenue stats ----
     from django.db.models import Sum
@@ -113,7 +111,6 @@ def dashboard(request, **kwargs):
     ready_count = ready.count()
     partial_count = partial_orders.count()
     completed_count = completed.count()
-    cancelled_count = orders.filter(status='cancelled').count()
     ready_orders = ready.order_by('-created_at')[:10]
 
     expenses = Expense.objects.filter(tenant=request.tenant)
@@ -133,7 +130,6 @@ def dashboard(request, **kwargs):
         'ready_count': ready_count,
         'partial_count': partial_count,
         'completed_count': completed_count,
-        'cancelled_count': cancelled_count,
         'ready_orders': ready_orders,
         'total_income': total_income,
         'total_expenses': total_expenses,
@@ -142,8 +138,8 @@ def dashboard(request, **kwargs):
         'total_given': total_given,
         'total_taken': total_taken,
         'recent_orders': recent_orders,
-        'tenant': tenant,
-    }
+        'tenant': tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/chakki_dashboard.html' if request.mobile else 'desktop/chakki_dashboard.html'
     return render(request, template, context)
 
@@ -191,8 +187,8 @@ def order_list(request, order_type, **kwargs):
     context = {
         'orders': orders.order_by('-created_at'),
         'order_type': order_type,
-        'tenant': tenant,
-    }
+        'tenant': tenant,,
+        "cancelled_count": cancelled_count,}
     template = f'mobile/order_list.html' if request.mobile else f'desktop/order_list.html'
     return render(request, template, context)
 
@@ -223,8 +219,8 @@ def order_detail(request, order_id, **kwargs):
         'order': order,
         'items': items,
         'selling_items': selling_items,
-        'tenant': request.tenant,
-    }
+        'tenant': request.tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/order_detail.html' if request.mobile else 'desktop/order_detail.html'
     return render(request, template, context)
 
@@ -244,7 +240,8 @@ def complete_order(request, order_id, **kwargs):
 @login_required
 def generate_transcript(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
-    context = {'order': order, 'tenant': request.tenant}
+    context = {'order': order, 'tenant': request.tenant,
+        "cancelled_count": cancelled_count,}
     return render(request, 'desktop/transcript.html', context)
 
 
@@ -456,8 +453,8 @@ def search(request, **kwargs):
         'query': q,
         'orders': orders,
         'customers': customers,
-        'tenant': tenant,
-    }
+        'tenant': tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/search.html' if request.mobile else 'desktop/search.html'
     return render(request, template, context)
 
@@ -465,7 +462,8 @@ def search(request, **kwargs):
 @login_required
 def get_transcript_modal(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
-    context = {'order': order, 'tenant': request.tenant}
+    context = {'order': order, 'tenant': request.tenant,
+        "cancelled_count": cancelled_count,}
     return render(request, 'mobile/transcript_modal_content.html', context)
 
 
@@ -514,15 +512,15 @@ def customer_list(request, **kwargs):
         'tab': tab,
         'regular_count': regular_customers.count(),
         'walk_count': len(walk_customers_with_pending),
-        'search_q': q,
-    }
+        'search_q': q,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
 
 @login_required
 def customer_profile(request, customer_id, **kwargs):
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
-    orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer).order_by('-created_at')
+    orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer).exclude(status='cancelled').order_by('-created_at')
     total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
     total_spent = sum(o.total_amount for o in orders if o.status == 'completed')
     context = {
@@ -531,8 +529,8 @@ def customer_profile(request, customer_id, **kwargs):
         'total_pending': total_pending,
         'total_spent': total_spent,
         'total_orders': orders.count(),
-        'tenant': request.tenant,
-    }
+        'tenant': request.tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/customer_profile.html' if request.mobile else 'desktop/customer_profile.html'
     return render(request, template, context)
 
@@ -551,7 +549,8 @@ def add_order(request, **kwargs):
     select = request.GET.get('select') == '1'
 
     if not customer_id and not walkin and not select:
-        context = {'tenant': tenant}
+        context = {'tenant': tenant,
+        "cancelled_count": cancelled_count,}
         template = 'mobile/add_order_select.html' if request.mobile else 'desktop/add_order_select.html'
         return render(request, template, context)
 
@@ -563,7 +562,8 @@ def add_order(request, **kwargs):
         for c in customers:
             orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=c)
             c.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
-        context = {'customers': customers, 'tenant': tenant}
+        context = {'customers': customers, 'tenant': tenant,
+        "cancelled_count": cancelled_count,}
         template = 'mobile/add_order_customer_list.html' if request.mobile else 'desktop/add_order_customer_list.html'
         return render(request, template, context)
 
@@ -695,8 +695,8 @@ def add_order(request, **kwargs):
         'selling_categories': selling_categories,
         'customer': customer,
         'walkin': walkin,
-        'tenant': tenant,
-    }
+        'tenant': tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/add_order_form.html' if request.mobile else 'desktop/add_order_form.html'
     return render(request, template, context)
 
@@ -705,8 +705,8 @@ def order_confirmation(request, order_id, **kwargs):
     context = {
         'order': order,
         'can_add_to_regulars': True,
-        'tenant': request.tenant,
-    }
+        'tenant': request.tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/order_confirmation.html' if request.mobile else 'mobile/order_confirmation.html'
     return render(request, template, context)
 
@@ -769,7 +769,8 @@ def complete_order_action(request, order_id, **kwargs):
             messages.success(request, f"Order #{order.id} Completed!")
             return redirect('chakki_home', schema_name=request.tenant.schema_name)
         # GET: show confirmation template
-        context = {'order': order, 'tenant': request.tenant, 'partial': False}
+        context = {'order': order, 'tenant': request.tenant, 'partial': False,
+        "cancelled_count": cancelled_count,}
         template = 'mobile/order_complete_confirm.html' if request.mobile else 'desktop/order_complete_confirm.html'
         return render(request, template, context)
 
@@ -818,8 +819,8 @@ def order_complete_partial(request, order_id, **kwargs):
     context = {
         'order': order,
         'remaining': order.remaining_amount,
-        'tenant': request.tenant,
-    }
+        'tenant': request.tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/order_complete_partial.html' if request.mobile else 'desktop/order_complete_partial.html'
     return render(request, template, context)
 
@@ -837,8 +838,8 @@ def walk_profile(request, **kwargs):
             pending_customers.append(c)
     context = {
         'customers': pending_customers,
-        'tenant': request.tenant,
-    }
+        'tenant': request.tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/walk_profile.html' if request.mobile else 'desktop/walk_profile.html'
     return render(request, template, context)
 
@@ -872,7 +873,8 @@ def create_customer(request, **kwargs):
         customer = ChakkiCustomer.objects.create(tenant=tenant, name=name, phone=phone, address=address, is_regular=True)
         messages.success(request, f"Customer {name} created successfully.")
         return redirect('customer_profile', schema_name=tenant.schema_name, customer_id=customer.id)
-    context = {'tenant': tenant}
+    context = {'tenant': tenant,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/create_customer.html' if request.mobile else 'desktop/create_customer.html'
     return render(request, template, context)
 
@@ -953,8 +955,8 @@ def grinding_category_detail(request, category_id, **kwargs):
         'total_revenue': total_revenue,
         'order_data': order_data,
         'type': 'grinding',
-        'tenant': request.tenant,
-    }
+        'tenant': request.tenant,,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
     return render(request, template, context)
 
@@ -1004,8 +1006,8 @@ def selling_category_detail(request, category_id, **kwargs):
         'order_data': order_data,
         'type': 'selling',
         'tenant': request.tenant,
-        "prices": category.prices.all(),
-}
+        "prices": category.prices.all(),,
+        "cancelled_count": cancelled_count,}
     template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
     return render(request, template, context)
 

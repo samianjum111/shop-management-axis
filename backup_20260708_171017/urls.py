@@ -34,5 +34,4 @@ urlpatterns = [
     # Category detail pages
     path('category/grinding/<int:category_id>/', views.grinding_category_detail, name='grinding_category_detail'),
     path('category/selling/<int:category_id>/', views.selling_category_detail, name='selling_category_detail'),
-        path('cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
 ]
