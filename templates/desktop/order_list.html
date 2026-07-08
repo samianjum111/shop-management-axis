@@ -1,37 +1,331 @@
-
 {% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}{{ order_type|title }} Orders | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Order List ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .search-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0.5rem 1.2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem;
+    box-shadow: var(--expense-shadow);
+  }
+  .search-bar .input-group {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .search-bar .input-group i {
+    color: var(--muted);
+    font-size: 1rem;
+  }
+  .search-bar .input-group input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.5rem 0;
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+  }
+  .search-bar .input-group input::placeholder {
+    color: var(--muted);
+  }
+  .search-bar .btn-search {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .search-bar .btn-search:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+  }
+
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--expense-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 700px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium .order-id {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .table-premium .customer-name {
+    font-weight: 500;
+  }
+  .table-premium .amount {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Badges */
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .badge-ready {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .badge-completed {
+    background: #d4edda;
+    color: #155724;
+  }
+  .badge-pending {
+    background: #e2e3e5;
+    color: #383d41;
+  }
+  .badge-partial {
+    background: #d1ecf1;
+    color: #0c5460;
+  }
+
+  .btn-sm-premium {
+    padding: 0.25rem 1rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+  }
+  .btn-sm-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26,42,58,0.1);
+  }
+  .btn-sm-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    color: #fff;
+  }
+  .btn-sm-secondary {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+  }
+  .btn-sm-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+    transform: translateY(-2px);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .search-bar { flex-direction: column; align-items: stretch; }
+    .search-bar .input-group { width: 100%; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>{{ order_type|title }} Orders</h2>
-<form method="get" class="mb-3">
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-clipboard-list"></i> {{ order_type|title }} Orders</h2>
+  <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-outline-premium">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+  </a>
+</div>
+
+<!-- ===== SEARCH BAR ===== -->
+<div class="search-bar">
+  <form method="get" style="flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:0.8rem;width:100%;">
     <div class="input-group">
-        <input type="text" name="search" class="form-control" placeholder="Search by customer, phone, order ID" value="{{ request.GET.search }}">
-        <button class="btn btn-outline-secondary">Search</button>
+      <i class="fas fa-search"></i>
+      <input type="text" name="search" placeholder="Search by customer, phone, or order ID" value="{{ request.GET.search }}">
     </div>
-</form>
-<table class="table table-bordered">
-    <tr><th>ID</th><th>Customer</th><th>Total</th><th>Paid</th><th>Remaining</th><th>Status</th><th>Ready</th><th>Action</th></tr>
-    {% for o in orders %}
-    <tr>
-        <td>{{ o.id }}</td><td>{{ o.customer.name }}</td><td>₹{{ o.total_amount }}</td><td>₹{{ o.amount_paid }}</td><td>₹{{ o.remaining_amount }}</td>
+    <button type="submit" class="btn-search"><i class="fas fa-search"></i> Search</button>
+    {% if request.GET.search %}
+      <a href="?" class="btn-outline-premium" style="padding:0.2rem 1rem;font-size:0.8rem;">
+        <i class="fas fa-times"></i> Clear
+      </a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- ===== TABLE ===== -->
+<div class="table-container">
+  <table class="table-premium">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Customer</th>
+        <th>Total</th>
+        <th>Paid</th>
+        <th>Remaining</th>
+        <th>Status</th>
+        <th>Ready</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td class="order-id">#{{ o.id }}</td>
+        <td class="customer-name">{{ o.customer.name }}</td>
+        <td class="amount">₹{{ o.total_amount|floatformat:2 }}</td>
+        <td class="amount">₹{{ o.amount_paid|floatformat:2 }}</td>
+        <td class="amount">₹{{ o.remaining_amount|floatformat:2 }}</td>
         <td>
-            {% if o.status == 'ready' %}<span class="badge bg-warning">Ready</span>
-            {% elif o.status == 'completed' %}<span class="badge bg-success">Done</span>
-            {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
-            {% if o.payment_status == 'partial' %}<span class="badge bg-info">Partial</span>{% endif %}
+          <span class="badge-premium
+            {% if o.status == 'ready' %}badge-ready
+            {% elif o.status == 'completed' %}badge-completed
+            {% else %}badge-pending{% endif %}">
+            {{ o.status|title }}
+          </span>
+          {% if o.payment_status == 'partial' %}
+          <span class="badge-premium badge-partial">Partial</span>
+          {% endif %}
         </td>
         <td>{{ o.ready_time|date:"d M H:i" }}</td>
-        
-<td>
-    {% if o.status != 'completed' %}
-        <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn btn-sm btn-primary">Complete</a>
-    {% else %}
-        <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-secondary">View</a>
-    {% endif %}
-</td>
+        <td>
+          {% if o.status != 'completed' %}
+            <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn-sm-premium btn-sm-primary">
+              <i class="fas fa-check-circle"></i> Complete
+            </a>
+          {% else %}
+            <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn-sm-premium btn-sm-secondary">
+              <i class="fas fa-eye"></i> View
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8">
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No {{ order_type }} orders found.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    </tr>
-    {% empty %}
-    <tr><td colspan="8">No orders found.</td></tr>
-    {% endfor %}
-</table>
 {% endblock %}

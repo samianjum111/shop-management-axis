@@ -1,65 +1,261 @@
 {% extends "desktop/base.html" %}
+{% load static %}
 {% block title %}Edit Worker | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Edit Worker Styles ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+
+  .worker-form-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    padding: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+    max-width: 720px;
+    margin: 0 auto;
+    transition: box-shadow 0.3s ease;
+  }
+  .worker-form-card:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+  .form-group label .required {
+    color: #dc3545;
+    margin-left: 0.2rem;
+  }
+  .form-group .form-control {
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    padding: 0.65rem 1rem;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+  .form-group .form-control:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    outline: none;
+  }
+  .form-group textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+  }
+  .form-group select.form-control {
+    appearance: auto;
+    -webkit-appearance: auto;
+  }
+
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+    text-decoration: none;
+  }
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: 40px;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+  .form-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .form-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .worker-form-card { padding: 1.2rem; }
+    .form-actions { flex-direction: column; }
+    .form-actions .btn { flex: 1; width: 100%; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h5 class="fw-bold">Edit Worker</h5>
-<form method="post">
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-user-edit"></i> Edit Worker</h2>
+  <a href="{% url 'worker_list' schema_name=tenant.schema_name %}" class="btn btn-outline-premium">
+    <i class="fas fa-arrow-left"></i> Back to Workers
+  </a>
+</div>
+
+<!-- ===== FORM CARD ===== -->
+<div class="worker-form-card">
+  <form method="post">
     {% csrf_token %}
-    <div class="form-group">
-        <label>Name *</label>
-        <input type="text" name="name" class="form-control" value="{{ worker.name }}" required>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Name <span class="required">*</span></label>
+          <input type="text" name="name" class="form-control" value="{{ worker.name }}" required>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Father Name</label>
+          <input type="text" name="father_name" class="form-control" value="{{ worker.father_name }}">
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-        <label>Father Name</label>
-        <input type="text" name="father_name" class="form-control" value="{{ worker.father_name }}">
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>CNIC</label>
+          <input type="text" name="cnic" class="form-control" value="{{ worker.cnic }}">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" name="phone" class="form-control" value="{{ worker.phone }}">
+        </div>
+      </div>
     </div>
+
     <div class="form-group">
-        <label>CNIC</label>
-        <input type="text" name="cnic" class="form-control" value="{{ worker.cnic }}">
+      <label>Address</label>
+      <textarea name="address" class="form-control" rows="2">{{ worker.address }}</textarea>
     </div>
-    <div class="form-group">
-        <label>Phone</label>
-        <input type="text" name="phone" class="form-control" value="{{ worker.phone }}">
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Joining Date <span class="required">*</span></label>
+          <input type="date" name="joining_date" class="form-control" value="{{ worker.joining_date|date:'Y-m-d' }}" required>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Resignation Date</label>
+          <input type="date" name="resignation_date" class="form-control" value="{{ worker.resignation_date|date:'Y-m-d' }}">
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-        <label>Address</label>
-        <textarea name="address" class="form-control">{{ worker.address }}</textarea>
-    </div>
-    <div class="form-group">
-        <label>Joining Date</label>
-        <input type="date" name="joining_date" class="form-control" value="{{ worker.joining_date|date:'Y-m-d' }}" required>
-    </div>
-    <div class="form-group">
-        <label>Resignation Date</label>
-        <input type="date" name="resignation_date" class="form-control" value="{{ worker.resignation_date|date:'Y-m-d' }}">
-    </div>
-    <div class="form-group">
-        <label>Status</label>
-        <select name="status" class="form-control">
+
+    <div class="row">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status" class="form-control">
             <option value="active" {% if worker.status == 'active' %}selected{% endif %}>Active</option>
             <option value="suspended" {% if worker.status == 'suspended' %}selected{% endif %}>Suspended</option>
             <option value="resigned" {% if worker.status == 'resigned' %}selected{% endif %}>Resigned</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>Salary Type</label>
-        <select name="salary_type" class="form-control">
+          </select>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Salary Type</label>
+          <select name="salary_type" class="form-control">
             <option value="daily" {% if worker.salary_type == 'daily' %}selected{% endif %}>Daily</option>
             <option value="monthly" {% if worker.salary_type == 'monthly' %}selected{% endif %}>Monthly</option>
-        </select>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Salary Amount</label>
+          <input type="number" name="salary_amount" step="0.01" class="form-control" value="{{ worker.salary_amount }}">
+        </div>
+      </div>
     </div>
+
     <div class="form-group">
-        <label>Salary Amount</label>
-        <input type="number" name="salary_amount" step="0.01" class="form-control" value="{{ worker.salary_amount }}">
+      <label>Category</label>
+      <select name="category" class="form-control">
+        <option value="">None</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if worker.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
     </div>
-    <div class="form-group">
-        <label>Category</label>
-        <select name="category" class="form-control">
-            <option value="">None</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if worker.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-            {% endfor %}
-        </select>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-premium">
+        <i class="fas fa-save"></i> Update Worker
+      </button>
+      <a href="{% url 'worker_list' schema_name=tenant.schema_name %}" class="btn btn-outline-premium">
+        <i class="fas fa-times"></i> Cancel
+      </a>
     </div>
-    <button type="submit" class="btn btn-primary w-100">Update</button>
-</form>
+  </form>
+</div>
+
 {% endblock %}

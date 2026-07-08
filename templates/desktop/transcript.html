@@ -1,60 +1,498 @@
-
 <!DOCTYPE html>
-<html>
-<head><title>Transcript - Order #{{ order.id }}</title>
-<style>
-    body { font-family: Arial, sans-serif; padding: 40px; max-width: 400px; margin: auto; }
-    .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; color: rgba(0,0,0,0.1); pointer-events: none; z-index: 999; }
-    .footer { text-align: center; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; }
-    table { width: 100%; border-collapse: collapse; }
-    td, th { padding: 8px; border: 1px solid #ccc; }
-    .right { text-align: right; }
-    .print-btn { margin-top: 20px; text-align: center; }
-    @media print {
-        .no-print { display: none; }
-        .watermark { color: rgba(0,0,0,0.05); }
-    }
-</style>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcript – Order #{{ order.id }} | {{ tenant.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: #f5f7fa;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+        .invoice-wrapper {
+            max-width: 820px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            padding: 40px 45px 30px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+        .invoice-wrapper:hover {
+            box-shadow: 0 30px 80px rgba(0,0,0,0.12);
+        }
+
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 100px;
+            font-weight: 900;
+            color: rgba(0,0,0,0.04);
+            pointer-events: none;
+            z-index: 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .invoice-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 1;
+        }
+        .invoice-header .brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: -0.02em;
+        }
+        .invoice-header .brand i {
+            color: #f59e0b;
+            margin-right: 6px;
+        }
+        .invoice-header .sub {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 400;
+            margin-top: 2px;
+            letter-spacing: 0.03em;
+        }
+
+        .order-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            position: relative;
+            z-index: 1;
+        }
+        .order-title h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .order-title .order-id {
+            color: #f59e0b;
+        }
+        .order-title .status-badge {
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .status-badge.paid { background: #d4edda; color: #155724; }
+        .status-badge.partial { background: #fff3cd; color: #856404; }
+        .status-badge.unpaid { background: #f8d7da; color: #b02a37; }
+
+        .customer-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem 1.5rem;
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.8rem;
+            position: relative;
+            z-index: 1;
+        }
+        .customer-info .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        .customer-info .value {
+            font-weight: 500;
+            color: #1a1a2e;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 1.8rem;
+            position: relative;
+            z-index: 1;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 4px;
+            font-size: 0.9rem;
+        }
+        .invoice-table thead th {
+            background: #f1f3f5;
+            color: #495057;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.6rem 0.8rem;
+            border: none;
+            border-radius: 12px 12px 0 0;
+            text-align: left;
+        }
+        .invoice-table thead th:last-child { text-align: right; }
+        .invoice-table tbody td {
+            background: #ffffff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 0.6rem 0.8rem;
+            vertical-align: middle;
+        }
+        .invoice-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .invoice-table tbody tr:hover td {
+            background: #f8f9fa;
+        }
+        .invoice-table .amount {
+            text-align: right;
+            font-weight: 500;
+        }
+        .invoice-table .total-row td {
+            font-weight: 700;
+            border-top: 2px solid #1a1a2e;
+            padding-top: 0.8rem;
+        }
+        .invoice-table .total-row .amount {
+            font-size: 1.1rem;
+        }
+        .invoice-table .highlight-amount {
+            color: #f59e0b;
+        }
+
+        .totals-summary {
+            display: flex;
+            justify-content: flex-end;
+            gap: 2rem;
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 0.8rem 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+            flex-wrap: wrap;
+        }
+        .totals-summary .item {
+            text-align: right;
+        }
+        .totals-summary .item .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        .totals-summary .item .value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #1a1a2e;
+        }
+        .totals-summary .item .value.remaining {
+            color: #dc3545;
+        }
+        .totals-summary .item .value.paid {
+            color: #28a745;
+        }
+
+        .footer {
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+            padding-top: 15px;
+            font-size: 0.8rem;
+            color: #6c757d;
+            position: relative;
+            z-index: 1;
+        }
+        .footer .thank-you {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+        .btn-premium {
+            background: #f59e0b;
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            padding: 0.6rem 1.8rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        .btn-premium:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+            color: #fff;
+        }
+        .btn-outline-premium {
+            background: transparent;
+            color: #495057;
+            border: 1.5px solid #e9ecef;
+            border-radius: 40px;
+            padding: 0.6rem 1.8rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        .btn-outline-premium:hover {
+            background: #f8f9fa;
+            border-color: #f59e0b;
+            color: #f59e0b;
+            transform: translateY(-2px);
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0.3in;
+            }
+            .invoice-wrapper {
+                box-shadow: none;
+                padding: 20px;
+                border-radius: 0;
+            }
+            .invoice-wrapper:hover {
+                box-shadow: none;
+            }
+            .action-buttons {
+                display: none !important;
+            }
+            .watermark {
+                color: rgba(0,0,0,0.04);
+                font-size: 80px;
+            }
+            .customer-info {
+                background: #f8f9fa;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .invoice-table thead th {
+                background: #f1f3f5;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .totals-summary {
+                background: #f8f9fa;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .status-badge {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .invoice-wrapper { padding: 20px; }
+            .customer-info { grid-template-columns: 1fr; gap: 0.3rem; }
+            .order-title { flex-direction: column; align-items: stretch; }
+            .order-title .status-badge { align-self: flex-start; }
+            .totals-summary { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+            .totals-summary .item { text-align: left; }
+            .invoice-table { font-size: 0.8rem; }
+            .invoice-table thead th, .invoice-table tbody td { padding: 0.4rem 0.5rem; }
+        }
+    </style>
 </head>
 <body>
-<div class="watermark">
-    {% if order.payment_status == 'paid' %}PAID{% elif order.payment_status == 'partial' %}PARTIAL PAID{% else %}UNPAID{% endif %}
+<div class="invoice-wrapper">
+    <!-- Watermark -->
+    <div class="watermark">
+        {% if order.payment_status == 'paid' %}PAID
+        {% elif order.payment_status == 'partial' %}PARTIAL
+        {% else %}UNPAID{% endif %}
+    </div>
+
+    <!-- Header -->
+    <div class="invoice-header">
+        <div class="brand"><i class="fas fa-wheat-awn"></i> {{ tenant.name }}</div>
+        <div class="sub">Flour Mill Invoice</div>
+    </div>
+
+    <!-- Order Title -->
+    <div class="order-title">
+        <h3>Order <span class="order-id">#{{ order.id }}</span></h3>
+        <span class="status-badge
+            {% if order.payment_status == 'paid' %}paid
+            {% elif order.payment_status == 'partial' %}partial
+            {% else %}unpaid{% endif %}">
+            {{ order.payment_status|title }}
+        </span>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="customer-info">
+        <div>
+            <div class="label">Customer</div>
+            <div class="value">{{ order.customer.name }}</div>
+        </div>
+        <div>
+            <div class="label">Phone</div>
+            <div class="value">{{ order.customer.phone|default:"—" }}</div>
+        </div>
+        <div>
+            <div class="label">Address</div>
+            <div class="value">{{ order.customer.address|default:"—" }}</div>
+        </div>
+        <div>
+            <div class="label">Ready Time</div>
+            <div class="value">{{ order.ready_time|date:"d M Y H:i" }}</div>
+        </div>
+    </div>
+
+    <!-- Grinding Items -->
+    <div class="table-container">
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>KG</th>
+                    <th>Cleaning</th>
+                    <th class="amount">Grinding</th>
+                    <th class="amount">Cleaning Charges</th>
+                    <th class="amount">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ item.category.name }}</td>
+                    <td>{{ item.total_kg }}</td>
+                    <td>{{ item.is_cleaning_done|yesno:"Yes,No" }}</td>
+                    <td class="amount">₹{{ item.grinding_charges|floatformat:2 }}</td>
+                    <td class="amount">₹{{ item.cleaning_charges|floatformat:2 }}</td>
+                    <td class="amount">₹{{ item.item_total|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center;color:#6c757d;">No grinding items</td></tr>
+                {% endfor %}
+                <!-- Totals for grinding -->
+                <tr class="total-row">
+                    <td colspan="5" style="text-align:right;font-weight:600;">Grinding Total</td>
+                    <td class="amount highlight-amount">₹{{ order.total_amount|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Selling Items (if any) -->
+    {% if order.selling_items.all %}
+    <div class="table-container" style="margin-top:0.5rem;">
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Measurement</th>
+                    <th>Quantity</th>
+                    <th class="amount">Price</th>
+                    <th class="amount">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.selling_items.all %}
+                <tr>
+                    <td>{{ item.selling_price.category.name }}</td>
+                    <td>{{ item.selling_price.get_measurement_display }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td class="amount">₹{{ item.selling_price.price|floatformat:2 }}</td>
+                    <td class="amount">₹{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="4" style="text-align:right;font-weight:600;">Selling Total</td>
+                    <td class="amount highlight-amount">₹{{ order.selling_total|default:0|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Totals Summary -->
+    <div class="totals-summary">
+        <div class="item">
+            <div class="label">Grand Total</div>
+            <div class="value">₹{{ order.total_amount|floatformat:2 }}</div>
+        </div>
+        <div class="item">
+            <div class="label">Amount Paid</div>
+            <div class="value paid">₹{{ order.amount_paid|floatformat:2 }}</div>
+        </div>
+        <div class="item">
+            <div class="label">Remaining</div>
+            <div class="value remaining">₹{{ order.remaining_amount|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="thank-you">Thank you for your business!</div>
+        <div>Generated on {% now "d M Y H:i" %} &middot; {{ tenant.name }}</div>
+    </div>
+
+    <!-- Action Buttons (print only) -->
+    <div class="action-buttons no-print">
+        <button onclick="window.print()" class="btn-premium">
+            <i class="fas fa-print"></i> Print
+        </button>
+        <button onclick="window.print()" class="btn-outline-premium">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </button>
+        <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=order.id %}" class="btn-outline-premium">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
 </div>
-<div class="header">
-    <h1>{{ tenant.name }}</h1>
-    <p>Flour Mill Invoice</p>
-</div>
-<h3>Order #{{ order.id }}</h3>
-<p><strong>Customer:</strong> {{ order.customer.name }}<br>
-<strong>Phone:</strong> {{ order.customer.phone }}<br>
-<strong>Address:</strong> {{ order.customer.address }}</p>
-<h4>Items</h4>
-<table>
-    <tr><th>Category</th><th>KG</th><th>Cleaning</th><th>Grinding</th><th>Cleaning Charges</th><th>Total</th></tr>
-    {% for item in order.items.all %}
-    <tr>
-        <td>{{ item.category.name }}</td>
-        <td>{{ item.total_kg }}</td>
-        <td>{{ item.is_cleaning_done|yesno:"Yes,No" }}</td>
-        <td class="right">₹{{ item.grinding_charges }}</td>
-        <td class="right">₹{{ item.cleaning_charges }}</td>
-        <td class="right">₹{{ item.item_total }}</td>
-    </tr>
-    {% endfor %}
-    <tr><th colspan="5">Grand Total</th><th class="right">₹{{ order.total_amount }}</th></tr>
-    <tr><td colspan="5">Amount Paid</td><td class="right">₹{{ order.amount_paid }}</td></tr>
-    <tr><td colspan="5">Remaining</td><td class="right">₹{{ order.remaining_amount }}</td></tr>
-</table>
-<div class="footer">
-    <p>Generated on {% now "d M Y H:i" %} | Thank you!</p>
-</div>
-<div class="print-btn no-print">
-    <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
-    <button onclick="window.downloadPDF()" class="btn btn-secondary">⬇️ Download PDF</button>
-</div>
+
 <script>
-function downloadPDF() { window.print(); }
+    // Both buttons trigger print; PDF download is handled by the browser's "Save as PDF" option in print dialog.
+    function downloadPDF() {
+        window.print();
+    }
 </script>
 </body>
 </html>

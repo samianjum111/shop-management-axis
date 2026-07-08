@@ -1,14 +1,266 @@
 {% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Complete Order #{{ order.id }} | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Partial Payment Page ===== */
+  .confirm-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 1.5rem;
+  }
+  .confirm-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    max-width: 540px;
+    width: 100%;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    text-align: center;
+    transition: box-shadow 0.3s ease;
+  }
+  .confirm-card:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+  }
+
+  .confirm-icon {
+    font-size: 3.5rem;
+    color: var(--accent);
+    background: rgba(245, 158, 11, 0.1);
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 1.2rem;
+    display: inline-block;
+  }
+  .confirm-card h4 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  .confirm-card .order-id {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface-alt);
+    padding: 0.2rem 1rem;
+    border-radius: 40px;
+    display: inline-block;
+    margin-bottom: 0.8rem;
+  }
+  .confirm-card .balance-info {
+    background: var(--surface-alt);
+    border-radius: 16px;
+    padding: 0.8rem 1rem;
+    margin: 1rem 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .confirm-card .balance-info .label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .confirm-card .balance-info .amount {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .confirm-card .message {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .confirm-card .message strong {
+    color: var(--text);
+  }
+
+  /* Form styles */
+  .partial-form .form-group {
+    margin-bottom: 1.2rem;
+  }
+  .partial-form .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+  }
+  .partial-form .form-group .input-wrapper {
+    position: relative;
+  }
+  .partial-form .form-group .input-wrapper .currency {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .partial-form .form-group input {
+    width: 100%;
+    padding: 0.65rem 1rem 0.65rem 2.2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+  .partial-form .form-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+  .btn-premium-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+  .btn-premium-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+  }
+  .btn-premium-success {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(40,167,69,0.2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-premium-success:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(40,167,69,0.3);
+    color: #fff;
+  }
+  .btn-premium-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: 40px;
+    padding: 0.6rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+  .btn-premium-secondary:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  @media (max-width: 480px) {
+    .confirm-card { padding: 2rem 1.2rem; }
+    .confirm-card h4 { font-size: 1.3rem; }
+    .confirm-icon { width: 64px; height: 64px; line-height: 64px; font-size: 2.5rem; }
+    .confirm-card .balance-info { flex-direction: column; }
+    .actions { flex-direction: column; }
+    .actions .btn { width: 100%; justify-content: center; }
+    .partial-form .form-group input { font-size: 0.95rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card p-4 text-center mx-auto" style="max-width:500px;">
-    <h4>Complete Order #{{ order.id }}</h4>
-    <p>This order is fully paid. Are you sure you want to mark it as <strong>Completed</strong>?</p>
-    <div class="mt-3">
-        <form method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary">Yes, I'm sure</button>
-        </form>
-        <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn btn-secondary mt-2">Cancel</a>
+
+<div class="confirm-wrapper">
+  <div class="confirm-card">
+    <!-- Icon -->
+    <div class="confirm-icon">
+      <i class="fas fa-hand-holding-usd"></i>
     </div>
+
+    <!-- Heading -->
+    <h4>Complete Order</h4>
+    <div class="order-id">#{{ order.id }}</div>
+
+    <!-- Balance Info -->
+    <div class="balance-info">
+      <span class="label">Remaining Balance</span>
+      <span class="amount">₹{{ remaining|floatformat:2 }}</span>
+    </div>
+
+    <!-- Message -->
+    <div class="message">
+      This order has a remaining balance. Choose how you'd like to complete it.
+    </div>
+
+    <!-- Form: Partial Payment -->
+    <form method="post" class="partial-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="receive_amount">Enter amount to receive</label>
+        <div class="input-wrapper">
+          <span class="currency">₹</span>
+          <input type="number" step="0.01" min="0.01" max="{{ remaining }}" name="receive_amount" id="receive_amount" class="form-control" placeholder="e.g. 250.00" required>
+        </div>
+        <small class="text-muted" style="display:block;margin-top:0.3rem;font-size:0.8rem;">
+          Max: ₹{{ remaining|floatformat:2 }}
+        </small>
+      </div>
+
+      <div class="actions">
+        <button type="submit" name="payment_choice" value="partial" class="btn-premium-success">
+          <i class="fas fa-arrow-right"></i> Receive &amp; Complete
+        </button>
+        <button type="submit" name="payment_choice" value="full" class="btn-premium-primary">
+          <i class="fas fa-check-circle"></i> Pay Full &amp; Complete
+        </button>
+        <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-premium-secondary">
+          <i class="fas fa-times"></i> Cancel
+        </a>
+      </div>
+    </form>
+  </div>
 </div>
+
 {% endblock %}
