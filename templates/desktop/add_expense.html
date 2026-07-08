@@ -1,21 +1,271 @@
 {% extends "desktop/base.html" %}
-{% block title %}Add Expense | {{ tenant.name }}{% endblock %}
+{% block title %}Add Expense / Loan | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Add Expense Styles ===== */
+  .page-header {
+    margin-bottom: 1.8rem;
+  }
+  .page-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 0.2rem;
+    letter-spacing: -0.02em;
+  }
+  .page-header p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .form-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    padding: 2rem 2rem 1.8rem;
+    transition: 0.25s;
+  }
+  .form-card:hover {
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+  }
+
+  .form-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .form-group label .required {
+    color: #e74c3c;
+    margin-left: 0.2rem;
+  }
+  .form-group .input-wrap {
+    position: relative;
+  }
+  .form-group .input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 1rem;
+    z-index: 2;
+    transition: 0.2s;
+  }
+  .form-group .input-wrap input,
+  .form-group .input-wrap select,
+  .form-group .input-wrap textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem 0.6rem 2.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .form-group .input-wrap input:focus,
+  .form-group .input-wrap select:focus,
+  .form-group .input-wrap textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    background: var(--surface);
+  }
+  .form-group .input-wrap input::placeholder,
+  .form-group .input-wrap textarea::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .form-group .input-wrap textarea {
+    padding-left: 2.6rem;
+    min-height: 80px;
+    resize: vertical;
+  }
+  .form-group .input-wrap select {
+    appearance: none;
+    padding-right: 2.4rem;
+    cursor: pointer;
+  }
+  .form-group .input-wrap select + i {
+    pointer-events: none;
+  }
+  .form-group .input-wrap select + i.fa-chevron-down {
+    right: 14px;
+    left: auto;
+  }
+
+  /* Checkbox */
+  .form-check-custom {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.8rem;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    transition: 0.2s;
+    cursor: pointer;
+  }
+  .form-check-custom:hover {
+    border-color: var(--accent);
+  }
+  .form-check-custom input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .form-check-custom label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 0;
+    cursor: pointer;
+  }
+  .form-check-custom label i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 2.2rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(26,42,58,0.15);
+  }
+  .btn-save:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(26,42,58,0.2);
+  }
+  .btn-save i {
+    font-size: 1rem;
+  }
+  .btn-cancel {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .btn-cancel:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-card { padding: 1.2rem; }
+    .form-group .input-wrap input,
+    .form-group .input-wrap select,
+    .form-group .input-wrap textarea {
+      padding-left: 2.2rem;
+      font-size: 0.9rem;
+    }
+    .page-header h2 { font-size: 1.5rem; }
+    .form-actions { flex-direction: column; }
+    .btn-save, .btn-cancel { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 576px) {
+    .form-card { padding: 1rem; border-radius: 14px; }
+    .form-group .input-wrap input,
+    .form-group .input-wrap select,
+    .form-group .input-wrap textarea {
+      padding: 0.5rem 0.6rem 0.5rem 2rem;
+      font-size: 0.85rem;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<h2>Add New Expense / Loan</h2>
-<form method="post" class="row g-3">
+
+<!-- ====== PAGE HEADER ====== -->
+<div class="page-header">
+  <h2>Add New Expense / Loan</h2>
+  <p>Record a new expense, loan given, or loan taken</p>
+</div>
+
+<!-- ====== FORM CARD ====== -->
+<div class="form-card">
+  <form method="post" class="row g-3">
     {% csrf_token %}
-    <div class="col-md-6">
-        <label class="form-label">Title *</label>
-        <input type="text" name="title" class="form-control" required placeholder="e.g., Medicine, Grocery, Loan to Ali">
+
+    <!-- Section: Basic Details -->
+    <div class="col-12">
+      <div class="form-section-title">Basic Details</div>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label">Amount (₹) *</label>
-        <input type="number" name="amount" step="0.01" class="form-control" required placeholder="0.00">
+      <div class="form-group">
+        <label>Title <span class="required">*</span></label>
+        <div class="input-wrap">
+          <i class="fas fa-tag"></i>
+          <input type="text" name="title" required placeholder="e.g., Medicine, Grocery, Loan to Ali">
+        </div>
+      </div>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label">Category</label>
-        <select name="category" class="form-select">
+      <div class="form-group">
+        <label>Amount (₹) <span class="required">*</span></label>
+        <div class="input-wrap">
+          <i class="fas fa-rupee-sign"></i>
+          <input type="number" name="amount" step="0.01" required placeholder="0.00">
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="form-group">
+        <label>Category</label>
+        <div class="input-wrap">
+          <i class="fas fa-list"></i>
+          <select name="category">
             <option value="general">General</option>
             <option value="medicine">Medicine</option>
             <option value="food">Food</option>
@@ -23,38 +273,105 @@
             <option value="given_loan">Given Loan (Udhaar)</option>
             <option value="taken_loan">Taken Loan</option>
             <option value="other">Other</option>
-        </select>
+          </select>
+          <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"></i>
+        </div>
+      </div>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label">Person Name</label>
-        <input type="text" name="person_name" class="form-control" placeholder="Name of person">
+      <div class="form-group">
+        <label>Due Date</label>
+        <div class="input-wrap">
+          <i class="fas fa-calendar-alt"></i>
+          <input type="date" name="due_date">
+        </div>
+      </div>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Phone</label>
-        <input type="text" name="phone" class="form-control" placeholder="Contact number">
-    </div>
-    <div class="col-md-6">
-        <label class="form-label">Due Date</label>
-        <input type="date" name="due_date" class="form-control">
-    </div>
+
+    <!-- Section: Person Details -->
     <div class="col-12">
-        <label class="form-label">Address</label>
-        <textarea name="address" class="form-control" rows="2" placeholder="Address (optional)"></textarea>
+      <div class="form-section-title">Person Details <span style="font-weight:400; text-transform:none; font-size:0.7rem; color:var(--muted);">(for loans)</span></div>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label">Reason / Purpose</label>
-        <input type="text" name="reason" class="form-control" placeholder="Why this transaction?">
+      <div class="form-group">
+        <label>Person Name</label>
+        <div class="input-wrap">
+          <i class="fas fa-user"></i>
+          <input type="text" name="person_name" placeholder="Name of person">
+        </div>
+      </div>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label">Additional Notes</label>
-        <textarea name="notes" class="form-control" rows="2" placeholder="Any extra details"></textarea>
+      <div class="form-group">
+        <label>Phone</label>
+        <div class="input-wrap">
+          <i class="fas fa-phone"></i>
+          <input type="text" name="phone" placeholder="Contact number">
+        </div>
+      </div>
     </div>
-    <div class="col-12 form-check">
-        <input type="checkbox" name="is_credit" id="is_credit" class="form-check-input">
-        <label for="is_credit" class="form-check-label">Money given to someone (receivable)</label>
-    </div>
+
     <div class="col-12">
-        <button type="submit" class="btn btn-primary">Save Expense</button>
+      <div class="form-group">
+        <label>Address</label>
+        <div class="input-wrap">
+          <i class="fas fa-map-marker-alt" style="top:18px; transform:none;"></i>
+          <textarea name="address" rows="2" placeholder="Address (optional)"></textarea>
+        </div>
+      </div>
     </div>
-</form>
+
+    <!-- Section: Additional Info -->
+    <div class="col-12">
+      <div class="form-section-title">Additional Information</div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="form-group">
+        <label>Reason / Purpose</label>
+        <div class="input-wrap">
+          <i class="fas fa-pencil-alt"></i>
+          <input type="text" name="reason" placeholder="Why this transaction?">
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="form-group">
+        <label>Additional Notes</label>
+        <div class="input-wrap">
+          <i class="fas fa-sticky-note" style="top:18px; transform:none;"></i>
+          <textarea name="notes" rows="2" placeholder="Any extra details"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkbox -->
+    <div class="col-12">
+      <div class="form-check-custom">
+        <input type="checkbox" name="is_credit" id="is_credit">
+        <label for="is_credit">
+          <i class="fas fa-hand-holding-usd"></i> Money given to someone (receivable / Udhaar)
+        </label>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-12">
+      <div class="form-actions">
+        <button type="submit" class="btn-save">
+          <i class="fas fa-save"></i> Save Expense
+        </button>
+        <a href="/portal/{{ tenant.schema_name }}/expenses/" class="btn-cancel">
+          <i class="fas fa-times"></i> Cancel
+        </a>
+      </div>
+    </div>
+
+  </form>
+</div>
+
 {% endblock %}

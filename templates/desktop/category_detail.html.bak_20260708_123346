@@ -1,0 +1,333 @@
+{% extends "desktop/base.html" %}
+{% block title %}{{ category.name }} Analytics | {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ category.name }} — {% if type == 'grinding' %}Grinding{% else %}Selling{% endif %} Category</h2>
+    <a href="{% url 'chakki_settings' schema_name=tenant.schema_name %}" class="btn btn-secondary">← Back to Settings</a>
+    <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#editCategoryModal">Edit</button>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Orders</div>
+            <div class="h4 fw-bold">{{ total_orders }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">{% if type == 'grinding' %}Total KG{% else %}Total Quantity{% endif %}</div>
+            <div class="h4 fw-bold">{% if type == 'grinding' %}{{ total_kg|floatformat:2 }}{% else %}{{ total_qty|floatformat:2 }}{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Revenue</div>
+            <div class="h4 fw-bold text-success">₹{{ total_revenue|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Cost</div>
+            <div class="h4 fw-bold text-danger">₹{{ total_cost|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Profit</div>
+            <div class="h4 fw-bold text-accent">₹{{ total_profit|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Prices Section -->
+<h5 class="fw-bold mb-3">Prices</h5>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Measurement</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Purchase Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for price in prices %}
+            <tr>
+                <td>{{ price.get_measurement_display }}</td>
+                <td>₹{{ price.price }}</td>
+                <td>{{ price.stock }}</td>
+                <td>₹{{ price.purchase_price }}</td>
+                <td>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editSellingPriceModal{{ price.id }}">Edit</button>
+                    <form method="post" style="display:inline;" onsubmit="return confirm('Delete this price?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_selling_price">
+                        <input type="hidden" name="selling_price_id" value="{{ price.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            <!-- Edit Price Modal -->
+            <div class="modal fade" id="editSellingPriceModal{{ price.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'chakki_settings' schema_name=tenant.schema_name %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="edit_selling_price">
+                            <input type="hidden" name="selling_price_id" value="{{ price.id }}">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Price</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-2">
+                                    <label>Measurement</label>
+                                    <select name="measurement" class="form-select">
+                                        <option value="kg" {% if price.measurement == 'kg' %}selected{% endif %}>KG</option>
+                                        <option value="liter" {% if price.measurement == 'liter' %}selected{% endif %}>Liter</option>
+                                        <option value="gram" {% if price.measurement == 'gram' %}selected{% endif %}>Gram</option>
+                                        <option value="packet" {% if price.measurement == 'packet' %}selected{% endif %}>Packet</option>
+                                        <option value="dozen" {% if price.measurement == 'dozen' %}selected{% endif %}>Dozen</option>
+                                        <option value="piece" {% if price.measurement == 'piece' %}selected{% endif %}>Piece</option>
+                                        <option value="bottle" {% if price.measurement == 'bottle' %}selected{% endif %}>Bottle</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label>Price</label>
+                                    <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label>Stock Quantity</label>
+                                    <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label>Purchase Price (cost per unit)</label>
+                                    <input type="number" name="purchase_price" step="0.01" class="form-control" value="{{ price.purchase_price|default:0 }}" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <tr><td colspan="5" class="text-muted">No prices defined for this category.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h5 class="fw-bold mb-3">Order Details</h5>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Category Total</th>
+                <th>Cost</th>
+                <th>Profit</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in order_data %}
+            <tr>
+                <td>{{ entry.order.id }}</td>
+                <td>{{ entry.order.customer.name }}</td>
+                <td>{{ entry.order.created_at|date:"d M Y H:i" }}</td>
+                <td>₹{{ entry.total|floatformat:2 }}</td>
+                <td>₹{{ entry.cost|floatformat:2 }}</td>
+                <td class="fw-bold {% if entry.profit >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ entry.profit|floatformat:2 }}</td>
+                <td>
+                    <span class="badge {% if entry.order.status == 'completed' %}bg-success{% elif entry.order.status == 'ready' %}bg-warning{% else %}bg-secondary{% endif %}">
+                        {{ entry.order.status|title }}
+                    </span>
+                </td>
+                <td>
+                    {% if entry.order.payment_status == 'paid' %}
+                        <span class="badge bg-success">Paid</span>
+                    {% elif entry.order.payment_status == 'partial' %}
+                        <span class="badge bg-info">Partial</span>
+                    {% else %}
+                        <span class="badge bg-danger">Unpaid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                    <button class="btn btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}">Transcript</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted">No orders for this category.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Transcript Modal (same as in chakki.html) -->
+<div class="modal fade" id="transcriptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Order Transcript</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transcriptModalBody">
+                <div class="text-center py-4">Loading...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="printTranscriptBtn"><i class="fas fa-print"></i> Print</button>
+                <div class="dropdown d-inline">
+                    <button class="btn btn-accent dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-format="png">PNG</a></li>
+                        <li><a class="dropdown-item" href="#" data-format="jpeg">JPEG</a></li>
+                        <li><a class="dropdown-item" href="#" data-format="pdf">PDF</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'chakki_settings' schema_name=tenant.schema_name %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="{% if type == 'grinding' %}edit_category{% else %}edit_selling_category{% endif %}">
+                <input type="hidden" name="{% if type == 'grinding' %}category_id{% else %}selling_category_id{% endif %}" value="{{ category.id }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit {% if type == 'grinding' %}Grinding{% else %}Selling{% endif %} Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label>Name</label>
+                        <input type="text" name="{% if type == 'grinding' %}category_name{% else %}selling_category_name{% endif %}" class="form-control" value="{{ category.name }}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Description</label>
+                        <input type="text" name="{% if type == 'grinding' %}category_description{% else %}selling_category_description{% endif %}" class="form-control" value="{{ category.description|default:'' }}">
+                    </div>
+                    {% if type == 'grinding' %}
+                    <div class="mb-2">
+                        <label>Grinding Rate (per KG)</label>
+                        <input type="number" name="grinding_rate" step="0.01" class="form-control" value="{{ category.grinding_rate }}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Cleaning Rate (per KG) – optional</label>
+                        <input type="number" name="cleaning_rate" step="0.01" class="form-control" value="{{ category.cleaning_rate|default:'' }}" placeholder="Leave blank for none">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('transcriptModal');
+    const modalBody = document.getElementById('transcriptModalBody');
+    const printBtn = document.getElementById('printTranscriptBtn');
+
+    document.querySelectorAll('.view-transcript').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            if (!orderId) return;
+            modalBody.innerHTML = '<div class="text-center py-4">Loading...</div>';
+            fetch(`/portal/{{ tenant.schema_name }}/chakki/transcript-modal/${orderId}/`)
+                .then(response => response.text())
+                .then(html => {
+                    modalBody.innerHTML = html;
+                })
+                .catch(() => {
+                    modalBody.innerHTML = '<div class="alert alert-danger">Error loading transcript.</div>';
+                });
+            var bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        });
+    });
+
+    printBtn.addEventListener('click', function() {
+        const content = modalBody.querySelector('.transcript-container');
+        if (!content) return;
+        const win = window.open('', '_blank');
+        if (!win) {
+            alert('Please allow pop‑ups for printing.');
+            return;
+        }
+        win.document.write('<html><head><title>Transcript</title><style>body { font-family: Arial, sans-serif; padding: 20px; } .watermark-text { display: none; }</style></head><body>');
+        win.document.write(content.outerHTML);
+        win.document.write('</body></html>');
+        win.document.close();
+        win.print();
+    });
+
+    document.querySelectorAll('.dropdown-item[data-format]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const format = this.dataset.format;
+            const container = modalBody.querySelector('.transcript-container');
+            if (!container) {
+                alert('Transcript content not loaded.');
+                return;
+            }
+            if (typeof html2canvas === 'undefined') {
+                alert('html2canvas library not loaded. Please check your internet connection.');
+                return;
+            }
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                if (format === 'pdf') {
+                    if (typeof window.jspdf === 'undefined') {
+                        alert('jsPDF library not loaded.');
+                        return;
+                    }
+                    const imgData = canvas.toDataURL('image/png');
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    pdf.save('transcript.pdf');
+                } else {
+                    const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+                    const ext = format === 'png' ? 'png' : 'jpg';
+                    const link = document.createElement('a');
+                    link.download = `transcript.${ext}`;
+                    link.href = canvas.toDataURL(mimeType);
+                    link.click();
+                }
+            }).catch(err => {
+                alert('Failed to generate download: ' + err.message);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -209,7 +209,7 @@
           <i class="fas fa-user-plus"></i>
         </div>
         <div class="title">Walk‑in Customer</div>
-        <div class="desc">New customer, no saved profile<br>Enter details now</div>
+        <div class="desc">New customer, no saved profile<bmOrder Now</div>
         <span class="badge-feature"><i class="fas fa-bolt"></i> Quick Entry</span>
         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
       </a>
@@ -220,7 +220,7 @@
           <i class="fas fa-user-check"></i>
         </div>
         <div class="title">Regular Customer</div>
-        <div class="desc">Choose from your saved customers<br>View Saved Customers &amp; pending balance</div>
+        <div class="desc">Choose from your saved customers<br>Choose Saved Customers &amp; pending balance</div>
         <span class="badge-feature"><i class="fas fa-address-book"></i> Saved Profile</span>
         <span class="arrow"><i class="fas fa-chevron-right"></i></span>
       </a>
