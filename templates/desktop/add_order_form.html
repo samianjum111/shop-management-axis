@@ -60,6 +60,7 @@
 {% endif %}
 
 <form method="post" id="orderForm">
+    <div id="formErrors" class="alert alert-danger" style="display:none;"></div>
     {% csrf_token %}
     <input type="hidden" name="customer_id" value="{{ customer.id|default:'' }}">
     <input type="hidden" name="walkin" value="{% if walkin %}1{% else %}0{% endif %}">
@@ -217,21 +218,29 @@ function updateRemaining() {
     remainingDisplay.textContent = 'Remaining: ₹' + remaining.toFixed(2);
 }
 
+
 function setPayment(type) {
     document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
     document.querySelector(`.payment-toggle .btn-option[data-value="${type}"]`).classList.add('active');
     paymentTypeInput.value = type;
+    const nameField = document.querySelector('input[name="name"]');
+    const phoneField = document.getElementById('walkin_phone');
+    const addressField = document.getElementById('walkin_address');
     if (type === 'partial') {
         partialAmountDiv.classList.add('show');
-        if (walkinPhone) walkinPhone.required = true;
-        if (walkinName) walkinName.required = true;
+        if (phoneField) phoneField.required = true;
+        if (nameField) nameField.required = true;
+        if (addressField) addressField.required = true;
+        // Also make address field visible? It's already visible.
     } else {
         partialAmountDiv.classList.remove('show');
-        if (walkinPhone) walkinPhone.required = false;
-        if (walkinName) walkinName.required = true;
+        if (phoneField) phoneField.required = false;
+        if (nameField) nameField.required = true;  // name always required for walk-in
+        if (addressField) addressField.required = false;
     }
     updateRemaining();
 }
+
 
 function addItemRow() {
     itemCount++;
@@ -274,14 +283,76 @@ function addItemRow() {
     });
 }
 
+
+
+function validateOrder() {
+    let errors = [];
+    // Check if customer type is walk-in (no customer_id)
+    const customerId = document.querySelector('input[name="customer_id"]')?.value;
+    const isWalkin = !customerId;
+    // For walk-in, name is mandatory
+    if (isWalkin) {
+        const name = document.querySelector('input[name="name"]')?.value.trim();
+        if (!name) {
+            errors.push('Name is required for walk-in customer.');
+        }
+    }
+    // Check payment type
+    const paymentType = document.getElementById('payment_type').value;
+    if (paymentType === 'partial') {
+        const phone = document.getElementById('walkin_phone')?.value.trim();
+        const name = document.querySelector('input[name="name"]')?.value.trim();
+        const address = document.getElementById('walkin_address')?.value.trim();
+        if (!name) {
+            errors.push('Name is required for partial payment.');
+        }
+        if (!phone) {
+            errors.push('Phone is required for partial payment.');
+        }
+        // Address is optional? The user said address should be required for partial? We'll make it optional but show warning? Actually they said "address bhi zaroori he" for partial. So we'll require it.
+        if (!address) {
+            errors.push('Address is required for partial payment.');
+        }
+    }
+    // Check items: at least one category and kg > 0
+    let hasItem = false;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const category = row.querySelector('.category-select').value;
+        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+        if (category && kg > 0) {
+            hasItem = true;
+        }
+    });
+    if (!hasItem) {
+        errors.push('Please add at least one item with a category and weight greater than 0.');
+    }
+    // Display errors
+    const errorDiv = document.getElementById('formErrors');
+    if (errors.length > 0) {
+        errorDiv.style.display = 'block';
+        errorDiv.innerHTML = errors.join('<br>');
+        // Scroll to error
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    } else {
+        errorDiv.style.display = 'none';
+        return true;
+    }
+}
+
+
+
 function showPreviewModal() {
+    if (!validateOrder()) {
+        return;
+    }
     const totals = window._totals || { grinding: 0, cleaning: 0, grand: 0 };
     const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
     const customerPhone = document.querySelector('input[name="phone"]')?.value || '{{ customer.phone|default:"N/A" }}';
-    const paymentType = paymentTypeInput.value;
+    const paymentType = document.getElementById('payment_type').value;
     let paymentAmount = 0;
     if (paymentType === 'partial') {
-        paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+        paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
     } else {
         paymentAmount = totals.grand;
     }
@@ -292,7 +363,7 @@ function showPreviewModal() {
         const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
         itemsHtml += `<p><strong>${category}</strong> - ${kg}kg, Cleaning: ${cleaning}</p>`;
     });
-    modalBody.innerHTML = `
+    document.getElementById('modalBody').innerHTML = `
         <p><strong>Customer:</strong> ${customerName} (${customerPhone})</p>
         <hr>
         <h6>Items:</h6>
@@ -329,6 +400,8 @@ function showPreviewModal() {
         alert('Modal element not found.');
     }
 }
+
+
 
 // ---- DOM Ready ----
 document.addEventListener('DOMContentLoaded', function() {

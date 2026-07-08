@@ -316,10 +316,15 @@
     <h2>Quick actions</h2>
     <a href="/portal/{{ tenant.schema_name }}/chakki/settings/">More</a>
 </div>
+
 <div class="actions-grid">
     <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="action-tile">
         <div class="icon"><i class="fas fa-plus-circle"></i></div>
         <strong>New Order</strong>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="action-tile">
+        <div class="icon"><i class="fas fa-user-plus"></i></div>
+        <strong>Create Customer</strong>
     </a>
     <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="action-tile">
         <div class="icon"><i class="fas fa-clock"></i></div>
@@ -333,15 +338,12 @@
         <div class="icon"><i class="fas fa-money-bill-wave"></i></div>
         <strong>Expenses</strong>
     </a>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="action-tile">
-        <div class="icon"><i class="fas fa-plus"></i></div>
-        <strong>Add Expense</strong>
-    </a>
     <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="action-tile">
         <div class="icon"><i class="fas fa-cog"></i></div>
         <strong>Settings</strong>
     </a>
 </div>
+
 
 <!-- Recent Orders -->
 <div class="section-heading">

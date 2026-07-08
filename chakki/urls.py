@@ -27,5 +27,6 @@ urlpatterns = [
     path('walk-profile/', views.walk_profile, name='walk_profile'),
     path('convert-walk/<int:customer_id>/', views.convert_walk_to_regular, name='convert_walk_to_regular'),
 
+    path('customer/create/', views.create_customer, name='create_customer'),
     path('check-ready/', views.check_ready_orders, name='check_ready_orders'),
 ]
