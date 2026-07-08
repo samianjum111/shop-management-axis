@@ -1,10 +1,10 @@
 {% extends "desktop/base.html" %}
 {% load static %}
-{% block title %}Walk‑in Customers | {{ tenant.name }}{% endblock %}
+{% block title %}{{ customer.name }} | {{ tenant.name }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* ===== Premium Walk‑in Profile Page ===== */
+  /* ===== Premium Customer Profile ===== */
   .page-header {
     display: flex;
     justify-content: space-between;
@@ -22,13 +22,7 @@
   }
   .page-header h2 i {
     color: var(--accent);
-    margin-right: 0.5rem;
-  }
-  .page-header .subtitle {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-weight: 400;
-    margin-top: 0.2rem;
+    margin-right: 0.4rem;
   }
 
   .btn-outline-premium {
@@ -53,7 +47,82 @@
     text-decoration: none;
   }
 
-  .table-container {
+  .btn-premium-success {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(40,167,69,0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  .btn-premium-success:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(40,167,69,0.3);
+    color: #fff;
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem 1.2rem;
+    box-shadow: var(--expense-shadow);
+    transition: box-shadow 0.3s ease;
+  }
+  .profile-card:hover {
+    box-shadow: var(--expense-hover-shadow);
+  }
+  .profile-card h5 {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+  .profile-card h5 i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+  .profile-card p {
+    margin-bottom: 0.3rem;
+    font-size: 0.95rem;
+  }
+  .profile-card p strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .profile-card .badge-large {
+    font-size: 1.1rem;
+    padding: 0.3rem 1rem;
+    border-radius: 40px;
+    font-weight: 700;
+    display: inline-block;
+  }
+  .badge-pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .badge-paid {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .order-table-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -94,65 +163,34 @@
   .table-premium tbody tr:hover td {
     background: var(--bg);
   }
-  .table-premium .amount-highlight {
-    font-weight: 700;
+  .table-premium .order-id {
+    font-weight: 600;
     color: var(--accent);
   }
-  .table-premium .customer-name {
-    font-weight: 500;
+  .table-premium .amount {
+    font-weight: 600;
+    white-space: nowrap;
   }
-
   .badge-premium {
     display: inline-block;
     padding: 0.2rem 0.7rem;
     border-radius: 40px;
     font-weight: 600;
     font-size: 0.7rem;
-    background: #fff3cd;
-    color: #856404;
+    text-transform: capitalize;
   }
-
-  .btn-sm-premium {
-    padding: 0.25rem 1rem;
-    border-radius: 40px;
-    font-weight: 600;
-    font-size: 0.75rem;
-    transition: all 0.2s ease;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    text-decoration: none;
-  }
-  .btn-sm-primary {
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(26,42,58,0.1);
-  }
-  .btn-sm-primary:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
-    color: #fff;
-  }
-  .btn-sm-secondary {
-    background: var(--surface-alt);
-    color: var(--text-secondary);
-  }
-  .btn-sm-secondary:hover {
-    background: var(--border);
-    color: var(--text);
-    transform: translateY(-2px);
-  }
+  .badge-ready { background: #fff3cd; color: #856404; }
+  .badge-completed { background: #d4edda; color: #155724; }
+  .badge-pending-status { background: #e2e3e5; color: #383d41; }
+  .badge-cancelled { background: #f8d7da; color: #b02a37; }
 
   .empty-state {
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 2rem 1rem;
     color: var(--muted);
   }
   .empty-state i {
-    font-size: 3rem;
+    font-size: 2.5rem;
     color: var(--border);
     margin-bottom: 0.5rem;
     display: block;
@@ -160,15 +198,13 @@
 
   @media (max-width: 768px) {
     .page-header { flex-direction: column; align-items: stretch; }
-    .page-header .subtitle { margin-bottom: 0.5rem; }
-    .table-container { padding: 0; }
+    .profile-grid { grid-template-columns: 1fr; }
+    .order-table-wrap { padding: 0; }
     .table-premium { font-size: 0.8rem; }
     .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
   }
   @media (max-width: 576px) {
     .page-header h2 { font-size: 1.6rem; }
-    .action-btns { flex-direction: column; align-items: stretch; }
-    .action-btns .btn-sm-premium { justify-content: center; }
   }
 </style>
 {% endblock %}
@@ -177,51 +213,96 @@
 
 <!-- ===== PAGE HEADER ===== -->
 <div class="page-header">
-  <div>
-    <h2><i class="fas fa-user-walk"></i> Walk‑in Customers</h2>
-    <div class="subtitle">Customers with pending balance after order completion</div>
+  <h2><i class="fas fa-user-circle"></i> {{ customer.name }}</h2>
+  <div class="actions" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+    <a href="{% url 'customer_list' schema_name=tenant.schema_name %}" class="btn-outline-premium">
+      <i class="fas fa-arrow-left"></i> Back to Customers
+    </a>
+    {% if not customer.is_regular and total_pending > 0 %}
+    <a href="/portal/{{ tenant.schema_name }}/chakki/convert-walk/{{ customer.id }}/" class="btn-premium-success">
+      <i class="fas fa-exchange-alt"></i> Convert to Regular
+    </a>
+    {% endif %}
   </div>
-  <a href="{% url 'worker_list' schema_name=tenant.schema_name %}" class="btn-outline-premium">
-    <i class="fas fa-arrow-left"></i> Back to Workers
-  </a>
 </div>
 
-<!-- ===== TABLE ===== -->
-<div class="table-container">
+<!-- ===== PROFILE CARDS ===== -->
+<div class="profile-grid">
+  <div class="profile-card">
+    <h5><i class="fas fa-address-card"></i> Customer Details</h5>
+    <p><strong>Name:</strong> {{ customer.name }}</p>
+    <p><strong>Phone:</strong> {{ customer.phone|default:"—" }}</p>
+    <p><strong>Address:</strong> {{ customer.address|default:"—" }}</p>
+    <p><strong>Type:</strong> 
+      {% if customer.is_regular %}
+        <span class="badge" style="background:#d4edda;color:#155724;border-radius:40px;padding:0.2rem 0.8rem;">Regular</span>
+      {% else %}
+        <span class="badge" style="background:#fff3cd;color:#856404;border-radius:40px;padding:0.2rem 0.8rem;">Walk‑in</span>
+      {% endif %}
+    </p>
+  </div>
+  <div class="profile-card">
+    <h5><i class="fas fa-chart-pie"></i> Summary</h5>
+    <p><strong>Total Orders:</strong> {{ total_orders }}</p>
+    <p><strong>Total Spent:</strong> ₹{{ total_spent|floatformat:2 }}</p>
+    <p>
+      <strong>Pending Amount:</strong>
+      {% if total_pending > 0 %}
+        <span class="badge-large badge-pending">₹{{ total_pending|floatformat:2 }}</span>
+      {% else %}
+        <span class="badge-large badge-paid">₹0.00</span>
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- ===== ORDER HISTORY ===== -->
+<h5 class="fw-bold mb-2"><i class="fas fa-clipboard-list" style="color:var(--accent);margin-right:0.4rem;"></i> Order History</h5>
+<div class="order-table-wrap">
   <table class="table-premium">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Address</th>
-        <th>Pending Amount</th>
-        <th>Actions</th>
+        <th>Order ID</th>
+        <th>Total</th>
+        <th>Paid</th>
+        <th>Remaining</th>
+        <th>Status</th>
+        <th>Ready</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
-      {% for c in customers %}
+      {% for order in orders %}
       <tr>
-        <td class="customer-name">{{ c.name }}</td>
-        <td>{{ c.phone|default:"—" }}</td>
-        <td>{{ c.address|default:"—" }}</td>
-        <td><span class="badge-premium">₹{{ c.total_pending|floatformat:2 }}</span></td>
+        <td class="order-id">#{{ order.id }}</td>
+        <td class="amount">₹{{ order.total_amount|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.amount_paid|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.remaining_amount|floatformat:2 }}</td>
         <td>
-          <div class="action-btns" style="display:flex;flex-wrap:wrap;gap:0.3rem;">
-            <a href="/portal/{{ tenant.schema_name }}/chakki/convert-walk/{{ c.id }}/" class="btn-sm-premium btn-sm-primary">
-              <i class="fas fa-user-plus"></i> Convert to Regular
-            </a>
-            <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn-sm-premium btn-sm-secondary">
-              <i class="fas fa-eye"></i> Profile
-            </a>
-          </div>
+          <span class="badge-premium
+            {% if order.status == 'ready' %}badge-ready
+            {% elif order.status == 'completed' %}badge-completed
+            {% elif order.status == 'cancelled' %}badge-cancelled
+            {% else %}badge-pending-status{% endif %}">
+            {{ order.status|title }}
+          </span>
+          {% if order.payment_status == 'partial' %}
+          <span class="badge-premium" style="background:#d1ecf1;color:#0c5460;">Partial</span>
+          {% endif %}
+        </td>
+        <td>{{ order.ready_time|date:"d M H:i" }}</td>
+        <td>
+          <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn-sm-premium btn-sm-primary">
+            <i class="fas fa-eye"></i> View
+          </a>
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5">
+        <td colspan="7">
           <div class="empty-state">
-            <i class="fas fa-check-circle"></i>
-            <p>No walk‑in customers with pending balance.</p>
+            <i class="fas fa-inbox"></i>
+            <p>No orders for this customer.</p>
           </div>
         </td>
       </tr>
