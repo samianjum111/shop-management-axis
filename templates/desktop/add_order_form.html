@@ -166,9 +166,10 @@
 
     <!-- Totals -->
     <div class="row mt-4">
-        <div class="col-md-4"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
-        <div class="col-md-4"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
-        <div class="col-md-4"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
+        <div class="col-md-3"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
+        <div class="col-md-3"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
+        <div class="col-md-3"><div class="card p-2"><h6>Selling</h6><h4 id="total_selling_display">₹0.00</h4></div></div>
+        <div class="col-md-3"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
     </div>
     <div class="total-pending-row" id="pending_row" style="display:{% if customer and customer.total_pending > 0 %}flex{% else %}none{% endif %};">
         <span>Customer Pending</span>
@@ -197,6 +198,43 @@
 </div>
 
 <script>
+
+    function setPayment(val) {
+        document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.payment-toggle .btn-option[data-value="${val}"]`).classList.add('active');
+        document.getElementById('payment_type').value = val;
+        var div = document.getElementById('partial_amount_div');
+        var amountInput = document.getElementById('payment_amount');
+        if (val === 'partial') {
+            div.style.display = 'block';
+            if (amountInput) amountInput.setAttribute('required', 'required');
+        } else {
+            div.style.display = 'none';
+            if (amountInput) amountInput.removeAttribute('required');
+        }
+        if (typeof updateRemaining === 'function') {
+            updateRemaining();
+        }
+    }
+
+    // Set initial state: Full Payment
+    document.addEventListener('DOMContentLoaded', function() {
+        setPayment('full');
+    });
+
+    // Also add listener for payment_amount to update remaining
+    document.addEventListener('DOMContentLoaded', function() {
+        var amountInput = document.getElementById('payment_amount');
+        if (amountInput) {
+            amountInput.addEventListener('input', function() {
+                if (typeof updateRemaining === 'function') {
+                    updateRemaining();
+                }
+            });
+        }
+    });
+
+
 document.addEventListener('DOMContentLoaded', function() {
     let itemCount = 1;
     const container = document.getElementById('itemsContainer');

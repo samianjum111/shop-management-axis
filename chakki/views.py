@@ -225,6 +225,8 @@ def generate_transcript(request, order_id, **kwargs):
 @login_required
 
 @login_required
+
+@login_required
 def settings_view(request, **kwargs):
     # No global rates anymore; we use per-category rates.
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
