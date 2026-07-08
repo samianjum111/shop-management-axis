@@ -337,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         opt.textContent = item.measurement + ' - ₹' + item.price + ' (Stock: ' + item.stock + ')';
                         opt.setAttribute('data-price', item.price);
                         opt.setAttribute('data-stock', item.stock);
-                        opt.setAttribute('data-measurement', item.measurement);
                         priceSelect.appendChild(opt);
                     });
                 })
@@ -552,8 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (qty > stock) {
                         const categorySelect = row.querySelector('.selling-category-select');
                 const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || 'Unknown';
-                const measurement = selectedOption.getAttribute('data-measurement') || '';
-                errors.push(`Insufficient stock for "${categoryName}". Available: ${stock} ${measurement}`);
+                errors.push(`Insufficient stock for "${categoryName}". Available: ${stock}`);
                     }
                 }
             }
