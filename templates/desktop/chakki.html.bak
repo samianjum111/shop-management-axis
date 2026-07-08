@@ -426,7 +426,6 @@
   <a href="?status=completed{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "completed" %}active{% endif %}">
     Completed <span class="badge">{{ completed_count }}</span>
   </a>
-  <a href="?status=cancelled{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'cancelled' %}active{% endif %}">Cancelled <span class="badge">{{ cancelled_count }}</span></a>
 </div>
 
 <!-- ===== SEARCH BAR ===== -->
