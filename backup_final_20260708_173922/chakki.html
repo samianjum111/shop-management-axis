@@ -396,7 +396,6 @@
     <a href="?status=ready{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'ready' %}active{% endif %}">Ready <span class="badge">{{ ready_count }}</span></a>
     <a href="?status=partial{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'partial' %}active{% endif %}">Partial <span class="badge">{{ partial_count }}</span></a>
     <a href="?status=completed{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'completed' %}active{% endif %}">Completed <span class="badge">{{ completed_count }}</span></a>
-    <a href="?status=cancelled{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == \'cancelled\' %}active{% endif %}">Cancelled <span class="badge">{{ cancelled_count }}</span></a>
 </div>
 
 <!-- Local Search -->
@@ -437,9 +436,6 @@
         <div class="actions">
             {% if order.status != 'completed' %}
                 <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action primary">✅ Complete</a>
-            {% endif %}
-            {% if order.can_cancel %}
-            <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn-action outline" onclick="return confirm(\'Cancel this order?\')">Cancel</a>
             {% endif %}
             <button class="btn-action secondary view-transcript" data-order-id="{{ order.id }}">📄 Transcript</button>
         </div>
@@ -513,27 +509,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const printBtn = document.getElementById('printTranscript');
 
     // ----- Open modal on view transcript button click -----
-    
-    // ----- Additional transcript fix: ensure modal opens even on error -----
-    
     document.querySelectorAll('.view-transcript').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
+        btn.addEventListener('click', function() {
             const orderId = this.dataset.orderId;
             if (!orderId) {
                 alert('Order ID not found.');
                 return;
             }
-            const modal = document.getElementById('transcriptModal');
-            const modalBody = document.getElementById('transcriptModalBody');
-            if (!modal || !modalBody) {
-                alert('Modal elements not found.');
-                return;
-            }
-            modalBody.innerHTML = '<div style="text-align:center; padding:20px;">Loading...</div>';
+            // Fetch transcript content
             fetch(`/portal/{{ tenant.schema_name }}/chakki/transcript-modal/${orderId}/`)
                 .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
                     return response.text();
                 })
                 .then(html => {
@@ -541,16 +529,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     modal.classList.add('open');
                 })
                 .catch(err => {
-                    console.error('Transcript fetch error:', err);
+                    console.error('Fetch error:', err);
                     modalBody.innerHTML = '<div style="padding:20px;text-align:center;color:red;">Error loading transcript. Please try again.</div>';
                     modal.classList.add('open');
                 });
-        });
-    });
-
-        });
-    });
-
         });
     });
 

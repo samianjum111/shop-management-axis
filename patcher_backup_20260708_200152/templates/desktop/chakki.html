@@ -466,9 +466,6 @@
     {% if order.status != 'completed' %}
       <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn btn-success btn-sm">✅ Complete</a>
     {% endif %}
-    {% if order.can_cancel %}
-        <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn btn-danger btn-sm" onclick="return confirm(\'Cancel this order?\')">Cancel</a>
-    {% endif %}
     <button class="btn btn-outline-secondary btn-sm view-transcript" data-order-id="{{ order.id }}">📄 Transcript</button>
     <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn btn-outline-primary btn-sm">View</a>
   </div>
@@ -578,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Attach click events to all transcript buttons
   
-    
     document.querySelectorAll('.view-transcript').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -598,9 +594,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     var modal = new bootstrap.Modal(document.getElementById('transcriptModal'));
                     modal.show();
                 });
-        });
-    });
-
         });
     });
 

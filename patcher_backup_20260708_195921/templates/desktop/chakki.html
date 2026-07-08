@@ -466,9 +466,6 @@
     {% if order.status != 'completed' %}
       <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn btn-success btn-sm">✅ Complete</a>
     {% endif %}
-    {% if order.can_cancel %}
-        <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn btn-danger btn-sm" onclick="return confirm(\'Cancel this order?\')">Cancel</a>
-    {% endif %}
     <button class="btn btn-outline-secondary btn-sm view-transcript" data-order-id="{{ order.id }}">📄 Transcript</button>
     <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn btn-outline-primary btn-sm">View</a>
   </div>
@@ -577,33 +574,35 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Attach click events to all transcript buttons
-  
-    
-    document.querySelectorAll('.view-transcript').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const orderId = this.dataset.orderId;
-            if (!orderId) return;
-            const modalBody = document.getElementById('transcriptModalBody');
-            modalBody.innerHTML = '<div class="text-center py-4">Loading...</div>';
-            fetch(`/portal/{{ tenant.schema_name }}/chakki/transcript-modal/${orderId}/`)
-                .then(response => response.text())
-                .then(html => {
-                    modalBody.innerHTML = html;
-                    var modal = new bootstrap.Modal(document.getElementById('transcriptModal'));
-                    modal.show();
-                })
-                .catch(err => {
-                    modalBody.innerHTML = '<div class="alert alert-danger">Error loading transcript.</div>';
-                    var modal = new bootstrap.Modal(document.getElementById('transcriptModal'));
-                    modal.show();
-                });
-        });
-    });
+  document.querySelectorAll('.view-transcript').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const orderId = this.dataset.orderId;
+      if (!orderId) {
+        alert('Order ID not found');
+        return;
+      }
 
-        });
-    });
+      modalBody.innerHTML = '<div class="text-center py-4">Loading transcript...</div>';
 
+      fetch(`/portal/{{ tenant.schema_name }}/chakki/transcript-modal/${orderId}/`)
+        .then(response => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.text();
+        })
+        .then(html => {
+          modalBody.innerHTML = html;
+          // Show modal using Bootstrap
+          const bsModal = new bootstrap.Modal(modal);
+          bsModal.show();
+        })
+        .catch(err => {
+          console.error('Transcript fetch error:', err);
+          modalBody.innerHTML = '<div class="alert alert-danger">Error loading transcript. Please try again.</div>';
+          // Still show modal with error
+          const bsModal = new bootstrap.Modal(modal);
+          bsModal.show();
+        });
     });
   });
 

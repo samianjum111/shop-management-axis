@@ -59,13 +59,11 @@ class ChakkiOrder(models.Model):
         ('pending', 'Pending'),
         ('ready', 'Ready'),
         ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
     ]
     PAYMENT_STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('ready', 'Ready'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ('unpaid', 'Unpaid'),
+        ('partial', 'Partial'),
+        ('paid', 'Paid'),
     ]
     customer = models.ForeignKey(ChakkiCustomer, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -96,17 +94,6 @@ class ChakkiOrder(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer.name}"
-
-
-    @property
-    def can_cancel(self):
-        from django.utils import timezone
-        from datetime import timedelta
-        if self.status == 'completed' or self.status == 'cancelled':
-            return False
-        if timezone.now() - self.created_at > timedelta(minutes=30):
-            return False
-        return True
 
 
 # ===== Selling (Buying) Items =====
