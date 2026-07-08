@@ -411,19 +411,19 @@
 
 <!-- ===== STATUS TABS ===== -->
 <div class="status-tabs">
-  <a href="?status=all{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'all' %}active{% endif %}">
+  <a href="?status=all{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "all" %}active{% endif %}">
     All <span class="badge">{{ all_count }}</span>
   </a>
-  <a href="?status=pending{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'pending' %}active{% endif %}">
+  <a href="?status=pending{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "pending" %}active{% endif %}">
     Pending <span class="badge">{{ pending_count }}</span>
   </a>
-  <a href="?status=ready{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'ready' %}active{% endif %}">
+  <a href="?status=ready{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "ready" %}active{% endif %}">
     Ready <span class="badge">{{ ready_count }}</span>
   </a>
-  <a href="?status=partial{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'partial' %}active{% endif %}">
+  <a href="?status=partial{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "partial" %}active{% endif %}">
     Partial <span class="badge">{{ partial_count }}</span>
   </a>
-  <a href="?status=completed{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'completed' %}active{% endif %}">
+  <a href="?status=completed{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "completed" %}active{% endif %}">
     Completed <span class="badge">{{ completed_count }}</span>
   </a>
 </div>
