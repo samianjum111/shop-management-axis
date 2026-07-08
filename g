@@ -1,58 +1,42 @@
 #!/usr/bin/env python3
 """
-Patcher: Fix Cancelled tab syntax in desktop/chakki.html
-Run: python3 patcher_fix_cancelled_syntax.py
+Fix chakki/views.py – remove duplicate import block causing SyntaxError
+Run: python3 fix_views_duplicate.py
 """
 
-import os
 import re
-import shutil
+from pathlib import Path
 
-html_path = "templates/desktop/chakki.html"
+VIEWS_FILE = Path(__file__).resolve().parent / 'chakki' / 'views.py'
 
-if not os.path.exists(html_path):
-    print(f"❌ File not found: {html_path}")
-    exit(1)
+def patch():
+    with open(VIEWS_FILE, 'r', encoding='utf-8') as f:
+        content = f.read()
 
-# Backup
-bak = html_path + ".bak_syntax"
-shutil.copy2(html_path, bak)
-print(f"✅ Backup saved: {bak}")
+    # Find the duplicate block: starts with '@login_required' and then a line starting with 'from django.shortcuts...'
+    # We'll remove everything from that '@login_required' up to the next 'def customer_list(' (but keep the def).
+    pattern = r'(@login_required\s*\nfrom django\.shortcuts import.*?)(?=\n@login_required\s*\ndef customer_list\()'
+    # But the duplicate block might have more imports and function definitions. We'll use a broader approach:
+    # Find the line that starts with '@login_required' and is followed by 'from django.shortcuts' on the next line.
+    # Then find the next 'def customer_list(' that is also preceded by '@login_required' – that's the correct one.
+    # We'll remove everything from the first pattern to just before that correct def.
 
-with open(html_path, "r", encoding="utf-8") as f:
-    content = f.read()
-
-# Find the Cancelled tab line in status-tabs
-# It should be something like:
-# <a href="?status=cancelled{% if search_q %}&search={ search_q }{% endif %}" class="tab {% if status_filter == 'cancelled' %}active{% endif %}">Cancelled <span class="badge">{ cancelled_count }</span></a>
-# We'll replace it with corrected version.
-
-pattern = r'(<a href="\?status=cancelled\{%.*?%\}.*?class="tab.*?">Cancelled <span class="badge">\{ cancelled_count \}</span></a>)'
-match = re.search(pattern, content, re.DOTALL)
-if match:
-    old_line = match.group(1)
-    # Build corrected line
-    corrected = old_line.replace('{ search_q }', '{{ search_q }}').replace('{ cancelled_count }', '{{ cancelled_count }}')
-    # But also ensure the if tag is correct: the pattern above captures it, but we can just replace directly.
-    # More robust: replace specific substrings.
-    new_line = old_line.replace('{ search_q }', '{{ search_q }}').replace('{ cancelled_count }', '{{ cancelled_count }}')
-    content = content.replace(old_line, new_line)
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    print("✅ Updated Cancelled tab syntax in desktop template.")
-else:
-    # Fallback: try to find the line with simpler pattern
-    # Maybe the line is different, we can search for '{ cancelled_count }' in the line.
-    lines = content.splitlines()
-    for i, line in enumerate(lines):
-        if '{ cancelled_count }' in line and 'Cancelled' in line:
-            new_line = line.replace('{ cancelled_count }', '{{ cancelled_count }}').replace('{ search_q }', '{{ search_q }}')
-            lines[i] = new_line
-            with open(html_path, "w", encoding="utf-8") as f:
-                f.write("\n".join(lines))
-            print("✅ Updated Cancelled tab syntax (fallback method).")
-            break
+    # Let's use regex to capture the duplicate block.
+    # We'll search for '@login_required\nfrom django.shortcuts' and then capture until we hit the next '@login_required\ndef customer_list('
+    # We'll use re.DOTALL to capture across lines.
+    pattern = r'(@login_required\s*\nfrom django\.shortcuts import.*?)(?=\n@login_required\s*\ndef customer_list\()'
+    match = re.search(pattern, content, re.DOTALL)
+    if match:
+        # Remove the matched block
+        content = content[:match.start()] + content[match.end():]
+        print("✅ Removed duplicate import block.")
     else:
-        print("❌ Could not find the Cancelled tab line. Manual fix required.")
+        print("⚠️ Duplicate block not found. Perhaps already fixed.")
 
-print("\n✅ Done! Restart your server and refresh the page – Cancelled tab should show the correct count.")
+    # Write back
+    with open(VIEWS_FILE, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("✅ views.py fixed.")
+
+if __name__ == "__main__":
+    patch()

@@ -474,8 +474,11 @@ def get_transcript_modal(request, order_id, **kwargs):
     return render(request, 'mobile/transcript_modal_content.html', context)
 
 
+
 @login_required
 def customer_list(request, **kwargs):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
     tenant = request.tenant
     tab = request.GET.get('tab', 'regular')
     q = request.GET.get('q', '').strip()
@@ -491,7 +494,7 @@ def customer_list(request, **kwargs):
         customer.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
         customer.total_orders = orders.count()
 
-    # Walk-in customers with pending balance (is_regular=False and remaining_amount > 0)
+    # Walk-in customers with pending balance
     walk_customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=False).order_by('name')
     if q:
         walk_customers = walk_customers.filter(
@@ -506,20 +509,31 @@ def customer_list(request, **kwargs):
             customer.total_orders = orders.count()
             walk_customers_with_pending.append(customer)
 
-    # Decide which list to display based on tab
+    # Choose which list to paginate
     if tab == 'walk':
-        customers = walk_customers_with_pending
+        customers_list = walk_customers_with_pending
     else:
-        customers = regular_customers
+        customers_list = regular_customers
         tab = 'regular'
 
+    # Pagination – 30 per page
+    paginator = Paginator(customers_list, 30)
+    page = request.GET.get('page')
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     context = {
-        'customers': customers,
-        'tenant': tenant,
+        'page_obj': page_obj,
         'tab': tab,
         'regular_count': regular_customers.count(),
         'walk_count': len(walk_customers_with_pending),
         'search_q': q,
+        'tenant': tenant,
+        'total_count': len(customers_list),
     }
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
