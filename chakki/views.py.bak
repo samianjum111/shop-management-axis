@@ -12,39 +12,14 @@ from expenses.models import Expense
 
 
 @login_required
-@login_required
 def chakki_home(request, **kwargs):
     from django.core.paginator import Paginator
-    from django.db.models import Q, Sum
-    from django.utils import timezone
-    from datetime import timedelta
-    from decimal import Decimal
+    from django.db.models import Q
 
     tenant = request.tenant
-    # Base queryset: all orders for tenant
-    all_orders = ChakkiOrder.objects.filter(tenant=request.tenant)
+    orders = ChakkiOrder.objects.filter(tenant=request.tenant).exclude(status='cancelled').order_by('-created_at')
 
     status_filter = request.GET.get('status', 'all')
-    search_q = request.GET.get('search', '').strip()
-
-    # Apply search filter to base queryset if needed
-    if search_q:
-        all_orders = all_orders.filter(
-            Q(customer__name__icontains=search_q) |
-            Q(customer__phone__icontains=search_q) |
-            Q(id__icontains=search_q)
-        )
-
-    # Compute counts from all_orders (including search)
-    all_count = all_orders.exclude(status='cancelled').count()
-    pending_count = all_orders.filter(status='pending').count()
-    ready_count = all_orders.filter(status='ready').count()
-    partial_count = all_orders.filter(payment_status='partial').count()
-    completed_count = all_orders.filter(status='completed').count()
-    cancelled_count = all_orders.filter(status='cancelled').count()
-
-    # Apply status filter for the list
-    orders = all_orders
     if status_filter == 'pending':
         orders = orders.filter(status='pending')
     elif status_filter == 'ready':
@@ -53,32 +28,30 @@ def chakki_home(request, **kwargs):
         orders = orders.filter(payment_status='partial')
     elif status_filter == 'completed':
         orders = orders.filter(status='completed')
-    elif status_filter == 'cancelled':
-        orders = orders.filter(status='cancelled')
     else:
-        orders = orders.exclude(status='cancelled')
         status_filter = 'all'
 
-    # Pagination
+    search_q = request.GET.get('search', '').strip()
+    if search_q:
+        orders = orders.filter(
+            Q(customer__name__icontains=search_q) |
+            Q(customer__phone__icontains=search_q) |
+            Q(id__icontains=search_q)
+        )
+
+    all_count = orders.count()
+    pending_count = orders.filter(status='pending').count()
+    ready_count = orders.filter(status='ready').count()
+    partial_count = orders.filter(payment_status='partial').count()
+    completed_count = orders.filter(status='completed').count()
+    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status='cancelled').count()
+
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
     try:
         page_obj = paginator.page(page_number)
     except:
         page_obj = paginator.page(1)
-
-    # Revenue stats (for dashboard)
-    total_revenue = all_orders.filter(status='completed').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
-
-    # Daily order counts for last 7 days (using all orders)
-    today = timezone.now().date()
-    daily_labels = []
-    daily_counts = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        daily_labels.append(day.strftime('%a'))
-        count = ChakkiOrder.objects.filter(tenant=request.tenant, created_at__date=day).count()
-        daily_counts.append(count)
 
     context = {
         'page_obj': page_obj,
@@ -91,13 +64,35 @@ def chakki_home(request, **kwargs):
         'partial_count': partial_count,
         'completed_count': completed_count,
         'cancelled_count': cancelled_count,
-        'total_revenue': total_revenue,
-        'daily_labels': daily_labels,
-        'daily_counts': daily_counts,
     }
 
+    # ---- Added by patcher: chart & revenue stats ----
+    from django.db.models import Sum
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # Total revenue
+    total_revenue = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+
+    # Daily order counts for last 7 days
+    today = timezone.now().date()
+    daily_labels = []
+    daily_counts = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        daily_labels.append(day.strftime('%a'))
+        count = ChakkiOrder.objects.filter(tenant=request.tenant, created_at__date=day).count()
+        daily_counts.append(count)
+
+    # Add to context
+    context['total_revenue'] = total_revenue
+    context['daily_labels'] = daily_labels
+    context['daily_counts'] = daily_counts
+    # -------------------------------------------------
     template = 'mobile/chakki.html' if request.mobile else 'desktop/chakki.html'
     return render(request, template, context)
+
+
 @login_required
 def dashboard(request, **kwargs):
     tenant = request.tenant
