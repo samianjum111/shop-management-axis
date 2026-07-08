@@ -365,7 +365,7 @@
 <div class="page-header">
   <h2><i class="fas fa-receipt"></i> Daily Expenses</h2>
   <div class="actions">
-    <button type="button" class="btn-primary-custom" onclick="openAddModal()">
+    <button type="button" class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
       <i class="fas fa-plus"></i> Add Expense
     </button>
   </div>
@@ -532,16 +532,19 @@
     return cookie ? cookie[1] : '';
   }
 
-  // Modal functions (using Bootstrap's modal)
-  function openAddModal() {
-    var dateInput = document.querySelector('#addExpenseForm input[name="expense_date"]');
-    if (dateInput) {
-      var today = new Date().toISOString().split('T')[0];
-      dateInput.value = today;
+  // Set today's date when Add modal opens
+  document.addEventListener('DOMContentLoaded', function() {
+    var addModal = document.getElementById('addExpenseModal');
+    if (addModal) {
+      addModal.addEventListener('show.bs.modal', function() {
+        var dateInput = document.querySelector('#addExpenseForm input[name="expense_date"]');
+        if (dateInput) {
+          var today = new Date().toISOString().split('T')[0];
+          dateInput.value = today;
+        }
+      });
     }
-    var modal = new bootstrap.Modal(document.getElementById('addExpenseModal'));
-    modal.show();
-  }
+  });
 
   // Add Expense Form Submission
   document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
@@ -660,7 +663,6 @@
   }
 
   // Make functions global
-  window.openAddModal = openAddModal;
   window.openDetailModal = openDetailModal;
   window.enableEditMode = enableEditMode;
   window.saveEdit = saveEdit;
