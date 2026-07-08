@@ -56,6 +56,12 @@
                         <td class="action-btns">
                             <a href="{% url 'grinding_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="btn btn-outline-info btn-sm">Detail</a>
                             <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editGrindingModal{{ cat.id }}">Edit</button>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Delete this category?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_category">
+                                <input type="hidden" name="category_id" value="{{ cat.id }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
                         </td>
                     </tr>
                     <!-- Edit Grinding Modal -->
@@ -132,6 +138,12 @@
                             <td class="action-btns">
                                 <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="btn btn-outline-info btn-sm">Detail</a>
                                 <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editSellingPriceModal{{ price.id }}">Edit</button>
+                                <form method="post" style="display:inline;" onsubmit="return confirm('Delete this price?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_selling_price">
+                                    <input type="hidden" name="selling_price_id" value="{{ price.id }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete"><i class="fas fa-trash"></i></button>
+                                </form>
                             </td>
                         </tr>
                         <!-- Edit Price Modal -->
@@ -345,14 +357,6 @@
                         <label>Price</label>
                         <input type="number" name="price" step="0.01" class="form-control" required>
                     </div>
-                    <div class="mb-2">
-                        <label>Purchase Price (cost per unit)</label>
-                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
-                    </div>
-                    <div class="mb-2">
-                        <label>Stock Quantity</label>
-                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -365,3 +369,27 @@
 {% endfor %}
 
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editGrinding = urlParams.get('edit_grinding');
+    const editSelling = urlParams.get('edit_selling');
+    if (editGrinding) {
+        const modalId = '#editGrindingModal' + editGrinding;
+        const modal = document.querySelector(modalId);
+        if (modal) {
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        }
+    }
+    if (editSelling) {
+        const modalId = '#editSellingPriceModal' + editSelling;
+        const modal = document.querySelector(modalId);
+        if (modal) {
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        }
+    }
+});
+</script>

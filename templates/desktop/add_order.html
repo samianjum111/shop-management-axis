@@ -1,82 +1,699 @@
-
 {% extends "desktop/base.html" %}
-{% block content %}
-<div class="alert alert-info">
-    <strong>Current Rates:</strong> Grinding: ₹{{ setting.grinding_rate }}/kg, Cleaning: ₹{{ setting.cleaning_rate }}/kg
-</div>
-<h2>Add Order</h2>
-<form method="post" id="orderForm">
-    {% csrf_token %}
-    <div class="row">
-        <div class="col-md-6">
-            <h5>Customer Details</h5>
-            <div class="mb-2"><label>Name *</label><input name="name" class="form-control" required></div>
-            <div class="mb-2"><label>Phone</label><input name="phone" class="form-control"></div>
-            <div class="mb-2"><label>Address</label><input name="address" class="form-control"></div>
-        </div>
-        <div class="col-md-6">
-            <h5>Ready in</h5>
-            <div class="mb-2">
-                <input type="number" name="time_value" class="form-control" placeholder="e.g. 2" value="1">
-                <select name="time_type" class="form-control">
-                    <option value="minutes">Minutes</option>
-                    <option value="hours" selected>Hours</option>
-                    <option value="days">Days</option>
-                </select>
-            </div>
-        </div>
-    </div>
-    <h5 class="mt-3">Items</h5>
-    <div id="itemsContainer">
-        <div class="row item-row mb-2">
-            <div class="col-md-4">
-                <select name="category_1" class="form-control category-select">
-                    <option value="">Select Category</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <input type="number" name="total_kg_1" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
-            </div>
-            <div class="col-md-2">
-                <input type="checkbox" name="cleaning_1" value="on"> Cleaning
-            </div>
-            <div class="col-md-3">
-                <button type="button" class="btn btn-danger remove-item">Remove</button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="btn btn-secondary mt-2" id="addItemBtn">+ Add Item</button>
-    <div class="row mt-3">
-        <div class="col-md-4"><div class="card p-2"><h6>Total Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
-        <div class="col-md-4"><div class="card p-2"><h6>Total Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
-        <div class="col-md-4"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
-    </div>
-    <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#confirmModal" id="previewBtn">Preview & Confirm</button>
-    <input type="hidden" name="item_count" id="item_count" value="1">
-</form>
+{% load static %}
+{% block title %}Add Order | {{ tenant.name }}{% endblock %}
 
-<!-- Confirmation Modal -->
+{% block extra_head %}
+<style>
+  /* ===== Premium Add Order Styles ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .page-header .sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .btn-back {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+  }
+  .btn-back:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .form-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    padding: 2rem 2rem 1.8rem;
+    transition: 0.25s;
+  }
+  .form-card:hover {
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+  }
+
+  .form-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  .form-section-title i {
+    margin-right: 0.4rem;
+    color: var(--accent);
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .form-group label .required {
+    color: #e74c3c;
+    margin-left: 0.2rem;
+  }
+  .form-group .input-wrap {
+    position: relative;
+  }
+  .form-group .input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.95rem;
+    z-index: 2;
+    transition: 0.2s;
+  }
+  .form-group .input-wrap input,
+  .form-group .input-wrap select,
+  .form-group .input-wrap textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem 0.6rem 2.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .form-group .input-wrap input:focus,
+  .form-group .input-wrap select:focus,
+  .form-group .input-wrap textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    background: var(--surface);
+  }
+  .form-group .input-wrap input::placeholder,
+  .form-group .input-wrap textarea::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .form-group .input-wrap textarea {
+    padding-left: 2.6rem;
+    min-height: 60px;
+    resize: vertical;
+  }
+  .form-group .input-wrap select {
+    appearance: none;
+    padding-right: 2.4rem;
+    cursor: pointer;
+  }
+  .form-group .input-wrap select + i.fa-chevron-down {
+    right: 14px;
+    left: auto;
+    pointer-events: none;
+  }
+
+  /* Items Section */
+  .items-section {
+    margin-top: 1.8rem;
+  }
+  .items-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+  .items-header h5 {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin: 0;
+  }
+  .items-header h5 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .items-header .btn-add-item {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.3rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: 0.2s;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .items-header .btn-add-item:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .item-row {
+    background: var(--bg);
+    border-radius: 14px;
+    padding: 0.8rem 0.8rem;
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--border);
+    transition: 0.2s;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .item-row:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .item-row .col-field {
+    flex: 1;
+    min-width: 100px;
+  }
+  .item-row .col-field-sm {
+    flex: 0 0 80px;
+  }
+  .item-row .col-field-xs {
+    flex: 0 0 50px;
+  }
+  .item-row .col-field .form-select,
+  .item-row .col-field .form-control {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    transition: 0.2s;
+    width: 100%;
+  }
+  .item-row .col-field .form-select:focus,
+  .item-row .col-field .form-control:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,42,58,0.06);
+  }
+  .item-row .col-field .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+  }
+  .item-row .col-field .form-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .item-row .col-field .form-check label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin: 0;
+  }
+  .item-row .btn-remove-item {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    transition: 0.2s;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .item-row .btn-remove-item:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  /* Payment Section */
+  .payment-section {
+    margin-top: 1.8rem;
+  }
+  .payment-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .payment-toggle .btn-option {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  .payment-toggle .btn-option:hover {
+    border-color: var(--muted);
+  }
+  .payment-toggle .btn-option.active {
+    border-color: var(--accent);
+    background: var(--accent-light, #f0f4f8);
+    color: var(--accent);
+  }
+  .payment-toggle .btn-option i {
+    margin-right: 0.3rem;
+  }
+  .amount-input {
+    display: none;
+    margin-top: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .amount-input.show {
+    display: block;
+  }
+  .amount-input label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .amount-input .input-wrap {
+    position: relative;
+  }
+  .amount-input .input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+  }
+  .amount-input .input-wrap input {
+    width: 100%;
+    padding: 0.5rem 0.8rem 0.5rem 2.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .amount-input .input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
+  }
+  .amount-input .remaining-display {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    font-weight: 500;
+  }
+  .amount-input .remaining-display strong {
+    color: var(--accent);
+  }
+
+  /* Totals */
+  .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0 1rem;
+  }
+  .total-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.8rem 0.5rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: 0.2s;
+  }
+  .total-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+  .total-card .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .total-card .value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 0.1rem;
+  }
+  .total-card .value.grinding { color: #2e7d32; }
+  .total-card .value.cleaning { color: #0d47a1; }
+  .total-card .value.grand { color: var(--accent); }
+
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-preview {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 2.2rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(26,42,58,0.15);
+  }
+  .btn-preview:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(26,42,58,0.2);
+  }
+  .btn-preview i {
+    font-size: 1rem;
+  }
+  .btn-cancel {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .btn-cancel:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  /* Modal */
+  .modal-content {
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+  }
+  .modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-card { padding: 1.2rem; }
+    .page-header h2 { font-size: 1.4rem; }
+    .item-row { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+    .item-row .col-field { min-width: 100%; }
+    .item-row .col-field-sm { flex: 1; }
+    .item-row .col-field-xs { flex: 1; }
+    .totals-grid { grid-template-columns: 1fr 1fr; }
+    .payment-toggle { flex-direction: column; }
+    .form-actions { flex-direction: column; }
+    .btn-preview, .btn-cancel { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 576px) {
+    .form-card { padding: 1rem; border-radius: 14px; }
+    .totals-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ====== PAGE HEADER ====== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-plus-circle"></i> Add Order</h2>
+    <p class="sub">Create a new order for a walk‑in customer</p>
+  </div>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Back
+  </a>
+</div>
+
+<!-- ====== FORM CARD ====== -->
+<div class="form-card">
+  <form method="post" id="orderForm">
+    <div id="formErrors" class="alert alert-danger" style="display:none; border-radius:12px;"></div>
+    {% csrf_token %}
+
+    <!-- ====== CUSTOMER DETAILS ====== -->
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Name <span class="required">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-user"></i>
+            <input type="text" name="name" placeholder="Customer name" required>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Phone</label>
+          <div class="input-wrap">
+            <i class="fas fa-phone"></i>
+            <input type="text" name="phone" placeholder="Phone number">
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="form-group">
+          <label>Address</label>
+          <div class="input-wrap">
+            <i class="fas fa-map-marker-alt" style="top:18px; transform:none;"></i>
+            <textarea name="address" rows="2" placeholder="Customer address (optional)"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== READY TIME ====== -->
+    <div class="row g-3 mt-2">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Ready in <span class="required">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-clock"></i>
+            <input type="number" name="time_value" placeholder="e.g. 2" value="1" required>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div class="input-wrap">
+            <i class="fas fa-calendar-alt"></i>
+            <select name="time_type">
+              <option value="minutes">Minutes</option>
+              <option value="hours" selected>Hours</option>
+              <option value="days">Days</option>
+            </select>
+            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== ITEMS SECTION ====== -->
+    <div class="items-section">
+      <div class="items-header">
+        <h5><i class="fas fa-list"></i> Order Items</h5>
+        <button type="button" class="btn-add-item" id="addItemBtn">
+          <i class="fas fa-plus"></i> Add Item
+        </button>
+      </div>
+
+      <div id="itemsContainer">
+        <!-- Item row 1 -->
+        <div class="item-row" id="itemRow1">
+          <div class="col-field" style="flex:2;">
+            <select name="category_1" class="form-select category-select">
+              <option value="">Select Grinding Category</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-field-sm">
+            <input type="number" name="total_kg_1" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+          </div>
+          <div class="col-field" style="flex:0 0 110px;">
+            <div class="form-check">
+              <input type="checkbox" name="cleaning_1" value="on" id="cleaning_1">
+              <label for="cleaning_1">Cleaning</label>
+            </div>
+          </div>
+          <div style="flex:0 0 40px;">
+            <button type="button" class="btn-remove-item remove-item" title="Remove item">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAYMENT TYPE ====== -->
+    <div class="payment-section">
+      <label class="fw-bold" style="font-size:0.95rem; display:block; margin-bottom:0.4rem;">Payment Type</label>
+      <div class="payment-toggle">
+        <div class="btn-option active" data-value="full" onclick="setPayment('full')">
+          <i class="fas fa-check-circle"></i> Full Payment
+        </div>
+        <div class="btn-option" data-value="partial" onclick="setPayment('partial')">
+          <i class="fas fa-hand-holding-usd"></i> Partial Payment
+        </div>
+      </div>
+      <input type="hidden" name="payment_type" id="payment_type" value="full">
+
+      <div class="amount-input" id="partial_amount_div">
+        <label>Amount Received (₹)</label>
+        <div class="input-wrap">
+          <i class="fas fa-rupee-sign"></i>
+          <input type="number" name="payment_amount" id="payment_amount" step="0.01" value="0">
+        </div>
+        <div class="remaining-display" id="remaining_display">Remaining: <strong>₹0.00</strong></div>
+      </div>
+    </div>
+
+    <!-- ====== TOTALS ====== -->
+    <div class="totals-grid">
+      <div class="total-card">
+        <div class="label">Grinding</div>
+        <div class="value grinding" id="total_grinding_display">₹0.00</div>
+      </div>
+      <div class="total-card">
+        <div class="label">Cleaning</div>
+        <div class="value cleaning" id="total_cleaning_display">₹0.00</div>
+      </div>
+      <div class="total-card">
+        <div class="label">Grand Total</div>
+        <div class="value grand" id="grand_total_display">₹0.00</div>
+      </div>
+    </div>
+
+    <!-- ====== ACTIONS ====== -->
+    <div class="form-actions">
+      <button type="button" class="btn-preview" id="previewBtn">
+        <i class="fas fa-eye"></i> Preview & Confirm
+      </button>
+      <button type="button" class="btn-cancel" onclick="window.location.href='/portal/{{ tenant.schema_name }}/chakki/'">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </div>
+
+    <input type="hidden" name="item_count" id="item_count" value="1">
+  </form>
+</div>
+
+<!-- ====== CONFIRMATION MODAL ====== -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Confirm Order</h5>
+        <h5 class="modal-title"><i class="fas fa-check-circle" style="color:var(--accent);"></i> Confirm Order</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-body" id="modalBody">
+        <!-- Filled by JS -->
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="confirmSubmit">Confirm Order</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmit" style="background:var(--accent); border:none; border-radius:40px; padding:0.5rem 2rem; font-weight:700;">
+          <i class="fas fa-check"></i> Confirm Order
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+  // ====== Payment toggle ======
+  function setPayment(val) {
+    document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.payment-toggle .btn-option[data-value="${val}"]`).classList.add('active');
+    document.getElementById('payment_type').value = val;
+    var div = document.getElementById('partial_amount_div');
+    var amountInput = document.getElementById('payment_amount');
+    if (val === 'partial') {
+      div.classList.add('show');
+      if (amountInput) amountInput.setAttribute('required', 'required');
+    } else {
+      div.classList.remove('show');
+      if (amountInput) amountInput.removeAttribute('required');
+    }
+    if (typeof updateRemaining === 'function') updateRemaining();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setPayment('full');
+
+    var amountInput = document.getElementById('payment_amount');
+    if (amountInput) {
+      amountInput.addEventListener('input', function() {
+        if (typeof updateRemaining === 'function') updateRemaining();
+      });
+    }
+
+    // ====== Main logic ======
     let itemCount = 1;
     const container = document.getElementById('itemsContainer');
     const addBtn = document.getElementById('addItemBtn');
@@ -87,101 +704,192 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalBody = document.getElementById('modalBody');
     const confirmSubmit = document.getElementById('confirmSubmit');
     const itemCountInput = document.getElementById('item_count');
-    const grindRate = {{ setting.grinding_rate }};
-    const cleanRate = {{ setting.cleaning_rate }};
 
+    // Grinding and cleaning rates from the category data (using data attributes)
     function updateTotals() {
-        let totalGrinding = 0, totalCleaning = 0;
-        document.querySelectorAll('.item-row').forEach(row => {
-            const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
-            const cleaning = row.querySelector('input[type="checkbox"]').checked;
-            totalGrinding += kg * grindRate;
-            if (cleaning) totalCleaning += kg * cleanRate;
-        });
-        const grandTotal = totalGrinding + totalCleaning;
-        totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
-        totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
-        grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
-        window._totals = { grinding: totalGrinding, cleaning: totalCleaning, grand: grandTotal };
+      let totalGrinding = 0, totalCleaning = 0;
+      document.querySelectorAll('.item-row').forEach(row => {
+        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+        const cleaning = row.querySelector('input[type="checkbox"]').checked;
+        const catSelect = row.querySelector('.category-select');
+        const selectedOption = catSelect.options[catSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          const grindRate = parseFloat(selectedOption.getAttribute('data-grind-rate')) || 0;
+          const cleanRate = parseFloat(selectedOption.getAttribute('data-clean-rate')) || 0;
+          totalGrinding += kg * grindRate;
+          if (cleaning) totalCleaning += kg * cleanRate;
+        }
+      });
+      const grandTotal = totalGrinding + totalCleaning;
+      totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
+      totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
+      grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+      window._totals = { grinding: totalGrinding, cleaning: totalCleaning, grand: grandTotal };
+      updateRemaining();
+    }
+
+    function updateRemaining() {
+      const grand = window._totals ? window._totals.grand : 0;
+      const paid = parseFloat(document.getElementById('payment_amount')?.value) || 0;
+      const remaining = Math.max(0, grand - paid);
+      const display = document.getElementById('remaining_display');
+      if (display) display.innerHTML = 'Remaining: <strong>₹' + remaining.toFixed(2) + '</strong>';
+    }
+
+    function toggleFields(row) {
+      // Not needed for this simple version, but keep for consistency
     }
 
     function addItemRow() {
-        itemCount++;
-        const newRow = document.createElement('div');
-        newRow.className = 'row item-row mb-2';
-        newRow.innerHTML = `
-            <div class="col-md-4">
-                <select name="category_${itemCount}" class="form-control category-select">
-                    <option value="">Select Category</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
-            </div>
-            <div class="col-md-2">
-                <input type="checkbox" name="cleaning_${itemCount}" value="on"> Cleaning
-            </div>
-            <div class="col-md-3">
-                <button type="button" class="btn btn-danger remove-item">Remove</button>
-            </div>
-        `;
-        container.appendChild(newRow);
-        itemCountInput.value = itemCount;
-        newRow.querySelector('.total-kg').addEventListener('input', updateTotals);
-        newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateTotals);
-        newRow.querySelector('.remove-item').addEventListener('click', function() {
-            if (container.children.length > 1) {
-                newRow.remove();
-                itemCount--;
-                itemCountInput.value = itemCount;
-                updateTotals();
-            }
-        });
+      itemCount++;
+      const newRow = document.createElement('div');
+      newRow.className = 'item-row';
+      newRow.innerHTML = `
+        <div class="col-field" style="flex:2;">
+          <select name="category_${itemCount}" class="form-select category-select">
+            <option value="">Select Grinding Category</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-field-sm">
+          <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+        </div>
+        <div class="col-field" style="flex:0 0 110px;">
+          <div class="form-check">
+            <input type="checkbox" name="cleaning_${itemCount}" value="on" id="cleaning_${itemCount}">
+            <label for="cleaning_${itemCount}">Cleaning</label>
+          </div>
+        </div>
+        <div style="flex:0 0 40px;">
+          <button type="button" class="btn-remove-item remove-item" title="Remove item">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(newRow);
+      itemCountInput.value = itemCount;
+
+      // Bind events
+      newRow.querySelectorAll('.total-kg, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
+      newRow.querySelector('.category-select').addEventListener('change', updateTotals);
+      newRow.querySelector('.remove-item').addEventListener('click', function() {
+        if (container.children.length > 1) {
+          newRow.remove();
+          itemCount--;
+          itemCountInput.value = itemCount;
+          updateTotals();
+        }
+      });
+      updateTotals();
     }
 
-    document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
-    document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
-    document.querySelector('.remove-item')?.addEventListener('click', function() {
-        const row = this.closest('.item-row');
-        if (container.children.length > 1) {
-            row.remove();
-            itemCount--;
-            itemCountInput.value = itemCount;
-            updateTotals();
+    // Initial event binding for existing rows
+    document.querySelectorAll('.item-row').forEach(row => {
+      row.querySelectorAll('.total-kg, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
+      row.querySelector('.category-select').addEventListener('change', updateTotals);
+      row.querySelector('.remove-item').addEventListener('click', function() {
+        if (document.querySelectorAll('.item-row').length > 1) {
+          row.remove();
+          itemCount--;
+          itemCountInput.value = itemCount;
+          updateTotals();
         }
+      });
     });
 
     addBtn.addEventListener('click', addItemRow);
-    updateTotals();
+    document.getElementById('payment_amount')?.addEventListener('input', updateRemaining);
 
+    // Preview & Confirm
     previewBtn.addEventListener('click', function() {
-        const totals = window._totals || { grinding: 0, cleaning: 0, grand: 0 };
-        const customerName = document.querySelector('input[name="name"]').value || 'N/A';
-        let itemsHtml = '';
-        document.querySelectorAll('.item-row').forEach(row => {
-            const category = row.querySelector('.category-select').options[row.querySelector('.category-select').selectedIndex]?.text || 'N/A';
-            const kg = row.querySelector('.total-kg').value || 0;
-            const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
-            itemsHtml += `<p><strong>${category}</strong> - ${kg}kg, Cleaning: ${cleaning}</p>`;
-        });
-        modalBody.innerHTML = `
+      if (!validateOrder()) return;
+      const totals = window._totals || { grand: 0 };
+      const customerName = document.querySelector('input[name="name"]')?.value || 'N/A';
+      let itemsHtml = '';
+      document.querySelectorAll('.item-row').forEach(row => {
+        const catSelect = row.querySelector('.category-select');
+        const category = catSelect.options[catSelect.selectedIndex]?.text || 'N/A';
+        const kg = row.querySelector('.total-kg').value || 0;
+        const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
+        itemsHtml += `<p><strong>${category}</strong> - ${kg}kg, Cleaning: ${cleaning}</p>`;
+      });
+      const paymentType = document.getElementById('payment_type').value;
+      let paymentAmount = 0;
+      if (paymentType === 'partial') {
+        paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
+      } else {
+        paymentAmount = totals.grand;
+      }
+      modalBody.innerHTML = `
+        <div class="row">
+          <div class="col-md-6">
             <p><strong>Customer:</strong> ${customerName}</p>
-            <hr>
+            <p><strong>Payment Type:</strong> ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</p>
+            <p><strong>Amount Paid:</strong> ₹${paymentAmount.toFixed(2)}</p>
+            <p><strong>Remaining:</strong> ₹${(totals.grand - paymentAmount).toFixed(2)}</p>
+          </div>
+          <div class="col-md-6">
             <h6>Items:</h6>
             ${itemsHtml}
-            <hr>
-            <p><strong>Grinding Total:</strong> ₹${totals.grinding.toFixed(2)}</p>
-            <p><strong>Cleaning Total:</strong> ₹${totals.cleaning.toFixed(2)}</p>
-            <h5><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</h5>
-        `;
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-md-6"><strong>Grinding:</strong> ₹${totals.grinding.toFixed(2)}</div>
+          <div class="col-md-6"><strong>Cleaning:</strong> ₹${totals.cleaning.toFixed(2)}</div>
+          <div class="col-12"><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</div>
+        </div>
+      `;
+      var modalEl = document.getElementById('confirmModal');
+      if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+          var modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        } else {
+          modalEl.style.display = 'block';
+          modalEl.classList.add('show');
+          document.body.classList.add('modal-open');
+          if (!document.querySelector('.modal-backdrop')) {
+            var backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+          }
+        }
+      }
     });
 
     confirmSubmit.addEventListener('click', function() {
-        document.getElementById('orderForm').submit();
+      document.getElementById('orderForm').submit();
     });
-});
+
+    // Validation
+    function validateOrder() {
+      let errors = [];
+      const name = document.querySelector('input[name="name"]')?.value.trim();
+      if (!name) errors.push('Customer name is required.');
+      let hasItem = false;
+      document.querySelectorAll('.item-row').forEach(row => {
+        const cat = row.querySelector('.category-select').value;
+        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+        if (cat && kg > 0) hasItem = true;
+      });
+      if (!hasItem) errors.push('Please add at least one valid item.');
+      const errorDiv = document.getElementById('formErrors');
+      if (errors.length > 0) {
+        errorDiv.style.display = 'block';
+        errorDiv.innerHTML = errors.join('<br>');
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      } else {
+        errorDiv.style.display = 'none';
+        return true;
+      }
+    }
+
+    updateTotals();
+  });
 </script>
+
 {% endblock %}

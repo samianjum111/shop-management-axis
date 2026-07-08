@@ -63,6 +63,30 @@ def chakki_home(request, **kwargs):
         'partial_count': partial_count,
         'completed_count': completed_count,
     }
+
+    # ---- Added by patcher: chart & revenue stats ----
+    from django.db.models import Sum
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # Total revenue
+    total_revenue = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+
+    # Daily order counts for last 7 days
+    today = timezone.now().date()
+    daily_labels = []
+    daily_counts = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        daily_labels.append(day.strftime('%a'))
+        count = ChakkiOrder.objects.filter(tenant=request.tenant, created_at__date=day).count()
+        daily_counts.append(count)
+
+    # Add to context
+    context['total_revenue'] = total_revenue
+    context['daily_labels'] = daily_labels
+    context['daily_counts'] = daily_counts
+    # -------------------------------------------------
     template = 'mobile/chakki.html' if request.mobile else 'desktop/chakki.html'
     return render(request, template, context)
 
@@ -363,6 +387,33 @@ def settings_view(request, **kwargs):
                 messages.error(request, "All fields are required.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
 
+        elif action == 'edit_selling_category_with_price':
+            cat_id = request.POST.get('category_id')
+            price_id = request.POST.get('price_id')
+            name = request.POST.get('category_name')
+            desc = request.POST.get('category_description', '')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock') or 0
+            purchase_price = request.POST.get('purchase_price') or 0
+            if cat_id and name and measurement and price:
+                category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
+                category.name = name
+                category.description = desc
+                category.save()
+                if price_id:
+                    selling_price = get_object_or_404(SellingPrice, id=price_id, tenant=request.tenant, category=category)
+                else:
+                    selling_price = SellingPrice(tenant=request.tenant, category=category)
+                selling_price.measurement = measurement
+                selling_price.price = price
+                selling_price.stock = stock
+                selling_price.purchase_price = purchase_price
+                selling_price.save()
+                messages.success(request, f"Category '{name}' and price updated.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
         elif action == 'delete_selling_price':
             price_id = request.POST.get('selling_price_id')
             if price_id:
@@ -370,6 +421,7 @@ def settings_view(request, **kwargs):
                 selling_price.delete()
                 messages.success(request, "Price deleted.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
 
     template = 'mobile/settings.html' if request.mobile else 'desktop/settings.html'
     return render(request, template, {
@@ -948,6 +1000,7 @@ def selling_category_detail(request, category_id, **kwargs):
         'order_data': order_data,
         'type': 'selling',
         'tenant': request.tenant,
-    }
+        "prices": category.prices.all(),
+}
     template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
     return render(request, template, context)

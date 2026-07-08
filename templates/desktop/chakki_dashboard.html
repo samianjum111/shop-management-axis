@@ -1,181 +1,439 @@
 {% extends "desktop/base.html" %}
 {% block title %}Dashboard | {{ tenant.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+  /* ===== Premium Dashboard Styles ===== */
+  .dash-header {
+    background: linear-gradient(135deg, #0f1a2e 0%, #1a2d4a 100%);
+    border-radius: 20px;
+    padding: 2rem 2rem 1.8rem;
+    margin-bottom: 2rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  }
+  .dash-header::after {
+    content: '';
+    position: absolute;
+    top: -60%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .dash-header .greeting {
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 0.8;
+    margin-bottom: 0.2rem;
+  }
+  .dash-header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem;
+  }
+  .dash-header .sub {
+    font-size: 1rem;
+    opacity: 0.7;
+    margin-bottom: 1.4rem;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  .stat-item {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 0.8rem 0.4rem;
+    text-align: center;
+    transition: 0.2s;
+    text-decoration: none;
+    color: #fff;
+  }
+  .stat-item:hover {
+    background: rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+  }
+  .stat-item .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.8;
+    display: block;
+  }
+  .stat-item .number {
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+    margin-top: 0.1rem;
+  }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 1.2rem 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    border: 1px solid var(--border);
+    transition: 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .kpi-card:hover {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.07);
+    transform: translateY(-3px);
+  }
+  .kpi-card .icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .kpi-card .icon.income { background: #e8f5e9; color: #2e7d32; }
+  .kpi-card .icon.expense { background: #fce4ec; color: #c62828; }
+  .kpi-card .icon.profit { background: #e3f2fd; color: #0d47a1; }
+  .kpi-card .icon.pending { background: #fff3e0; color: #e65100; }
+  .kpi-card .info { flex: 1; min-width: 0; }
+  .kpi-card .info .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .kpi-card .info .value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .kpi-card .info .trend {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  /* Quick Actions */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+  }
+  .quick-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem 0.3rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    transition: 0.2s;
+  }
+  .quick-btn:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+  .quick-btn .icon {
+    font-size: 1.8rem;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .quick-btn .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: block;
+  }
+
+  /* Section title */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.8rem 0 1rem;
+  }
+  .section-head h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+  .section-head a {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .section-head a:hover {
+    text-decoration: underline;
+  }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  }
+  .table-wrap .table {
+    margin-bottom: 0;
+  }
+  .table-wrap .table thead th {
+    background: var(--surface-alt);
+    border-bottom: 2px solid var(--border);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 0.8rem;
+  }
+  .table-wrap .table td {
+    vertical-align: middle;
+    padding: 0.7rem 0.8rem;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-wrap .table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .badge-status {
+    padding: 0.2rem 0.7rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    display: inline-block;
+  }
+  .badge-status.ready { background: #fef3e2; color: #d35400; }
+  .badge-status.completed { background: #e8f8f0; color: #1e7e34; }
+  .badge-status.pending { background: #f1f3f5; color: #495057; }
+  .badge-status.partial { background: #e3f0fd; color: #2980b9; }
+
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* Alert */
+  .alert-ready {
+    border-radius: 16px;
+    border-left: 4px solid #f5a623;
+    background: #fff8e7;
+    color: #7a4a00;
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .alert-ready a {
+    font-weight: 600;
+    color: #d35400;
+    text-decoration: none;
+  }
+  .alert-ready a:hover {
+    text-decoration: underline;
+  }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .quick-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .dash-header h1 { font-size: 1.6rem; }
+  }
+  @media (max-width: 576px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="fw-bold">🌾 Dashboard</h2>
-    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn btn-accent">+ New Order</a>
+
+<!-- ====== HEADER / HERO ====== -->
+<div class="dash-header">
+  <div class="greeting">Welcome back, {{ request.user.username }}</div>
+  <h1>{{ tenant.name }}</h1>
+  <div class="sub">Flour Mill Management Dashboard</div>
+
+  <div class="stat-grid">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/" class="stat-item">
+      <span class="label">Total Orders</span>
+      <span class="number">{{ pending|add:ready|add:completed }}</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/?status=pending" class="stat-item">
+      <span class="label">Pending</span>
+      <span class="number">{{ pending }}</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/?status=ready" class="stat-item">
+      <span class="label">Ready</span>
+      <span class="number">{{ ready }}</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/?status=completed" class="stat-item">
+      <span class="label">Completed</span>
+      <span class="number">{{ completed }}</span>
+    </a>
+  </div>
 </div>
 
+<!-- ====== READY ALERT ====== -->
 {% if ready_count > 0 %}
-<div class="alert alert-warning blink" role="alert">
-    <strong><i class="fas fa-exclamation-triangle"></i> {{ ready_count }} order(s) ready!</strong>
-    <a href="/portal/{{ tenant.schema_name }}/chakki/?status=ready" class="alert-link">View now</a>
+<div class="alert-ready">
+  <i class="fas fa-exclamation-triangle" style="font-size:1.2rem;"></i>
+  <strong>{{ ready_count }} order(s) ready!</strong>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=ready">View now →</a>
 </div>
 {% endif %}
 
-<!-- Hero Card -->
-<div class="card p-4 mb-4" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); color: #fff; border: none;">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h4 class="fw-light">Welcome back</h4>
-            <h1 class="display-6 fw-bold">{{ tenant.name }}</h1>
-            <p class="opacity-75">Flour mill overview</p>
-            <div class="row g-2 mt-2">
-                <div class="col-3">
-                    <div class="bg-light bg-opacity-10 p-2 rounded">
-                        <small>Orders</small>
-                        <div class="h5 fw-bold">{{ pending|add:ready|add:completed }}</div>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class="bg-light bg-opacity-10 p-2 rounded">
-                        <small>Pending</small>
-                        <div class="h5 fw-bold">{{ pending }}</div>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class="bg-light bg-opacity-10 p-2 rounded">
-                        <small>Ready</small>
-                        <div class="h5 fw-bold">{{ ready }}</div>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class="bg-light bg-opacity-10 p-2 rounded">
-                        <small>Completed</small>
-                        <div class="h5 fw-bold">{{ completed }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 text-center text-md-end">
-            <i class="fas fa-wheat-awn fa-5x opacity-25"></i>
-        </div>
+<!-- ====== KPI CARDS ====== -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="icon income"><i class="fas fa-arrow-up"></i></div>
+    <div class="info">
+      <div class="label">Total Income</div>
+      <div class="value">₹{{ total_income|default:"0" }}</div>
+      <div class="trend">All time</div>
     </div>
+  </div>
+  <div class="kpi-card">
+    <div class="icon expense"><i class="fas fa-arrow-down"></i></div>
+    <div class="info">
+      <div class="label">Total Expenses</div>
+      <div class="value">₹{{ total_expenses|default:"0" }}</div>
+      <div class="trend">All time</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="icon profit"><i class="fas fa-chart-line"></i></div>
+    <div class="info">
+      <div class="label">Net Profit</div>
+      <div class="value">₹{{ net_profit|default:"0" }}</div>
+      <div class="trend">{% if net_profit >= 0 %}Positive{% else %}Negative{% endif %}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="icon pending"><i class="fas fa-clock"></i></div>
+    <div class="info">
+      <div class="label">Pending Value</div>
+      <div class="value">₹{{ total_pending_value|default:"0" }}</div>
+      <div class="trend">Unpaid orders</div>
+    </div>
+  </div>
 </div>
 
-<!-- KPI Strip -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3 col-6">
-        <div class="card p-3 text-center">
-            <div class="text-muted small text-uppercase">Total Orders</div>
-            <div class="h4 fw-bold">{{ pending|add:ready|add:completed }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card p-3 text-center">
-            <div class="text-muted small text-uppercase">Pending</div>
-            <div class="h4 fw-bold">{{ pending }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card p-3 text-center">
-            <div class="text-muted small text-uppercase">Ready</div>
-            <div class="h4 fw-bold text-warning">{{ ready }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card p-3 text-center">
-            <div class="text-muted small text-uppercase">Completed</div>
-            <div class="h4 fw-bold text-success">{{ completed }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card p-3 text-center">
-            <div class="text-muted small text-uppercase">Income</div>
-            <div class="h4 fw-bold text-accent">₹{{ total_income|default:"0" }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card p-3 text-center">
-            <div class="text-muted small text-uppercase">Expenses</div>
-            <div class="h4 fw-bold text-danger">₹{{ total_expenses|default:"0" }}</div>
-        </div>
-    </div>
+<!-- ====== QUICK ACTIONS ====== -->
+<div class="quick-grid">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="quick-btn">
+    <span class="icon"><i class="fas fa-plus-circle"></i></span>
+    <span class="label">New Order</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=pending" class="quick-btn">
+    <span class="icon"><i class="fas fa-clock"></i></span>
+    <span class="label">Pending</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=ready" class="quick-btn">
+    <span class="icon"><i class="fas fa-hourglass-half"></i></span>
+    <span class="label">Ready</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=partial" class="quick-btn">
+    <span class="icon"><i class="fas fa-hand-holding-usd"></i></span>
+    <span class="label">Partial</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/" class="quick-btn">
+    <span class="icon"><i class="fas fa-money-bill-wave"></i></span>
+    <span class="label">Expenses</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="quick-btn">
+    <span class="icon"><i class="fas fa-cog"></i></span>
+    <span class="label">Settings</span>
+  </a>
 </div>
 
-<!-- Quick Actions -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="card text-decoration-none p-3 text-center h-100">
-            <i class="fas fa-plus-circle fa-2x text-accent"></i>
-            <h6 class="mt-2">New Order</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="card text-decoration-none p-3 text-center h-100">
-            <i class="fas fa-clock fa-2x text-secondary"></i>
-            <h6 class="mt-2">Pending</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="card text-decoration-none p-3 text-center h-100">
-            <i class="fas fa-hourglass-half fa-2x text-warning"></i>
-            <h6 class="mt-2">Ready</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/" class="card text-decoration-none p-3 text-center h-100">
-            <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
-            <h6 class="mt-2">Expenses</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="card text-decoration-none p-3 text-center h-100">
-            <i class="fas fa-plus fa-2x text-success"></i>
-            <h6 class="mt-2">Add Expense</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="card text-decoration-none p-3 text-center h-100">
-            <i class="fas fa-cog fa-2x text-secondary"></i>
-            <h6 class="mt-2">Settings</h6>
-        </a>
-    </div>
+<!-- ====== RECENT ORDERS ====== -->
+<div class="section-head">
+  <h3>Recent Orders</h3>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=all">See all →</a>
 </div>
 
-<!-- Recent Orders -->
-<div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="fw-bold">Recent Orders</h5>
-    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="btn btn-sm btn-outline-secondary">See all</a>
-</div>
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th>#ID</th>
-                <th>Customer</th>
-                <th>Total</th>
-                <th>Paid</th>
-                <th>Status</th>
-                <th>Ready</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for o in recent_orders %}
-            <tr>
-                <td>{{ o.id }}</td>
-                <td>{{ o.customer.name }}</td>
-                <td>₹{{ o.total_amount }}</td>
-                <td>₹{{ o.amount_paid }}</td>
-                <td>
-                    <span class="badge {% if o.status == 'ready' %}bg-warning{% elif o.status == 'completed' %}bg-success{% elif o.payment_status == 'partial' %}bg-info{% else %}bg-secondary{% endif %}">
-                        {% if o.status == 'ready' %}Ready{% elif o.status == 'completed' %}Done{% elif o.payment_status == 'partial' %}Partial{% else %}Pending{% endif %}
-                    </span>
-                </td>
-                <td>{{ o.ready_time|date:"d M H:i" }}</td>
-                <td>
-                    <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-outline-primary">View</a>
-                    {% if o.status != 'completed' %}
-                        <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn btn-sm btn-success">Complete</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="7" class="text-center text-muted">No orders yet.</td></tr>
-            {% endfor %}
-        </tbody>
+<div class="table-wrap">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>#ID</th>
+          <th>Customer</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Status</th>
+          <th>Ready</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in recent_orders %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>{{ o.customer.name }}</td>
+          <td>₹{{ o.total_amount }}</td>
+          <td>₹{{ o.amount_paid }}</td>
+          <td>
+            <span class="badge-status 
+              {% if o.status == 'ready' %}ready
+              {% elif o.status == 'completed' %}completed
+              {% elif o.payment_status == 'partial' %}partial
+              {% else %}pending{% endif %}">
+              {% if o.status == 'ready' %}Ready
+              {% elif o.status == 'completed' %}Done
+              {% elif o.payment_status == 'partial' %}Partial
+              {% else %}Pending{% endif %}
+            </span>
+          </td>
+          <td>{{ o.ready_time|date:"d M H:i" }}</td>
+          <td>
+            <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-outline-primary">View</a>
+            {% if o.status != 'completed' %}
+              <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn btn-sm btn-success">Complete</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="empty-state">No orders yet</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
 </div>
+
 {% endblock %}
