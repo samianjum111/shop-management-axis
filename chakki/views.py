@@ -656,6 +656,31 @@ def convert_walk_to_regular(request, customer_id, **kwargs):
     return redirect('walk_profile', schema_name=request.tenant.schema_name)
 
 
+
+@login_required
+def create_customer(request, **kwargs):
+    """Create a new regular customer."""
+    tenant = request.tenant
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        address = request.POST.get('address', '').strip()
+        if not name or not phone:
+            messages.error(request, "Name and Phone are required.")
+            return redirect('create_customer', schema_name=tenant.schema_name)
+        # Check if phone already exists
+        existing = ChakkiCustomer.objects.filter(tenant=tenant, phone=phone).first()
+        if existing:
+            messages.info(request, f"Phone number already exists for customer {existing.name}. Please use a different phone or view their profile.")
+            return redirect('create_customer', schema_name=tenant.schema_name)
+        customer = ChakkiCustomer.objects.create(tenant=tenant, name=name, phone=phone, address=address, is_regular=True)
+        messages.success(request, f"Customer {name} created successfully.")
+        return redirect('customer_profile', schema_name=tenant.schema_name, customer_id=customer.id)
+    context = {'tenant': tenant}
+    template = 'mobile/create_customer.html' if request.mobile else 'desktop/create_customer.html'
+    return render(request, template, context)
+
+
 @login_required
 def check_ready_orders(request, **kwargs):
     """Check for pending unpaid orders whose ready_time has passed, update them to 'ready',

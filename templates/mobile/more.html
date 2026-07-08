@@ -53,8 +53,19 @@
 
 <div class="section-title">👥 Customers</div>
 <div class="more-grid">
-  <a href="/portal/{{ tenant.schema_name }}/customers/" class="more-card">
-    <div class="icon"><i class="fas fa-users"></i></div>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="more-card">
+    <div class="icon"><i class="fas fa-user-plus"></i></div>
+    <span class="label">Create Customer</span>
+    <span class="desc">Add a new regular customer</span>
+  </a>
+<a href="/portal/{{ tenant.schema_name }}/customers/" class="more-card">
+    <div class="icon"><i class="fas fa-users"></i>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="more-card">
+        <div class="icon"><i class="fas fa-user-plus"></i></div>
+        <span class="label">Create Customer</span>
+        <span class="desc">Add a new regular customer</span>
+    </a>
+</div>
     <span class="label">Customers</span>
     <span class="desc">Manage your customers</span>
   </a>
