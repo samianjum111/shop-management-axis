@@ -60,6 +60,7 @@
 {% endif %}
 
 <form method="post" id="orderForm">
+    <div id="formErrors" class="alert alert-danger" style="display:none;"></div>
     {% csrf_token %}
     <input type="hidden" name="customer_id" value="{{ customer.id|default:'' }}">
     <input type="hidden" name="walkin" value="{% if walkin %}1{% else %}0{% endif %}">
@@ -152,7 +153,7 @@
         <span>₹{{ customer.total_pending|floatformat:2|default:"0.00" }}</span>
     </div>
 
-    <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#confirmModal" id="previewBtn">Preview & Confirm</button>
+        <button type="button" class="btn btn-primary mt-3" id="previewBtn" onclick="showPreviewModal();">Preview & Confirm</button>
     <input type="hidden" name="item_count" id="item_count" value="1">
 </form>
 
@@ -166,12 +167,13 @@
       </div>
       <div class="modal-body" id="modalBody"></div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
         <button type="button" class="btn btn-primary" id="confirmSubmit">Confirm Order</button>
       </div>
     </div>
   </div>
 </div>
+
 
 <script>
 let itemCount = 1;
@@ -180,7 +182,6 @@ const addBtn = document.getElementById('addItemBtn');
 const totalGrindingDisplay = document.getElementById('total_grinding_display');
 const totalCleaningDisplay = document.getElementById('total_cleaning_display');
 const grandTotalDisplay = document.getElementById('grand_total_display');
-const previewBtn = document.getElementById('previewBtn');
 const modalBody = document.getElementById('modalBody');
 const confirmSubmit = document.getElementById('confirmSubmit');
 const itemCountInput = document.getElementById('item_count');
@@ -217,21 +218,29 @@ function updateRemaining() {
     remainingDisplay.textContent = 'Remaining: ₹' + remaining.toFixed(2);
 }
 
+
 function setPayment(type) {
     document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
     document.querySelector(`.payment-toggle .btn-option[data-value="${type}"]`).classList.add('active');
     paymentTypeInput.value = type;
+    const nameField = document.querySelector('input[name="name"]');
+    const phoneField = document.getElementById('walkin_phone');
+    const addressField = document.getElementById('walkin_address');
     if (type === 'partial') {
         partialAmountDiv.classList.add('show');
-        if (walkinPhone) walkinPhone.required = true;
-        if (walkinName) walkinName.required = true;
+        if (phoneField) phoneField.required = true;
+        if (nameField) nameField.required = true;
+        if (addressField) addressField.required = true;
+        // Also make address field visible? It's already visible.
     } else {
         partialAmountDiv.classList.remove('show');
-        if (walkinPhone) walkinPhone.required = false;
-        if (walkinName) walkinName.required = true;
+        if (phoneField) phoneField.required = false;
+        if (nameField) nameField.required = true;  // name always required for walk-in
+        if (addressField) addressField.required = false;
     }
     updateRemaining();
 }
+
 
 function addItemRow() {
     itemCount++;
@@ -261,6 +270,7 @@ function addItemRow() {
     `;
     container.appendChild(newRow);
     itemCountInput.value = itemCount;
+    // Attach events for the new row
     newRow.querySelector('.total-kg').addEventListener('input', updateTotals);
     newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateTotals);
     newRow.querySelector('.remove-item').addEventListener('click', function() {
@@ -273,30 +283,76 @@ function addItemRow() {
     });
 }
 
-document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
-document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
-document.querySelector('.remove-item')?.addEventListener('click', function() {
-    const row = this.closest('.item-row');
-    if (container.children.length > 1) {
-        row.remove();
-        itemCount--;
-        itemCountInput.value = itemCount;
-        updateTotals();
+
+
+function validateOrder() {
+    let errors = [];
+    // Check if customer type is walk-in (no customer_id)
+    const customerId = document.querySelector('input[name="customer_id"]')?.value;
+    const isWalkin = !customerId;
+    // For walk-in, name is mandatory
+    if (isWalkin) {
+        const name = document.querySelector('input[name="name"]')?.value.trim();
+        if (!name) {
+            errors.push('Name is required for walk-in customer.');
+        }
     }
-});
+    // Check payment type
+    const paymentType = document.getElementById('payment_type').value;
+    if (paymentType === 'partial') {
+        const phone = document.getElementById('walkin_phone')?.value.trim();
+        const name = document.querySelector('input[name="name"]')?.value.trim();
+        const address = document.getElementById('walkin_address')?.value.trim();
+        if (!name) {
+            errors.push('Name is required for partial payment.');
+        }
+        if (!phone) {
+            errors.push('Phone is required for partial payment.');
+        }
+        // Address is optional? The user said address should be required for partial? We'll make it optional but show warning? Actually they said "address bhi zaroori he" for partial. So we'll require it.
+        if (!address) {
+            errors.push('Address is required for partial payment.');
+        }
+    }
+    // Check items: at least one category and kg > 0
+    let hasItem = false;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const category = row.querySelector('.category-select').value;
+        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+        if (category && kg > 0) {
+            hasItem = true;
+        }
+    });
+    if (!hasItem) {
+        errors.push('Please add at least one item with a category and weight greater than 0.');
+    }
+    // Display errors
+    const errorDiv = document.getElementById('formErrors');
+    if (errors.length > 0) {
+        errorDiv.style.display = 'block';
+        errorDiv.innerHTML = errors.join('<br>');
+        // Scroll to error
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    } else {
+        errorDiv.style.display = 'none';
+        return true;
+    }
+}
 
-addBtn.addEventListener('click', addItemRow);
-paymentAmountInput.addEventListener('input', updateRemaining);
-updateTotals();
 
-previewBtn.addEventListener('click', function() {
+
+function showPreviewModal() {
+    if (!validateOrder()) {
+        return;
+    }
     const totals = window._totals || { grinding: 0, cleaning: 0, grand: 0 };
     const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
     const customerPhone = document.querySelector('input[name="phone"]')?.value || '{{ customer.phone|default:"N/A" }}';
-    const paymentType = paymentTypeInput.value;
+    const paymentType = document.getElementById('payment_type').value;
     let paymentAmount = 0;
     if (paymentType === 'partial') {
-        paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+        paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
     } else {
         paymentAmount = totals.grand;
     }
@@ -307,7 +363,7 @@ previewBtn.addEventListener('click', function() {
         const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
         itemsHtml += `<p><strong>${category}</strong> - ${kg}kg, Cleaning: ${cleaning}</p>`;
     });
-    modalBody.innerHTML = `
+    document.getElementById('modalBody').innerHTML = `
         <p><strong>Customer:</strong> ${customerName} (${customerPhone})</p>
         <hr>
         <h6>Items:</h6>
@@ -323,10 +379,110 @@ previewBtn.addEventListener('click', function() {
         <p class="text-muted small">After order, you can add this customer to regulars.</p>
         {% endif %}
     `;
-});
+    // Show modal
+    var modalEl = document.getElementById('confirmModal');
+    if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            // Manual fallback
+            modalEl.style.display = 'block';
+            modalEl.classList.add('show');
+            document.body.classList.add('modal-open');
+            if (!document.querySelector('.modal-backdrop')) {
+                var backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+            }
+        }
+    } else {
+        alert('Modal element not found.');
+    }
+}
 
-confirmSubmit.addEventListener('click', function() {
-    document.getElementById('orderForm').submit();
+
+
+// ---- DOM Ready ----
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing items
+    document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
+    // Existing remove buttons
+    document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.item-row');
+            if (row && container.children.length > 1) {
+                row.remove();
+                itemCount--;
+                itemCountInput.value = itemCount;
+                updateTotals();
+            }
+        });
+    });
+    // Cancel button
+    var cancelBtn = document.getElementById('cancelModalBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            var modalEl = document.getElementById('confirmModal');
+            if (modalEl) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    else {
+                        modalEl.style.display = 'none';
+                        modalEl.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        var backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) backdrop.remove();
+                    }
+                } else {
+                    modalEl.style.display = 'none';
+                    modalEl.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    var backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
+                }
+            }
+        });
+    }
+    // Close button (X) in modal header
+    var closeBtn = document.querySelector('#confirmModal .btn-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            var modalEl = document.getElementById('confirmModal');
+            if (modalEl) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    else {
+                        modalEl.style.display = 'none';
+                        modalEl.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        var backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) backdrop.remove();
+                    }
+                } else {
+                    modalEl.style.display = 'none';
+                    modalEl.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    var backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
+                }
+            }
+        });
+    }
+    // Add item button
+    addBtn.addEventListener('click', addItemRow);
+    // Payment amount input
+    paymentAmountInput.addEventListener('input', updateRemaining);
+    // Confirm submit
+    confirmSubmit.addEventListener('click', function() {
+        document.getElementById('orderForm').submit();
+    });
+    // Initial calculation
+    updateTotals();
 });
 </script>
+
 {% endblock %}

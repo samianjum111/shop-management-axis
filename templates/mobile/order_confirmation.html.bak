@@ -11,16 +11,7 @@
 <div class="card p-3">
     <h5>Order Summary</h5>
     <p><strong>Customer:</strong> {{ order.customer.name }}</p>
-    
-<p><strong>Selling Items:</strong></p>
-<ul>
-    {% for item in order.selling_items.all %}
-    <li>{{ item.selling_price.category.name }} - {{ item.quantity }}{{ item.selling_price.get_measurement_display }} = ₹{{ item.total }}</li>
-    {% empty %}
-    <li>No selling items</li>
-    {% endfor %}
-</ul>
-<p><strong>Total:</strong> ₹{{ order.total_amount }}</p>
+    <p><strong>Total:</strong> ₹{{ order.total_amount }}</p>
     <p><strong>Paid:</strong> ₹{{ order.amount_paid }}</p>
     <p><strong>Remaining:</strong> ₹{{ order.remaining_amount }}</p>
     <p><strong>Status:</strong> {{ order.status|title }}</p>

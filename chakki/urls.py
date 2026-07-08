@@ -29,4 +29,5 @@ urlpatterns = [
 
     path('customer/create/', views.create_customer, name='create_customer'),
     path('check-ready/', views.check_ready_orders, name='check_ready_orders'),
+    path('api/selling-prices/', views.selling_prices_api, name='selling_prices_api'),
 ]

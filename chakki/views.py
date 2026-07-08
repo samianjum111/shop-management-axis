@@ -1,4 +1,3 @@
-# This is the corrected views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -7,7 +6,8 @@ from django.db.models import Q
 from decimal import Decimal
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from .models import ChakkiCustomer, ChakkiOrder, ChakkiSetting, ChakkiCategory, ChakkiOrderItem
+from .models import ChakkiCustomer, ChakkiOrder, ChakkiSetting, ChakkiCategory, ChakkiOrderItem, SellingCategory, SellingPrice, SellingOrderItem
+
 from expenses.models import Expense
 
 
@@ -170,6 +170,7 @@ def order_list(request, order_type, **kwargs):
 
 
 @login_required
+
 def order_detail(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
     if order.status == 'completed':
@@ -189,16 +190,16 @@ def order_detail(request, order_id, **kwargs):
         return redirect('order_detail', schema_name=request.tenant.schema_name, order_id=order.id)
 
     items = order.items.all()
+    selling_items = order.selling_items.all()
     context = {
         'order': order,
         'items': items,
+        'selling_items': selling_items,
         'tenant': request.tenant,
     }
     template = 'mobile/order_detail.html' if request.mobile else 'desktop/order_detail.html'
     return render(request, template, context)
 
-
-@login_required
 def complete_order(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
     if order.remaining_amount > 0:
@@ -220,41 +221,52 @@ def generate_transcript(request, order_id, **kwargs):
 
 
 @login_required
+
+@login_required
+
+@login_required
 def settings_view(request, **kwargs):
-    setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant)
+    # No global rates anymore; we use per-category rates.
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
+    selling_categories = SellingCategory.objects.filter(tenant=request.tenant).prefetch_related('prices')
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'update_rates':
-            setting.grinding_rate = Decimal(request.POST.get('grinding_rate'))
-            setting.cleaning_rate = Decimal(request.POST.get('cleaning_rate'))
-            setting.save()
-            messages.success(request, "Rates updated!")
-            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
-
-        elif action == 'add_category':
+        # ----- Grinding Categories -----
+        if action == 'add_category':
             name = request.POST.get('category_name')
             desc = request.POST.get('category_description', '')
-            if name:
-                ChakkiCategory.objects.create(tenant=request.tenant, name=name, description=desc)
+            grinding_rate = request.POST.get('grinding_rate')
+            cleaning_rate = request.POST.get('cleaning_rate') or None
+            if name and grinding_rate:
+                ChakkiCategory.objects.create(
+                    tenant=request.tenant,
+                    name=name,
+                    description=desc,
+                    grinding_rate=grinding_rate,
+                    cleaning_rate=cleaning_rate
+                )
                 messages.success(request, f"Category '{name}' added.")
             else:
-                messages.error(request, "Category name is required.")
+                messages.error(request, "Category name and grinding rate are required.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
 
         elif action == 'edit_category':
             cat_id = request.POST.get('category_id')
             name = request.POST.get('category_name')
             desc = request.POST.get('category_description', '')
-            if cat_id and name:
+            grinding_rate = request.POST.get('grinding_rate')
+            cleaning_rate = request.POST.get('cleaning_rate') or None
+            if cat_id and name and grinding_rate:
                 category = get_object_or_404(ChakkiCategory, id=cat_id, tenant=request.tenant)
                 category.name = name
                 category.description = desc
+                category.grinding_rate = grinding_rate
+                category.cleaning_rate = cleaning_rate
                 category.save()
                 messages.success(request, f"Category '{name}' updated.")
             else:
-                messages.error(request, "Invalid data.")
+                messages.error(request, "All fields are required.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
 
         elif action == 'delete_category':
@@ -265,11 +277,92 @@ def settings_view(request, **kwargs):
                 messages.success(request, "Category deleted.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
 
+        # ----- Selling Categories with Price -----
+        elif action == 'add_selling_category_with_price':
+            name = request.POST.get('selling_category_name')
+            desc = request.POST.get('selling_category_description', '')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            if name and measurement and price:
+                category = SellingCategory.objects.create(
+                    tenant=request.tenant,
+                    name=name,
+                    description=desc
+                )
+                SellingPrice.objects.create(
+                    tenant=request.tenant,
+                    category=category,
+                    measurement=measurement,
+                    price=price
+                )
+                messages.success(request, f"Selling category '{name}' added with price.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
+        # ----- Existing actions (edit/delete category, add/edit/delete price) -----
+        elif action == 'edit_selling_category':
+            cat_id = request.POST.get('selling_category_id')
+            name = request.POST.get('selling_category_name')
+            desc = request.POST.get('selling_category_description', '')
+            if cat_id and name:
+                category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
+                category.name = name
+                category.description = desc
+                category.save()
+                messages.success(request, f"Selling category '{name}' updated.")
+            else:
+                messages.error(request, "Invalid data.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
+        elif action == 'delete_selling_category':
+            cat_id = request.POST.get('selling_category_id')
+            if cat_id:
+                category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
+                category.delete()
+                messages.success(request, "Selling category deleted.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
+        elif action == 'add_selling_price':
+            cat_id = request.POST.get('selling_category_id')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            if cat_id and measurement and price:
+                category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
+                SellingPrice.objects.create(tenant=request.tenant, category=category, measurement=measurement, price=price)
+                messages.success(request, f"Price added for {category.name} ({measurement})")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
+        elif action == 'edit_selling_price':
+            price_id = request.POST.get('selling_price_id')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            if price_id and measurement and price:
+                selling_price = get_object_or_404(SellingPrice, id=price_id, tenant=request.tenant)
+                selling_price.measurement = measurement
+                selling_price.price = price
+                selling_price.save()
+                messages.success(request, "Price updated.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
+        elif action == 'delete_selling_price':
+            price_id = request.POST.get('selling_price_id')
+            if price_id:
+                selling_price = get_object_or_404(SellingPrice, id=price_id, tenant=request.tenant)
+                selling_price.delete()
+                messages.success(request, "Price deleted.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
     template = 'mobile/settings.html' if request.mobile else 'desktop/settings.html'
-    return render(request, template, {'setting': setting, 'categories': categories})
+    return render(request, template, {
+        'categories': categories,
+        'selling_categories': selling_categories,
+    })
 
-
-@login_required
 def search(request, **kwargs):
     tenant = request.tenant
     q = request.GET.get('q', '').strip()
@@ -375,9 +468,12 @@ def customer_profile(request, customer_id, **kwargs):
 
 
 @login_required
+
+@login_required
 def add_order(request, **kwargs):
-    setting, _ = ChakkiSetting.objects.get_or_create(tenant=request.tenant)
+    # We no longer need global setting for rates; use category rates.
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
+    selling_categories = SellingCategory.objects.filter(tenant=request.tenant)
     tenant = request.tenant
 
     customer_id = request.GET.get('customer_id')
@@ -423,24 +519,19 @@ def add_order(request, **kwargs):
             if payment_type == 'partial' and not phone:
                 messages.error(request, "Phone is required for partial payment.")
                 return redirect('add_order', schema_name=tenant.schema_name)
-            # Check if phone exists
             if phone:
                 existing = ChakkiCustomer.objects.filter(tenant=request.tenant, phone=phone).first()
                 if existing:
-                    # If existing is a regular customer, redirect to use that customer
                     if existing.is_regular:
                         messages.info(request, f"Phone number belongs to existing regular customer: {existing.name}.")
                         return redirect(f'/portal/{tenant.schema_name}/chakki/order/add/?customer_id={existing.id}')
                     else:
-                        # Existing is a walk-in customer. Check if they have any pending orders/balance.
                         orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=existing)
                         has_pending = any(o.remaining_amount > 0 for o in orders)
                         if has_pending:
-                            # This walk-in still has pending balance, so we should not create a new one.
                             messages.info(request, f"Walk-in customer {existing.name} has pending balance. Please complete their orders first.")
                             return redirect(f'/portal/{tenant.schema_name}/chakki/order/add/?customer_id={existing.id}')
                         else:
-                            # Walk-in with no pending, we can reuse and update details.
                             customer = existing
                             messages.info(request, f"Reusing existing walk-in customer {existing.name} (no pending balance).")
             cust = ChakkiCustomer.objects.create(tenant=request.tenant,
@@ -466,19 +557,33 @@ def add_order(request, **kwargs):
         )
         item_count = int(request.POST.get('item_count', 0))
         for i in range(1, item_count + 1):
-            category_id = request.POST.get(f'category_{i}')
-            kg = request.POST.get(f'total_kg_{i}')
-            cleaning = request.POST.get(f'cleaning_{i}') == 'on'
-            if category_id and kg:
-                kg = Decimal(kg)
-                item = ChakkiOrderItem.objects.create(tenant=request.tenant,
-                    order=order,
-                    category_id=category_id,
-                    total_kg=kg,
-                    is_cleaning_done=cleaning
-                )
-                item.save()
-        order.save()
+            item_type = request.POST.get(f'item_type_{i}')
+            if item_type == 'grinding':
+                category_id = request.POST.get(f'category_{i}')
+                kg = request.POST.get(f'total_kg_{i}')
+                cleaning = request.POST.get(f'cleaning_{i}') == 'on'
+                if category_id and kg:
+                    kg = Decimal(kg)
+                    item = ChakkiOrderItem.objects.create(tenant=request.tenant,
+                        order=order,
+                        category_id=category_id,
+                        total_kg=kg,
+                        is_cleaning_done=cleaning
+                    )
+                    item.save()
+            elif item_type == 'selling':
+                selling_price_id = request.POST.get(f'selling_price_{i}')
+                qty = request.POST.get(f'quantity_{i}')
+                if selling_price_id and qty:
+                    qty = Decimal(qty)
+                    selling_price = get_object_or_404(SellingPrice, id=selling_price_id, tenant=request.tenant)
+                    item = SellingOrderItem.objects.create(tenant=request.tenant,
+                        order=order,
+                        selling_price=selling_price,
+                        quantity=qty
+                    )
+                    item.save()
+        order.save()  # triggers total recalculation
 
         if payment_type == 'full':
             order.amount_paid = order.total_amount
@@ -493,8 +598,8 @@ def add_order(request, **kwargs):
             return redirect('portal_dashboard', schema_name=tenant.schema_name)
 
     context = {
-        'setting': setting,
         'categories': categories,
+        'selling_categories': selling_categories,
         'customer': customer,
         'walkin': walkin,
         'tenant': tenant,
@@ -502,8 +607,6 @@ def add_order(request, **kwargs):
     template = 'mobile/add_order_form.html' if request.mobile else 'desktop/add_order_form.html'
     return render(request, template, context)
 
-
-@login_required
 def order_confirmation(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
     context = {
@@ -713,3 +816,13 @@ def check_ready_orders(request, **kwargs):
         'orders': ready_list,
         'updated': updated_count
     })
+
+
+@login_required
+def selling_prices_api(request, **kwargs):
+    category_id = request.GET.get('category')
+    if category_id:
+        prices = SellingPrice.objects.filter(category_id=category_id, tenant=request.tenant)
+        data = [{'id': p.id, 'measurement': p.get_measurement_display(), 'price': float(p.price)} for p in prices]
+        return JsonResponse(data, safe=False)
+    return JsonResponse([], safe=False)

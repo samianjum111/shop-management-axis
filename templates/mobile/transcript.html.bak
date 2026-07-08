@@ -264,23 +264,7 @@
                 </tbody>
             </table>
 
-            
-<h5>Selling Items</h5>
-<table class="table table-bordered">
-    <tr><th>Item</th><th>Measurement</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
-    {% for item in order.selling_items.all %}
-    <tr>
-        <td>{{ item.selling_price.category.name }}</td>
-        <td>{{ item.selling_price.get_measurement_display }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>₹{{ item.selling_price.price }}</td>
-        <td>₹{{ item.total }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="5">No selling items</td></tr>
-    {% endfor %}
-</table>
-<div class="totals">
+            <div class="totals">
                 <div class="row"><span>Grand Total</span><span>₹{{ order.total_amount|floatformat:2 }}</span></div>
                 <div class="row"><span>Amount Paid</span><span>₹{{ order.amount_paid|floatformat:2 }}</span></div>
                 <div class="row remaining"><span>Remaining</span><span>₹{{ order.remaining_amount|floatformat:2 }}</span></div>
