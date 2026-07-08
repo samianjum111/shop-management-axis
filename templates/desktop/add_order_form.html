@@ -103,24 +103,46 @@
     <h5 class="mt-4">Items</h5>
     <div id="itemsContainer">
         <div class="row item-row g-2 mb-2">
-            <div class="col-md-4">
+            <div class="col-2">
+                <select name="item_type_1" class="form-select item-type-select">
+                    <option value="grinding">Grinding</option>
+                    <option value="selling">Selling</option>
+                </select>
+            </div>
+            <div class="col-4 grinding-fields">
                 <select name="category_1" class="form-select category-select">
-                    <option value="">Select Category</option>
+                    <option value="">Select Grinding Category</option>
                     {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-3 grinding-fields">
                 <input type="number" name="total_kg_1" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
             </div>
-            <div class="col-md-2">
+            <div class="col-2 grinding-fields">
                 <div class="form-check">
                     <input type="checkbox" name="cleaning_1" value="on" class="form-check-input">
                     <label class="form-check-label">Cleaning</label>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-5 selling-fields" style="display:none;">
+                <select name="selling_category_1" class="form-select selling-category-select">
+                    <option value="">Select Selling Category</option>
+                    {% for cat in selling_categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-3 selling-fields" style="display:none;">
+                <select name="selling_price_1" class="form-select selling-price-select">
+                    <option value="">Select Measurement</option>
+                </select>
+            </div>
+            <div class="col-2 selling-fields" style="display:none;">
+                <input type="number" name="quantity_1" class="form-control quantity" step="0.1" placeholder="Qty" value="0">
+            </div>
+            <div class="col-2">
                 <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
             </div>
         </div>
@@ -153,7 +175,7 @@
         <span>₹{{ customer.total_pending|floatformat:2|default:"0.00" }}</span>
     </div>
 
-        <button type="button" class="btn btn-primary mt-3" id="previewBtn" onclick="showPreviewModal();">Preview & Confirm</button>
+    <button type="button" class="btn btn-primary mt-3" id="previewBtn">Preview & Confirm</button>
     <input type="hidden" name="item_count" id="item_count" value="1">
 </form>
 
@@ -174,313 +196,277 @@
   </div>
 </div>
 
-
 <script>
-let itemCount = 1;
-const container = document.getElementById('itemsContainer');
-const addBtn = document.getElementById('addItemBtn');
-const totalGrindingDisplay = document.getElementById('total_grinding_display');
-const totalCleaningDisplay = document.getElementById('total_cleaning_display');
-const grandTotalDisplay = document.getElementById('grand_total_display');
-const modalBody = document.getElementById('modalBody');
-const confirmSubmit = document.getElementById('confirmSubmit');
-const itemCountInput = document.getElementById('item_count');
-const paymentTypeInput = document.getElementById('payment_type');
-const partialAmountDiv = document.getElementById('partial_amount_div');
-const paymentAmountInput = document.getElementById('payment_amount');
-const remainingDisplay = document.getElementById('remaining_display');
-const pendingRow = document.getElementById('pending_row');
-const walkinName = document.getElementById('walkin_name');
-const walkinPhone = document.getElementById('walkin_phone');
-const grindRate = {{ setting.grinding_rate }};
-const cleanRate = {{ setting.cleaning_rate }};
-
-function updateTotals() {
-    let totalGrinding = 0, totalCleaning = 0;
-    document.querySelectorAll('.item-row').forEach(row => {
-        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
-        const cleaning = row.querySelector('input[type="checkbox"]').checked;
-        totalGrinding += kg * grindRate;
-        if (cleaning) totalCleaning += kg * cleanRate;
-    });
-    const grandTotal = totalGrinding + totalCleaning;
-    totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
-    totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
-    grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
-    window._totals = { grinding: totalGrinding, cleaning: totalCleaning, grand: grandTotal };
-    updateRemaining();
-}
-
-function updateRemaining() {
-    const grand = window._totals ? window._totals.grand : 0;
-    const paid = parseFloat(paymentAmountInput.value) || 0;
-    const remaining = Math.max(0, grand - paid);
-    remainingDisplay.textContent = 'Remaining: ₹' + remaining.toFixed(2);
-}
-
-
-function setPayment(type) {
-    document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.payment-toggle .btn-option[data-value="${type}"]`).classList.add('active');
-    paymentTypeInput.value = type;
-    const nameField = document.querySelector('input[name="name"]');
-    const phoneField = document.getElementById('walkin_phone');
-    const addressField = document.getElementById('walkin_address');
-    if (type === 'partial') {
-        partialAmountDiv.classList.add('show');
-        if (phoneField) phoneField.required = true;
-        if (nameField) nameField.required = true;
-        if (addressField) addressField.required = true;
-        // Also make address field visible? It's already visible.
-    } else {
-        partialAmountDiv.classList.remove('show');
-        if (phoneField) phoneField.required = false;
-        if (nameField) nameField.required = true;  // name always required for walk-in
-        if (addressField) addressField.required = false;
-    }
-    updateRemaining();
-}
-
-
-function addItemRow() {
-    itemCount++;
-    const newRow = document.createElement('div');
-    newRow.className = 'row item-row g-2 mb-2';
-    newRow.innerHTML = `
-        <div class="col-md-4">
-            <select name="category_${itemCount}" class="form-select category-select">
-                <option value="">Select Category</option>
-                {% for cat in categories %}
-                <option value="{{ cat.id }}">{{ cat.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
-        </div>
-        <div class="col-md-2">
-            <div class="form-check">
-                <input type="checkbox" name="cleaning_${itemCount}" value="on" class="form-check-input">
-                <label class="form-check-label">Cleaning</label>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
-        </div>
-    `;
-    container.appendChild(newRow);
-    itemCountInput.value = itemCount;
-    // Attach events for the new row
-    newRow.querySelector('.total-kg').addEventListener('input', updateTotals);
-    newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateTotals);
-    newRow.querySelector('.remove-item').addEventListener('click', function() {
-        if (container.children.length > 1) {
-            newRow.remove();
-            itemCount--;
-            itemCountInput.value = itemCount;
-            updateTotals();
-        }
-    });
-}
-
-
-
-function validateOrder() {
-    let errors = [];
-    // Check if customer type is walk-in (no customer_id)
-    const customerId = document.querySelector('input[name="customer_id"]')?.value;
-    const isWalkin = !customerId;
-    // For walk-in, name is mandatory
-    if (isWalkin) {
-        const name = document.querySelector('input[name="name"]')?.value.trim();
-        if (!name) {
-            errors.push('Name is required for walk-in customer.');
-        }
-    }
-    // Check payment type
-    const paymentType = document.getElementById('payment_type').value;
-    if (paymentType === 'partial') {
-        const phone = document.getElementById('walkin_phone')?.value.trim();
-        const name = document.querySelector('input[name="name"]')?.value.trim();
-        const address = document.getElementById('walkin_address')?.value.trim();
-        if (!name) {
-            errors.push('Name is required for partial payment.');
-        }
-        if (!phone) {
-            errors.push('Phone is required for partial payment.');
-        }
-        // Address is optional? The user said address should be required for partial? We'll make it optional but show warning? Actually they said "address bhi zaroori he" for partial. So we'll require it.
-        if (!address) {
-            errors.push('Address is required for partial payment.');
-        }
-    }
-    // Check items: at least one category and kg > 0
-    let hasItem = false;
-    document.querySelectorAll('.item-row').forEach(row => {
-        const category = row.querySelector('.category-select').value;
-        const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
-        if (category && kg > 0) {
-            hasItem = true;
-        }
-    });
-    if (!hasItem) {
-        errors.push('Please add at least one item with a category and weight greater than 0.');
-    }
-    // Display errors
-    const errorDiv = document.getElementById('formErrors');
-    if (errors.length > 0) {
-        errorDiv.style.display = 'block';
-        errorDiv.innerHTML = errors.join('<br>');
-        // Scroll to error
-        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return false;
-    } else {
-        errorDiv.style.display = 'none';
-        return true;
-    }
-}
-
-
-
-function showPreviewModal() {
-    if (!validateOrder()) {
-        return;
-    }
-    const totals = window._totals || { grinding: 0, cleaning: 0, grand: 0 };
-    const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
-    const customerPhone = document.querySelector('input[name="phone"]')?.value || '{{ customer.phone|default:"N/A" }}';
-    const paymentType = document.getElementById('payment_type').value;
-    let paymentAmount = 0;
-    if (paymentType === 'partial') {
-        paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
-    } else {
-        paymentAmount = totals.grand;
-    }
-    let itemsHtml = '';
-    document.querySelectorAll('.item-row').forEach(row => {
-        const category = row.querySelector('.category-select').options[row.querySelector('.category-select').selectedIndex]?.text || 'N/A';
-        const kg = row.querySelector('.total-kg').value || 0;
-        const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
-        itemsHtml += `<p><strong>${category}</strong> - ${kg}kg, Cleaning: ${cleaning}</p>`;
-    });
-    document.getElementById('modalBody').innerHTML = `
-        <p><strong>Customer:</strong> ${customerName} (${customerPhone})</p>
-        <hr>
-        <h6>Items:</h6>
-        ${itemsHtml}
-        <hr>
-        <p><strong>Grinding Total:</strong> ₹${totals.grinding.toFixed(2)}</p>
-        <p><strong>Cleaning Total:</strong> ₹${totals.cleaning.toFixed(2)}</p>
-        <h5><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</h5>
-        <p><strong>Payment Type:</strong> ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</p>
-        <p><strong>Amount Paid:</strong> ₹${paymentAmount.toFixed(2)}</p>
-        <p><strong>Remaining:</strong> ₹${(totals.grand - paymentAmount).toFixed(2)}</p>
-        {% if not customer %}
-        <p class="text-muted small">After order, you can add this customer to regulars.</p>
-        {% endif %}
-    `;
-    // Show modal
-    var modalEl = document.getElementById('confirmModal');
-    if (modalEl) {
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            var modal = new bootstrap.Modal(modalEl);
-            modal.show();
-        } else {
-            // Manual fallback
-            modalEl.style.display = 'block';
-            modalEl.classList.add('show');
-            document.body.classList.add('modal-open');
-            if (!document.querySelector('.modal-backdrop')) {
-                var backdrop = document.createElement('div');
-                backdrop.className = 'modal-backdrop fade show';
-                document.body.appendChild(backdrop);
-            }
-        }
-    } else {
-        alert('Modal element not found.');
-    }
-}
-
-
-
-// ---- DOM Ready ----
 document.addEventListener('DOMContentLoaded', function() {
-    // Existing items
-    document.querySelectorAll('.total-kg').forEach(el => el.addEventListener('input', updateTotals));
-    document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', updateTotals));
-    // Existing remove buttons
-    document.querySelectorAll('.remove-item').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const row = this.closest('.item-row');
-            if (row && container.children.length > 1) {
+    let itemCount = 1;
+    const container = document.getElementById('itemsContainer');
+    const addBtn = document.getElementById('addItemBtn');
+    const totalGrindingDisplay = document.getElementById('total_grinding_display');
+    const totalCleaningDisplay = document.getElementById('total_cleaning_display');
+    const grandTotalDisplay = document.getElementById('grand_total_display');
+    const previewBtn = document.getElementById('previewBtn');
+    const modalBody = document.getElementById('modalBody');
+    const confirmSubmit = document.getElementById('confirmSubmit');
+    const itemCountInput = document.getElementById('item_count');
+
+    function updateTotals() {
+        let totalGrinding = 0, totalCleaning = 0, totalSelling = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const itemType = row.querySelector('.item-type-select').value;
+            if (itemType === 'grinding') {
+                const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+                const cleaning = row.querySelector('input[type="checkbox"]').checked;
+                const catSelect = row.querySelector('.category-select');
+                const selectedOption = catSelect.options[catSelect.selectedIndex];
+                const grindRate = parseFloat(selectedOption.getAttribute('data-grind-rate')) || 0;
+                const cleanRate = parseFloat(selectedOption.getAttribute('data-clean-rate')) || 0;
+                totalGrinding += kg * grindRate;
+                if (cleaning) totalCleaning += kg * cleanRate;
+            } else if (itemType === 'selling') {
+                const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+                const priceSelect = row.querySelector('.selling-price-select');
+                const price = parseFloat(priceSelect.options[priceSelect.selectedIndex]?.getAttribute('data-price')) || 0;
+                totalSelling += qty * price;
+            }
+        });
+        const grandTotal = totalGrinding + totalCleaning + totalSelling;
+        totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
+        totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
+        grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+        window._totals = { grinding: totalGrinding, cleaning: totalCleaning, selling: totalSelling, grand: grandTotal };
+        updateRemaining();
+    }
+
+    function updateRemaining() {
+        const grand = window._totals ? window._totals.grand : 0;
+        const paid = parseFloat(document.getElementById('payment_amount')?.value) || 0;
+        const remaining = Math.max(0, grand - paid);
+        const display = document.getElementById('remaining_display');
+        if (display) display.textContent = 'Remaining: ₹' + remaining.toFixed(2);
+    }
+
+    function fetchPrices(selectEl) {
+        const catId = selectEl.value;
+        const priceSelect = selectEl.closest('.item-row').querySelector('.selling-price-select');
+        priceSelect.innerHTML = '<option value="">Select Measurement</option>';
+        if (catId) {
+            fetch(`/portal/{{ tenant.schema_name }}/chakki/api/selling-prices/?category=${catId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.measurement + ' - ₹' + item.price;
+                        opt.setAttribute('data-price', item.price);
+                        priceSelect.appendChild(opt);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+    }
+
+    function toggleFields(row) {
+        const type = row.querySelector('.item-type-select').value;
+        const grindingFields = row.querySelectorAll('.grinding-fields');
+        const sellingFields = row.querySelectorAll('.selling-fields');
+        if (type === 'grinding') {
+            grindingFields.forEach(el => el.style.display = '');
+            sellingFields.forEach(el => el.style.display = 'none');
+        } else {
+            grindingFields.forEach(el => el.style.display = 'none');
+            sellingFields.forEach(el => el.style.display = '');
+        }
+        updateTotals();
+    }
+
+    function addItemRow() {
+        itemCount++;
+        const template = `
+            <div class="row item-row g-2 mb-2">
+                <div class="col-2">
+                    <select name="item_type_${itemCount}" class="form-select item-type-select">
+                        <option value="grinding">Grinding</option>
+                        <option value="selling">Selling</option>
+                    </select>
+                </div>
+                <div class="col-4 grinding-fields">
+                    <select name="category_${itemCount}" class="form-select category-select">
+                        <option value="">Select Grinding Category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-3 grinding-fields">
+                    <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+                </div>
+                <div class="col-2 grinding-fields">
+                    <div class="form-check">
+                        <input type="checkbox" name="cleaning_${itemCount}" value="on" class="form-check-input">
+                        <label class="form-check-label">Cleaning</label>
+                    </div>
+                </div>
+                <div class="col-5 selling-fields" style="display:none;">
+                    <select name="selling_category_${itemCount}" class="form-select selling-category-select">
+                        <option value="">Select Selling Category</option>
+                        {% for cat in selling_categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-3 selling-fields" style="display:none;">
+                    <select name="selling_price_${itemCount}" class="form-select selling-price-select">
+                        <option value="">Select Measurement</option>
+                    </select>
+                </div>
+                <div class="col-2 selling-fields" style="display:none;">
+                    <input type="number" name="quantity_${itemCount}" class="form-control quantity" step="0.1" placeholder="Qty" value="0">
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                </div>
+            </div>
+        `;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = template.trim();
+        const newRow = wrapper.firstElementChild;
+        container.appendChild(newRow);
+        itemCountInput.value = itemCount;
+        newRow.querySelector('.item-type-select').addEventListener('change', function() { toggleFields(newRow); });
+        newRow.querySelector('.selling-category-select').addEventListener('change', function() { fetchPrices(this); });
+        newRow.querySelectorAll('.total-kg, .quantity, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
+        newRow.querySelector('.remove-item').addEventListener('click', function() {
+            if (container.children.length > 1) {
+                newRow.remove();
+                itemCount--;
+                itemCountInput.value = itemCount;
+                updateTotals();
+            }
+        });
+        toggleFields(newRow);
+        updateTotals();
+    }
+
+    // Initial event binding for existing rows
+    document.querySelectorAll('.item-row').forEach(row => {
+        row.querySelector('.item-type-select').addEventListener('change', function() { toggleFields(row); });
+        row.querySelector('.selling-category-select').addEventListener('change', function() { fetchPrices(this); });
+        row.querySelectorAll('.total-kg, .quantity, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
+        row.querySelector('.remove-item').addEventListener('click', function() {
+            if (document.querySelectorAll('.item-row').length > 1) {
                 row.remove();
                 itemCount--;
                 itemCountInput.value = itemCount;
                 updateTotals();
             }
         });
+        toggleFields(row);
     });
-    // Cancel button
-    var cancelBtn = document.getElementById('cancelModalBtn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            var modalEl = document.getElementById('confirmModal');
-            if (modalEl) {
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    var modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                    else {
-                        modalEl.style.display = 'none';
-                        modalEl.classList.remove('show');
-                        document.body.classList.remove('modal-open');
-                        var backdrop = document.querySelector('.modal-backdrop');
-                        if (backdrop) backdrop.remove();
-                    }
-                } else {
-                    modalEl.style.display = 'none';
-                    modalEl.classList.remove('show');
-                    document.body.classList.remove('modal-open');
-                    var backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) backdrop.remove();
-                }
-            }
-        });
-    }
-    // Close button (X) in modal header
-    var closeBtn = document.querySelector('#confirmModal .btn-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            var modalEl = document.getElementById('confirmModal');
-            if (modalEl) {
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    var modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                    else {
-                        modalEl.style.display = 'none';
-                        modalEl.classList.remove('show');
-                        document.body.classList.remove('modal-open');
-                        var backdrop = document.querySelector('.modal-backdrop');
-                        if (backdrop) backdrop.remove();
-                    }
-                } else {
-                    modalEl.style.display = 'none';
-                    modalEl.classList.remove('show');
-                    document.body.classList.remove('modal-open');
-                    var backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) backdrop.remove();
-                }
-            }
-        });
-    }
-    // Add item button
+
     addBtn.addEventListener('click', addItemRow);
-    // Payment amount input
-    paymentAmountInput.addEventListener('input', updateRemaining);
-    // Confirm submit
+
+    document.getElementById('payment_amount')?.addEventListener('input', updateRemaining);
+
+    previewBtn.addEventListener('click', function() {
+        if (!validateOrder()) return;
+        const totals = window._totals || { grand: 0 };
+        const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
+        let itemsHtml = '';
+        document.querySelectorAll('.item-row').forEach(row => {
+            const type = row.querySelector('.item-type-select').value;
+            if (type === 'grinding') {
+                const cat = row.querySelector('.category-select').options[row.querySelector('.category-select').selectedIndex]?.text || 'N/A';
+                const kg = row.querySelector('.total-kg').value || 0;
+                const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
+                itemsHtml += `<p><strong>${cat}</strong> (Grinding) - ${kg}kg, Cleaning: ${cleaning}</p>`;
+            } else {
+                const cat = row.querySelector('.selling-category-select').options[row.querySelector('.selling-category-select').selectedIndex]?.text || 'N/A';
+                const meas = row.querySelector('.selling-price-select').options[row.querySelector('.selling-price-select').selectedIndex]?.text || 'N/A';
+                const qty = row.querySelector('.quantity').value || 0;
+                itemsHtml += `<p><strong>${cat}</strong> (Selling) - ${qty} ${meas}</p>`;
+            }
+        });
+        const paymentType = document.getElementById('payment_type').value;
+        let paymentAmount = 0;
+        if (paymentType === 'partial') {
+            paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
+        } else {
+            paymentAmount = totals.grand;
+        }
+        modalBody.innerHTML = `
+            <p><strong>Customer:</strong> ${customerName}</p>
+            <hr>
+            <h6>Items:</h6>
+            ${itemsHtml}
+            <hr>
+            <p><strong>Grinding Total:</strong> ₹${totals.grinding.toFixed(2)}</p>
+            <p><strong>Cleaning Total:</strong> ₹${totals.cleaning.toFixed(2)}</p>
+            <p><strong>Selling Total:</strong> ₹${totals.selling.toFixed(2)}</p>
+            <h5><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</h5>
+            <p><strong>Payment Type:</strong> ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</p>
+            <p><strong>Amount Paid:</strong> ₹${paymentAmount.toFixed(2)}</p>
+            <p><strong>Remaining:</strong> ₹${(totals.grand - paymentAmount).toFixed(2)}</p>
+        `;
+        var modalEl = document.getElementById('confirmModal');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                modalEl.style.display = 'block';
+                modalEl.classList.add('show');
+                document.body.classList.add('modal-open');
+                if (!document.querySelector('.modal-backdrop')) {
+                    var backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    document.body.appendChild(backdrop);
+                }
+            }
+        }
+    });
+
     confirmSubmit.addEventListener('click', function() {
         document.getElementById('orderForm').submit();
     });
-    // Initial calculation
+
+    function validateOrder() {
+        let errors = [];
+        const customerId = document.querySelector('input[name="customer_id"]')?.value;
+        if (!customerId) {
+            const name = document.querySelector('input[name="name"]')?.value.trim();
+            if (!name) errors.push('Name is required for walk-in customer.');
+        }
+        const paymentType = document.getElementById('payment_type').value;
+        if (paymentType === 'partial') {
+            const phone = document.getElementById('walkin_phone')?.value.trim();
+            if (!phone) errors.push('Phone is required for partial payment.');
+        }
+        let hasItem = false;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const type = row.querySelector('.item-type-select').value;
+            if (type === 'grinding') {
+                const cat = row.querySelector('.category-select').value;
+                const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+                if (cat && kg > 0) hasItem = true;
+            } else {
+                const price = row.querySelector('.selling-price-select').value;
+                const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+                if (price && qty > 0) hasItem = true;
+            }
+        });
+        if (!hasItem) errors.push('Please add at least one valid item.');
+        const errorDiv = document.getElementById('formErrors');
+        if (errors.length > 0) {
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = errors.join('<br>');
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        } else {
+            errorDiv.style.display = 'none';
+            return true;
+        }
+    }
+
     updateTotals();
 });
 </script>
