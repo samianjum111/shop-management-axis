@@ -23,7 +23,7 @@ class ChakkiSetting(models.Model):
 
 class ChakkiCategory(models.Model):
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(max_length=50, unique=True, help_text="e.g., Wheat, Rice, Maize")
+    name = models.CharField(max_length=50, help_text="e.g., Wheat, Rice, Maize")
     description = models.TextField(blank=True)
     grinding_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Per KG grinding charge")
     cleaning_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Per KG cleaning charge (optional)")
