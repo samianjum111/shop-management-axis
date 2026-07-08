@@ -3,95 +3,132 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>More</h2>
+  <h2 class="fw-bold">More</h2>
 </div>
-<p class="text-muted">Quick access to all portal sections.</p>
+<p class="text-muted mb-4">Quick access to all portal sections</p>
 
-<div class="row g-3 mt-2">
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-plus-circle fa-2x text-warning"></i>
-            <h6 class="mt-2">New Order</h6>
-        </a>
-    
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/customers/?tab=walk" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-user-walk fa-2x text-secondary"></i>
-            <h6 class="mt-2">Walk-in Pending</h6>
-        </a>
-    </div>
+<!-- Customers -->
+<h5 class="fw-bold mb-3"><i class="fas fa-users text-accent me-2"></i>Customers</h5>
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-user-plus fa-2x text-accent mb-2"></i>
+      <h6 class="fw-bold">Create Customer</h6>
+      <small class="text-muted">Add a new regular customer</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/customers/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-address-book fa-2x text-accent mb-2"></i>
+      <h6 class="fw-bold">View Customers</h6>
+      <small class="text-muted">Manage all customers</small>
+    </a>
+  </div>
 </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-clock fa-2x text-secondary"></i>
-            <h6 class="mt-2">Pending Orders</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-hourglass-half fa-2x text-warning"></i>
-            <h6 class="mt-2">Ready Orders</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-check-circle fa-2x text-success"></i>
-            <h6 class="mt-2">Completed</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-money-bill-wave fa-2x text-primary"></i>
-            <h6 class="mt-2">Expenses</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-receipt fa-2x text-info"></i>
-            <h6 class="mt-2">Daily Expenses</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-hand-holding-usd fa-2x text-success"></i>
-            <h6 class="mt-2">Loans Given</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-hand-holding-heart fa-2x text-danger"></i>
-            <h6 class="mt-2">Loans Taken</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-bell fa-2x text-warning"></i>
-            <h6 class="mt-2">Reminders</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-users fa-2x text-primary"></i>
-            <h6 class="mt-2">Workers</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-clipboard-list fa-2x text-secondary"></i>
-            <h6 class="mt-2">Attendance</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/expenses/workers/payments/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-credit-card fa-2x text-success"></i>
-            <h6 class="mt-2">Pending Payments</h6>
-        </a>
-    </div>
-    <div class="col-md-3 col-6">
-        <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="card text-decoration-none h-100 p-3 text-center">
-            <i class="fas fa-cog fa-2x text-secondary"></i>
-            <h6 class="mt-2">Settings</h6>
-        </a>
-    </div>
+
+<!-- Orders -->
+<h5 class="fw-bold mb-3"><i class="fas fa-wheat-awn text-accent me-2"></i>Orders</h5>
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-plus-circle fa-2x text-accent mb-2"></i>
+      <h6 class="fw-bold">New Order</h6>
+      <small class="text-muted">Create a new order</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-clock fa-2x text-secondary mb-2"></i>
+      <h6 class="fw-bold">Pending</h6>
+      <small class="text-muted">{{ pending_count }} pending</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-hourglass-half fa-2x text-warning mb-2"></i>
+      <h6 class="fw-bold">Ready</h6>
+      <small class="text-muted">{{ ready_count }} ready</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+      <h6 class="fw-bold">Completed</h6>
+      <small class="text-muted">{{ completed_count }} done</small>
+    </a>
+  </div>
+</div>
+
+<!-- Finance -->
+<h5 class="fw-bold mb-3"><i class="fas fa-coins text-accent me-2"></i>Finance &amp; Expenses</h5>
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-chart-pie fa-2x text-primary mb-2"></i>
+      <h6 class="fw-bold">Dashboard</h6>
+      <small class="text-muted">Overview</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-receipt fa-2x text-info mb-2"></i>
+      <h6 class="fw-bold">Daily Expenses</h6>
+      <small class="text-muted">Add &amp; view daily</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-hand-holding-usd fa-2x text-success mb-2"></i>
+      <h6 class="fw-bold">Loans Given</h6>
+      <small class="text-muted">Udhaar</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-hand-holding-heart fa-2x text-danger mb-2"></i>
+      <h6 class="fw-bold">Loans Taken</h6>
+      <small class="text-muted">Borrowed</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-bell fa-2x text-warning mb-2"></i>
+      <h6 class="fw-bold">Reminders</h6>
+      <small class="text-muted">Pending</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-users fa-2x text-primary mb-2"></i>
+      <h6 class="fw-bold">Workers</h6>
+      <small class="text-muted">Manage staff</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-clipboard-list fa-2x text-secondary mb-2"></i>
+      <h6 class="fw-bold">Attendance</h6>
+      <small class="text-muted">Daily attendance</small>
+    </a>
+  </div>
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/payments/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-credit-card fa-2x text-success mb-2"></i>
+      <h6 class="fw-bold">Pending Payments</h6>
+      <small class="text-muted">Due salaries</small>
+    </a>
+  </div>
+</div>
+
+<!-- Settings -->
+<h5 class="fw-bold mb-3"><i class="fas fa-cog text-accent me-2"></i>Settings</h5>
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="card text-decoration-none h-100 p-3 text-center shadow-sm">
+      <i class="fas fa-sliders-h fa-2x text-secondary mb-2"></i>
+      <h6 class="fw-bold">Settings</h6>
+      <small class="text-muted">Rates &amp; categories</small>
+    </a>
+  </div>
 </div>
 {% endblock %}
