@@ -42,7 +42,7 @@ def daily_expense_list(request, **kwargs):
 
     expenses = Expense.objects.filter(tenant=request.tenant, 
         category__in=['general','food','medicine','utility','other']
-    ).order_by('-expense_date')
+    ).order_by("-expense_date", "-id")
 
     # Search
     search_q = request.GET.get('q', '').strip()
@@ -72,7 +72,7 @@ def daily_expense_list(request, **kwargs):
     count = expenses.count()
 
     # Pagination (15 per page)
-    paginator = Paginator(expenses, 15)
+    paginator = Paginator(expenses, 30)
     page = request.GET.get('page')
     try:
         page_obj = paginator.page(page)

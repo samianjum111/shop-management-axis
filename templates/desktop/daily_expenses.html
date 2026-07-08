@@ -4,12 +4,19 @@
 
 {% block extra_head %}
 <style>
-  /* ===== Premium Daily Expenses Styles ===== */
+  /* ===== Premium Daily Expenses (Design Only) ===== */
+  :root {
+    --expense-card-radius: 16px;
+    --expense-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    --expense-hover-shadow: 0 8px 28px rgba(0,0,0,0.08);
+    --expense-border: #e9ecef;
+  }
+
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.8rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 0.8rem;
   }
@@ -24,33 +31,25 @@
     color: var(--accent);
     margin-right: 0.4rem;
   }
-  .page-header .actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .btn-primary-custom {
+  .btn-primary-premium {
     background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 40px;
-    padding: 0.4rem 1.4rem;
+    padding: 0.4rem 1.6rem;
     font-weight: 600;
     font-size: 0.9rem;
-    transition: 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
+    transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(26,42,58,0.15);
   }
-  .btn-primary-custom:hover {
+  .btn-primary-premium:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(26,42,58,0.2);
     color: #fff;
   }
 
-  /* Analytics Cards */
+  /* Analytics Grid */
   .analytics-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -59,16 +58,16 @@
   }
   .analytics-card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--expense-card-radius);
     border: 1px solid var(--border);
-    padding: 1.2rem 0.8rem;
+    padding: 1.2rem 0.6rem;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-shadow: var(--expense-shadow);
     transition: 0.25s;
   }
   .analytics-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+    box-shadow: var(--expense-hover-shadow);
     border-color: var(--accent);
   }
   .analytics-card .number {
@@ -91,16 +90,11 @@
     display: block;
     color: var(--accent);
   }
-  .analytics-card .trend {
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 0.2rem;
-  }
 
   /* Filter Bar */
   .filter-bar {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--expense-card-radius);
     border: 1px solid var(--border);
     padding: 0.8rem 1.2rem;
     margin-bottom: 1.5rem;
@@ -156,11 +150,11 @@
     color: var(--text);
   }
 
-  /* Expenses List */
+  /* Expense Items */
   .expense-item {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: var(--expense-card-radius);
     padding: 0.8rem 1.2rem;
     margin-bottom: 0.6rem;
     box-shadow: 0 2px 6px rgba(0,0,0,0.02);
@@ -169,7 +163,7 @@
   }
   .expense-item:hover {
     border-color: var(--accent);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    box-shadow: var(--expense-hover-shadow);
     transform: translateY(-2px);
   }
   .expense-item .top {
@@ -254,7 +248,7 @@
     pointer-events: none;
   }
 
-  /* Modal styles (Bootstrap overrides) */
+  /* Modal Overrides (keep Bootstrap classes, just style) */
   .modal-content {
     border-radius: 20px;
     border: 1px solid var(--border);
@@ -282,6 +276,13 @@
     border-radius: 40px;
     padding: 0.4rem 1.4rem;
     font-weight: 600;
+  }
+  .modal-footer .btn-primary {
+    background: var(--accent);
+    border: none;
+  }
+  .modal-footer .btn-primary:hover {
+    background: var(--accent-hover);
   }
 
   /* Form inside modal */
@@ -319,24 +320,6 @@
     min-height: 60px;
   }
 
-  /* Responsive */
-  @media (max-width: 992px) {
-    .analytics-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 768px) {
-    .page-header { flex-direction: column; align-items: stretch; }
-    .page-header .actions { justify-content: flex-start; }
-    .filter-bar { flex-direction: column; align-items: stretch; }
-    .filter-bar .form-control { min-width: 100%; }
-    .analytics-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 576px) {
-    .analytics-grid { grid-template-columns: 1fr; }
-    .page-header h2 { font-size: 1.6rem; }
-    .expense-item .top { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
-    .expense-item .title { max-width: 100%; }
-  }
-
   /* Empty state */
   .empty-state {
     text-align: center;
@@ -356,6 +339,24 @@
     font-size: 1rem;
     margin: 0;
   }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .analytics-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .actions { justify-content: flex-start; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-bar .form-control { min-width: 100%; }
+    .analytics-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 576px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+    .page-header h2 { font-size: 1.6rem; }
+    .expense-item .top { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+    .expense-item .title { max-width: 100%; }
+  }
 </style>
 {% endblock %}
 
@@ -365,7 +366,7 @@
 <div class="page-header">
   <h2><i class="fas fa-receipt"></i> Daily Expenses</h2>
   <div class="actions">
-    <button type="button" class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+    <button type="button" class="btn btn-primary btn-primary-premium" onclick="openAddModal()">
       <i class="fas fa-plus"></i> Add Expense
     </button>
   </div>
@@ -377,25 +378,21 @@
     <span class="icon"><i class="fas fa-calendar-day"></i></span>
     <div class="number">₹{{ today_total|floatformat:2 }}</div>
     <div class="label">Today</div>
-    <div class="trend">Current day</div>
   </div>
   <div class="analytics-card">
     <span class="icon"><i class="fas fa-calendar-week"></i></span>
     <div class="number">₹{{ week_total|floatformat:2 }}</div>
     <div class="label">This Week</div>
-    <div class="trend">Last 7 days</div>
   </div>
   <div class="analytics-card">
     <span class="icon"><i class="fas fa-calendar-alt"></i></span>
     <div class="number">₹{{ month_total|floatformat:2 }}</div>
     <div class="label">This Month</div>
-    <div class="trend">Current month</div>
   </div>
   <div class="analytics-card">
     <span class="icon"><i class="fas fa-chart-pie"></i></span>
     <div class="number">₹{{ overall_total|floatformat:2 }}</div>
     <div class="label">Total ({{ count }})</div>
-    <div class="trend">All time</div>
   </div>
 </div>
 
@@ -405,6 +402,16 @@
     <input type="text" name="q" class="form-control" placeholder="Search title, description..." value="{{ search_q }}" style="flex:1; min-width:140px;">
     <input type="date" name="start_date" class="form-control" value="{{ start_date }}" style="max-width:160px;">
     <input type="date" name="end_date" class="form-control" value="{{ end_date }}" style="max-width:160px;">
+
+    <!-- Quick Filters -->
+    <div class="quick-filters d-flex flex-wrap gap-2 mt-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickFilter('today')">Today</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickFilter('week')">This Week</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickFilter('month')">This Month</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickFilter('6months')">Last 6 Months</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickFilter('all')">All</button>
+    </div>
+
     <button type="submit" class="btn-search"><i class="fas fa-search"></i> Apply</button>
     <a href="?" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
   </form>
@@ -466,7 +473,7 @@
       <form id="addExpenseForm">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fas fa-plus-circle" style="color:var(--accent);"></i> Add Daily Expense</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" onclick="closeModal('addExpenseModal')">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
@@ -492,7 +499,7 @@
           <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addExpenseModal')">Cancel</button>
           <button type="submit" class="btn btn-primary" style="background:var(--accent);border:none;border-radius:40px;padding:0.4rem 1.6rem;font-weight:600;">Save Expense</button>
         </div>
       </form>
@@ -506,25 +513,23 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="fas fa-file-invoice" style="color:var(--accent);"></i> Expense Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" onclick="closeModal('detailModal')">&times;</button>
       </div>
       <div class="modal-body" id="detailModalBody">
         <!-- filled by JS -->
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="editExpenseBtn" style="background:var(--accent);border:none;border-radius:40px;padding:0.4rem 1.6rem;font-weight:600;">Edit</button>
-        <button type="button" class="btn btn-success" id="saveEditBtn" style="display:none;background:#28a745;border:none;border-radius:40px;padding:0.4rem 1.6rem;font-weight:600;">Save Changes</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button>
+        <button type="button" class="btn btn-primary" id="editExpenseBtn" onclick="enableEditMode()" style="background:var(--accent);border:none;border-radius:40px;padding:0.4rem 1.6rem;font-weight:600;">Edit</button>
+        <button type="button" class="btn btn-success" id="saveEditBtn" style="display:none;background:#28a745;border:none;border-radius:40px;padding:0.4rem 1.6rem;font-weight:600;" onclick="saveEdit()">Save Changes</button>
       </div>
     </div>
   </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
+<!-- ===== SCRIPTS ===== -->
 <script>
-  // Helper to get CSRF token
+  // Helper to get CSRF token from hidden input or from cookie
   function getCSRFToken() {
     var token = document.querySelector('input[name="csrfmiddlewaretoken"]');
     if (token) return token.value;
@@ -532,19 +537,40 @@
     return cookie ? cookie[1] : '';
   }
 
-  // Set today's date when Add modal opens
-  document.addEventListener('DOMContentLoaded', function() {
-    var addModal = document.getElementById('addExpenseModal');
-    if (addModal) {
-      addModal.addEventListener('show.bs.modal', function() {
-        var dateInput = document.querySelector('#addExpenseForm input[name="expense_date"]');
-        if (dateInput) {
-          var today = new Date().toISOString().split('T')[0];
-          dateInput.value = today;
-        }
-      });
+  // Modal functions using plain JS
+  function openModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+    // Add backdrop if not present
+    if (!document.querySelector('.modal-backdrop')) {
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      document.body.appendChild(backdrop);
     }
-  });
+  }
+
+  function closeModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.classList.remove('modal-open');
+    var backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.remove();
+  }
+
+  function openAddModal() {
+    // Set default date to today
+    var dateInput = document.querySelector('#addExpenseForm input[name="expense_date"]');
+    if (dateInput) {
+      var today = new Date().toISOString().split('T')[0];
+      dateInput.value = today;
+    }
+    openModal('addExpenseModal');
+  }
 
   // Add Expense Form Submission
   document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
@@ -622,8 +648,7 @@
         document.getElementById('editExpenseBtn').style.display = 'inline-block';
         document.getElementById('saveEditBtn').style.display = 'none';
         isEditing = false;
-        var modal = new bootstrap.Modal(document.getElementById('detailModal'));
-        modal.show();
+        openModal('detailModal');
       })
       .catch(error => alert('Error loading details: ' + error));
   }
@@ -662,9 +687,65 @@
     .catch(error => alert('Network error: ' + error));
   }
 
-  // Make functions global
+  // Quick filter function
+  window.setQuickFilter = function(type) {
+    var startDate = document.querySelector('input[name="start_date"]');
+    var endDate = document.querySelector('input[name="end_date"]');
+    var today = new Date();
+    var y = today.getFullYear();
+    var m = String(today.getMonth() + 1).padStart(2, '0');
+    var d = String(today.getDate()).padStart(2, '0');
+    var todayStr = y + '-' + m + '-' + d;
+    var start, end;
+
+    switch(type) {
+      case 'today':
+        start = end = todayStr;
+        break;
+      case 'week':
+        var day = today.getDay();
+        var diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        var monday = new Date(today.setDate(diff));
+        var y2 = monday.getFullYear();
+        var m2 = String(monday.getMonth() + 1).padStart(2, '0');
+        var d2 = String(monday.getDate()).padStart(2, '0');
+        start = y2 + '-' + m2 + '-' + d2;
+        end = todayStr;
+        break;
+      case 'month':
+        var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        var y3 = firstDay.getFullYear();
+        var m3 = String(firstDay.getMonth() + 1).padStart(2, '0');
+        var d3 = String(firstDay.getDate()).padStart(2, '0');
+        start = y3 + '-' + m3 + '-' + d3;
+        end = todayStr;
+        break;
+      case '6months':
+        var sixMonthsAgo = new Date(today);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        var y4 = sixMonthsAgo.getFullYear();
+        var m4 = String(sixMonthsAgo.getMonth() + 1).padStart(2, '0');
+        var d4 = String(sixMonthsAgo.getDate()).padStart(2, '0');
+        start = y4 + '-' + m4 + '-' + d4;
+        end = todayStr;
+        break;
+      case 'all':
+        start = '';
+        end = '';
+        break;
+      default: return;
+    }
+    startDate.value = start;
+    endDate.value = end;
+    document.getElementById('filterForm').submit();
+  };
+
+  // Make functions global for onclick
+  window.openAddModal = openAddModal;
   window.openDetailModal = openDetailModal;
   window.enableEditMode = enableEditMode;
   window.saveEdit = saveEdit;
+  window.closeModal = closeModal;
 </script>
+
 {% endblock %}
