@@ -336,8 +336,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         opt.value = item.id;
                         opt.textContent = item.measurement + ' - ₹' + item.price + ' (Stock: ' + item.stock + ')';
                         opt.setAttribute('data-price', item.price);
-                        opt.setAttribute('data-stock', item.stock);
-                        opt.setAttribute('data-measurement', item.measurement);
                         priceSelect.appendChild(opt);
                     });
                 })
@@ -539,26 +537,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (price && qty > 0) hasItem = true;
             }
         });
-        
-        // Check stock for selling items
-        document.querySelectorAll('.item-row').forEach(row => {
-            const itemType = row.querySelector('.item-type-select').value;
-            if (itemType === 'selling') {
-                const priceSelect = row.querySelector('.selling-price-select');
-                const selectedOption = priceSelect.options[priceSelect.selectedIndex];
-                if (selectedOption && selectedOption.value) {
-                    const stock = parseFloat(selectedOption.getAttribute('data-stock')) || 0;
-                    const qty = parseFloat(row.querySelector('.quantity').value) || 0;
-                    if (qty > stock) {
-                        const categorySelect = row.querySelector('.selling-category-select');
-                const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || 'Unknown';
-                const measurement = selectedOption.getAttribute('data-measurement') || '';
-                errors.push(`Insufficient stock for "${categoryName}". Available: ${stock} ${measurement}`);
-                    }
-                }
-            }
-        });
-        
         if (!hasItem) errors.push('Please add at least one valid item.');
         const errorDiv = document.getElementById('formErrors');
         if (errors.length > 0) {

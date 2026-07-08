@@ -1,91 +1,790 @@
 #!/usr/bin/env python3
 """
-Add a "Selling" total card in the order form totals section.
-Also rename "Grand Total" to "Total" for brevity.
+Patcher to add purchase_price field to SellingPrice model.
+Adds input in settings forms and shows profit in category detail analytics.
+Run: python3 patcher_add_purchase_price.py
+Then: python3 manage.py makemigrations chakki && python3 manage.py migrate
 """
 
+import os
 import re
+import shutil
+from datetime import datetime
 
-def patch_file(filepath):
+def backup_file(filepath):
+    if os.path.exists(filepath):
+        backup_path = filepath + ".bak_" + datetime.now().strftime("%Y%m%d_%H%M%S")
+        shutil.copy2(filepath, backup_path)
+        print(f"Backup created: {backup_path}")
+
+def replace_in_file(filepath, old, new):
+    if not os.path.exists(filepath):
+        print(f"File {filepath} not found, skipping.")
+        return
+    backup_file(filepath)
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
-
-    # For desktop: find the row with three cards and add a fourth.
-    # Desktop uses col-md-4, we'll change to col-md-3 and add a new card.
-    # We'll locate the <div class="row mt-4"> and replace the inner content.
-    # We'll use regex to find the pattern.
-    
-    # Look for the row with cards
-    if 'desktop' in filepath:
-        # Desktop version: col-md-4
-        pattern = r'(<div class="row mt-4">)\s*<div class="col-md-4"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">.*?</h4></div></div>\s*<div class="col-md-4"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">.*?</h4></div></div>\s*<div class="col-md-4"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">.*?</h4></div></div>\s*</div>'
-        replacement = r'''<div class="row mt-4">
-        <div class="col-md-3"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
-        <div class="col-md-3"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
-        <div class="col-md-3"><div class="card p-2"><h6>Selling</h6><h4 id="total_selling_display">₹0.00</h4></div></div>
-        <div class="col-md-3"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
-    </div>'''
-        content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-        # Now we need to add the JavaScript to update the new selling display.
-        # In the updateTotals() function, we need to set total_selling_display.
-        # We'll search for "totalSellingDisplay" variable and add a new one.
-        # We'll add a new variable declaration and update it.
-        # Look for the line: const grandTotalDisplay = document.getElementById('grand_total_display');
-        # We'll add a new line after that.
-        # Then inside updateTotals, we set its textContent.
-        # We'll use regex to find the updateTotals function and insert the line.
-        # However, it's easier to just add a new element id and update it.
-
-        # We'll add a new variable in the script:
-        if 'total_selling_display' not in content:
-            # We'll insert after the line where grandTotalDisplay is defined
-            insert_pos = content.find('const grandTotalDisplay = document.getElementById')
-            if insert_pos != -1:
-                # Find the end of that line
-                end_line = content.find('\n', insert_pos)
-                if end_line != -1:
-                    new_line = '\n    const totalSellingDisplay = document.getElementById(\'total_selling_display\');\n'
-                    content = content[:end_line] + new_line + content[end_line:]
-            # Also inside updateTotals, we need to set totalSellingDisplay.textContent
-            # We'll find the line where totalSelling is calculated and set it.
-            # In updateTotals, after calculating grandTotal, we set displays.
-            # We'll add a line: totalSellingDisplay.textContent = '₹' + totalSelling.toFixed(2);
-            # We'll find the line where grandTotalDisplay.textContent is set and insert before it.
-            # We'll use a simple replacement: find the line with grandTotalDisplay.textContent and insert before.
-            # Use regex to find the line and insert before.
-            pattern2 = r'(grandTotalDisplay\.textContent = .*?;)'
-            replacement2 = r'totalSellingDisplay.textContent = \'₹\' + totalSelling.toFixed(2);\n        \1'
-            content = re.sub(pattern2, replacement2, content)
-
-    else:
-        # Mobile version: col-4 to col-3
-        pattern = r'(<div class="row mt-3">)\s*<div class="col-4"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">.*?</h4></div></div>\s*<div class="col-4"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">.*?</h4></div></div>\s*<div class="col-4"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">.*?</h4></div></div>\s*</div>'
-        replacement = r'''<div class="row mt-3">
-        <div class="col-3"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
-        <div class="col-3"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
-        <div class="col-3"><div class="card p-2"><h6>Selling</h6><h4 id="total_selling_display">₹0.00</h4></div></div>
-        <div class="col-3"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
-    </div>'''
-        content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-        # Add JavaScript for totalSellingDisplay
-        if 'total_selling_display' not in content:
-            insert_pos = content.find('const grandTotalDisplay = document.getElementById')
-            if insert_pos != -1:
-                end_line = content.find('\n', insert_pos)
-                if end_line != -1:
-                    new_line = '\n    const totalSellingDisplay = document.getElementById(\'total_selling_display\');\n'
-                    content = content[:end_line] + new_line + content[end_line:]
-            pattern2 = r'(grandTotalDisplay\.textContent = .*?;)'
-            replacement2 = r'totalSellingDisplay.textContent = \'₹\' + totalSelling.toFixed(2);\n        \1'
-            content = re.sub(pattern2, replacement2, content)
-
+    if old not in content:
+        print(f"Warning: pattern not found in {filepath}, no replacement done.")
+        return
+    new_content = content.replace(old, new)
     with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(content)
-    print(f"✅ Patched {filepath}")
+        f.write(new_content)
+    print(f"Replaced in {filepath}")
+
+def insert_after(filepath, marker, new_content):
+    if not os.path.exists(filepath):
+        print(f"File {filepath} not found, skipping.")
+        return
+    backup_file(filepath)
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    if marker not in content:
+        print(f"Warning: marker not found in {filepath}, no insertion done.")
+        return
+    idx = content.find(marker) + len(marker)
+    new_content = content[:idx] + new_content + content[idx:]
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(new_content)
+    print(f"Inserted after marker in {filepath}")
 
 def main():
-    patch_file('templates/desktop/add_order_form.html')
-    patch_file('templates/mobile/add_order_form.html')
+    print("=== Adding Purchase Price to Selling Items ===")
 
-if __name__ == '__main__':
+    # 1. Add purchase_price field to SellingPrice model
+    model_file = "chakki/models.py"
+    with open(model_file, 'r') as f:
+        model_content = f.read()
+    if "purchase_price" in model_content and "SellingPrice" in model_content:
+        print("purchase_price field already exists in SellingPrice, skipping.")
+    else:
+        # Insert after stock field
+        pattern = r'(stock = models\.DecimalField\([^)]+\))'
+        replacement = r'\1\n    purchase_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Cost price per unit (for profit calculation)")'
+        new_model = re.sub(pattern, replacement, model_content, count=1)
+        if new_model != model_content:
+            backup_file(model_file)
+            with open(model_file, 'w') as f:
+                f.write(new_model)
+            print("Added purchase_price field to SellingPrice model.")
+        else:
+            print("Could not find stock field in SellingPrice, skipping.")
+
+    # 2. Create migration
+    migration_dir = "chakki/migrations"
+    if not os.path.exists(migration_dir):
+        os.makedirs(migration_dir)
+    existing = [f for f in os.listdir(migration_dir) if f.startswith("000") and f.endswith(".py")]
+    if existing:
+        nums = [int(f.split('_')[0]) for f in existing]
+        latest = max(nums)
+        new_num = latest + 1
+        # find dependency
+        latest_file = [f for f in existing if f.startswith(f"{latest:04d}")][0]
+        dep = latest_file.replace('.py', '')
+    else:
+        new_num = 1
+        dep = '0001_initial'
+    migration_file = os.path.join(migration_dir, f"{new_num:04d}_sellingprice_purchase_price.py")
+    if os.path.exists(migration_file):
+        print(f"Migration {migration_file} already exists, skipping creation.")
+    else:
+        migration_content = f'''# Generated by patcher_add_purchase_price.py
+from django.db import migrations, models
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('chakki', '{dep}'),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name='sellingprice',
+            name='purchase_price',
+            field=models.DecimalField(decimal_places=2, default=0, help_text='Cost price per unit (for profit calculation)', max_digits=10),
+        ),
+    ]
+'''
+        with open(migration_file, 'w') as f:
+            f.write(migration_content)
+        print(f"Created migration: {migration_file}")
+
+    # 3. Update views.py: settings_view to handle purchase_price
+    views_file = "chakki/views.py"
+    with open(views_file, 'r') as f:
+        views_content = f.read()
+
+    # Update add_selling_price
+    old_add_price = """elif action == 'add_selling_price':
+            cat_id = request.POST.get('selling_category_id')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock') or 0
+            if cat_id and measurement and price:
+                category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
+                SellingPrice.objects.create(tenant=request.tenant, category=category, measurement=measurement, price=price, stock=stock)
+                messages.success(request, f"Price added for {category.name} ({measurement})")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)"""
+    new_add_price = """elif action == 'add_selling_price':
+            cat_id = request.POST.get('selling_category_id')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock') or 0
+            purchase_price = request.POST.get('purchase_price') or 0
+            if cat_id and measurement and price:
+                category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
+                SellingPrice.objects.create(tenant=request.tenant, category=category, measurement=measurement, price=price, stock=stock, purchase_price=purchase_price)
+                messages.success(request, f"Price added for {category.name} ({measurement})")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)"""
+    if old_add_price in views_content:
+        views_content = views_content.replace(old_add_price, new_add_price)
+        print("Updated add_selling_price to include purchase_price.")
+    else:
+        print("Warning: Could not find old add_selling_price block, skipping.")
+
+    # Update edit_selling_price
+    old_edit_price = """elif action == 'edit_selling_price':
+            price_id = request.POST.get('selling_price_id')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock')
+            if price_id and measurement and price:
+                selling_price = get_object_or_404(SellingPrice, id=price_id, tenant=request.tenant)
+                selling_price.measurement = measurement
+                selling_price.price = price
+                if stock is not None:
+                    selling_price.stock = stock
+                selling_price.save()
+                messages.success(request, "Price updated.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)"""
+    new_edit_price = """elif action == 'edit_selling_price':
+            price_id = request.POST.get('selling_price_id')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock')
+            purchase_price = request.POST.get('purchase_price')
+            if price_id and measurement and price:
+                selling_price = get_object_or_404(SellingPrice, id=price_id, tenant=request.tenant)
+                selling_price.measurement = measurement
+                selling_price.price = price
+                if stock is not None:
+                    selling_price.stock = stock
+                if purchase_price is not None:
+                    selling_price.purchase_price = purchase_price
+                selling_price.save()
+                messages.success(request, "Price updated.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)"""
+    if old_edit_price in views_content:
+        views_content = views_content.replace(old_edit_price, new_edit_price)
+        print("Updated edit_selling_price to include purchase_price.")
+    else:
+        print("Warning: Could not find old edit_selling_price block, skipping.")
+
+    # Update add_selling_category_with_price
+    old_add_cat = """        elif action == 'add_selling_category_with_price':
+            name = request.POST.get('selling_category_name')
+            desc = request.POST.get('selling_category_description', '')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock') or 0
+            if name and measurement and price:
+                category = SellingCategory.objects.create(
+                    tenant=request.tenant,
+                    name=name,
+                    description=desc
+                )
+                SellingPrice.objects.create(
+                    tenant=request.tenant,
+                    category=category,
+                    measurement=measurement,
+                    price=price,
+                    stock=stock
+                )
+                messages.success(request, f"Selling category '{name}' added with price.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)"""
+    new_add_cat = """        elif action == 'add_selling_category_with_price':
+            name = request.POST.get('selling_category_name')
+            desc = request.POST.get('selling_category_description', '')
+            measurement = request.POST.get('measurement')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock') or 0
+            purchase_price = request.POST.get('purchase_price') or 0
+            if name and measurement and price:
+                category = SellingCategory.objects.create(
+                    tenant=request.tenant,
+                    name=name,
+                    description=desc
+                )
+                SellingPrice.objects.create(
+                    tenant=request.tenant,
+                    category=category,
+                    measurement=measurement,
+                    price=price,
+                    stock=stock,
+                    purchase_price=purchase_price
+                )
+                messages.success(request, f"Selling category '{name}' added with price.")
+            else:
+                messages.error(request, "All fields are required.")
+            return redirect('chakki_settings', schema_name=request.tenant.schema_name)"""
+    if old_add_cat in views_content:
+        views_content = views_content.replace(old_add_cat, new_add_cat)
+        print("Updated add_selling_category_with_price to include purchase_price.")
+    else:
+        print("Warning: Could not find old add_selling_category_with_price block, skipping.")
+
+    # Write back views.py
+    backup_file(views_file)
+    with open(views_file, 'w') as f:
+        f.write(views_content)
+
+    # 4. Update selling_category_detail view to compute profit
+    # We'll replace the existing view with a new version that adds profit computation
+    # We'll find the function and insert the profit logic.
+    # For simplicity, we'll replace the entire function.
+    old_view_function = """@login_required
+def selling_category_detail(request, category_id, **kwargs):
+    \"\"\"Detailed analytics for a selling category.\"\"\"
+    from django.db.models import Sum, Count, Q
+    from decimal import Decimal
+
+    category = get_object_or_404(SellingCategory, id=category_id, tenant=request.tenant)
+    items = SellingOrderItem.objects.filter(selling_price__category=category, tenant=request.tenant)
+    orders = ChakkiOrder.objects.filter(selling_items__in=items, tenant=request.tenant).distinct()
+
+    total_orders = orders.count()
+    total_qty = items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0.00')
+    total_revenue = items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
+
+    order_data = []
+    for order in orders.order_by('-created_at'):
+        order_items = items.filter(order=order)
+        order_total = order_items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
+        order_data.append({
+            'order': order,
+            'total': order_total,
+            'items': order_items,
+        })
+
+    context = {
+        'category': category,
+        'total_orders': total_orders,
+        'total_qty': total_qty,
+        'total_revenue': total_revenue,
+        'order_data': order_data,
+        'type': 'selling',
+        'tenant': request.tenant,
+    }
+    template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
+    return render(request, template, context)"""
+
+    # We need to compute total profit and per-order profit.
+    # For each item, profit = quantity * (selling_price.price - selling_price.purchase_price)
+    # We'll add total_profit and per-order profit.
+    new_view_function = """@login_required
+def selling_category_detail(request, category_id, **kwargs):
+    \"\"\"Detailed analytics for a selling category.\"\"\"
+    from django.db.models import Sum, Count, Q
+    from decimal import Decimal
+
+    category = get_object_or_404(SellingCategory, id=category_id, tenant=request.tenant)
+    items = SellingOrderItem.objects.filter(selling_price__category=category, tenant=request.tenant)
+    orders = ChakkiOrder.objects.filter(selling_items__in=items, tenant=request.tenant).distinct()
+
+    total_orders = orders.count()
+    total_qty = items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0.00')
+    total_revenue = items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
+    total_cost = Decimal('0.00')
+    total_profit = Decimal('0.00')
+
+    order_data = []
+    for order in orders.order_by('-created_at'):
+        order_items = items.filter(order=order)
+        order_total = order_items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
+        order_cost = Decimal('0.00')
+        for item in order_items:
+            cost = item.quantity * item.selling_price.purchase_price
+            order_cost += cost
+        order_profit = order_total - order_cost
+        total_cost += order_cost
+        total_profit += order_profit
+        order_data.append({
+            'order': order,
+            'total': order_total,
+            'cost': order_cost,
+            'profit': order_profit,
+            'items': order_items,
+        })
+
+    context = {
+        'category': category,
+        'total_orders': total_orders,
+        'total_qty': total_qty,
+        'total_revenue': total_revenue,
+        'total_cost': total_cost,
+        'total_profit': total_profit,
+        'order_data': order_data,
+        'type': 'selling',
+        'tenant': request.tenant,
+    }
+    template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
+    return render(request, template, context)"""
+
+    if old_view_function in views_content:
+        views_content = views_content.replace(old_view_function, new_view_function)
+        backup_file(views_file)
+        with open(views_file, 'w') as f:
+            f.write(views_content)
+        print("Updated selling_category_detail view to include profit.")
+    else:
+        print("Warning: Could not find old selling_category_detail function, skipping.")
+
+    # 5. Update templates to include purchase_price field in settings modals
+    # Desktop settings: add purchase_price field in Add Price, Edit Price, and Add Selling Item modals
+    desktop_settings = "templates/desktop/settings.html"
+    if os.path.exists(desktop_settings):
+        with open(desktop_settings, 'r') as f:
+            content = f.read()
+        # Add Purchase Price in Add Selling Price Modal (for existing category)
+        old_price_field = """<div class="mb-2">
+                                <label>Price</label>
+                                <input type="number" name="price" step="0.01" class="form-control" required>
+                            </div>"""
+        new_price_field = """<div class="mb-2">
+                                <label>Price</label>
+                                <input type="number" name="price" step="0.01" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label>Purchase Price (cost per unit)</label>
+                                <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
+                            </div>"""
+        # We'll replace the specific block in addSellingPriceModal
+        # But we need to replace only the one in addSellingPriceModal, not others.
+        # We'll use a more specific pattern: in the modal with id="addSellingPriceModal{{ cat.id }}"
+        # Instead of replacing all occurrences, we'll replace the generic one inside the modal.
+        # Since the template loops, it's the same block repeated. We'll replace all.
+        if old_price_field in content:
+            content = content.replace(old_price_field, new_price_field)
+            backup_file(desktop_settings)
+            with open(desktop_settings, 'w') as f:
+                f.write(content)
+            print("Added purchase_price field to Add Price modal in desktop settings.")
+        else:
+            print("Warning: Could not find price field in desktop settings, skipping.")
+
+        # Edit Price modal: add purchase_price
+        old_edit_price_field = """<div class="mb-2">
+                                                <label>Price</label>
+                                                <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label>Stock Quantity</label>
+                                                <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label>Stock Quantity</label>
+                                                <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                            </div>"""
+        # The above has duplicate stock fields; we'll fix that as well.
+        # We'll replace with proper fields including purchase_price.
+        new_edit_price_field = """<div class="mb-2">
+                                                <label>Price</label>
+                                                <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label>Stock Quantity</label>
+                                                <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label>Purchase Price (cost per unit)</label>
+                                                <input type="number" name="purchase_price" step="0.01" class="form-control" value="{{ price.purchase_price|default:0 }}" required>
+                                            </div>"""
+        if old_edit_price_field in content:
+            content = content.replace(old_edit_price_field, new_edit_price_field)
+            backup_file(desktop_settings)
+            with open(desktop_settings, 'w') as f:
+                f.write(content)
+            print("Added purchase_price field to Edit Price modal in desktop settings.")
+        else:
+            # Try a simpler pattern without duplicate stock
+            old_edit_price_field2 = """<div class="mb-2">
+                                                <label>Price</label>
+                                                <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label>Stock Quantity</label>
+                                                <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                            </div>"""
+            if old_edit_price_field2 in content:
+                content = content.replace(old_edit_price_field2, new_edit_price_field)
+                backup_file(desktop_settings)
+                with open(desktop_settings, 'w') as f:
+                    f.write(content)
+                print("Added purchase_price field to Edit Price modal (fallback) in desktop settings.")
+            else:
+                print("Warning: Could not find edit price block in desktop settings, skipping.")
+
+        # Add Selling Item modal (addSellingModal) – add purchase_price after price
+        old_add_item_field = """<div class="mb-2">
+                        <label>Price (per unit) *</label>
+                        <input type="number" name="price" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Stock Quantity</label>
+                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
+                    </div>"""
+        new_add_item_field = """<div class="mb-2">
+                        <label>Price (per unit) *</label>
+                        <input type="number" name="price" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Stock Quantity</label>
+                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Purchase Price (cost per unit) *</label>
+                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
+                    </div>"""
+        if old_add_item_field in content:
+            content = content.replace(old_add_item_field, new_add_item_field)
+            backup_file(desktop_settings)
+            with open(desktop_settings, 'w') as f:
+                f.write(content)
+            print("Added purchase_price field to Add Selling Item modal in desktop settings.")
+        else:
+            print("Warning: Could not find add item block in desktop settings, skipping.")
+
+    # Mobile settings
+    mobile_settings = "templates/mobile/settings.html"
+    if os.path.exists(mobile_settings):
+        with open(mobile_settings, 'r') as f:
+            content = f.read()
+        # Add Price modal
+        old_price_field_mob = """<div class="mb-2">
+                                <label>Price</label>
+                                <input type="number" name="price" step="0.01" class="form-control" required>
+                            </div>"""
+        new_price_field_mob = """<div class="mb-2">
+                                <label>Price</label>
+                                <input type="number" name="price" step="0.01" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label>Purchase Price (cost per unit)</label>
+                                <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
+                            </div>"""
+        if old_price_field_mob in content:
+            content = content.replace(old_price_field_mob, new_price_field_mob)
+            backup_file(mobile_settings)
+            with open(mobile_settings, 'w') as f:
+                f.write(content)
+            print("Added purchase_price field to Add Price modal in mobile settings.")
+        else:
+            print("Warning: Could not find price field in mobile settings, skipping.")
+
+        # Edit Price modal
+        old_edit_price_field_mob = """<div class="mb-2">
+                                        <label>Price</label>
+                                        <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Stock Quantity</label>
+                                        <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Stock Quantity</label>
+                                        <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                    </div>"""
+        new_edit_price_field_mob = """<div class="mb-2">
+                                        <label>Price</label>
+                                        <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Stock Quantity</label>
+                                        <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Purchase Price (cost per unit)</label>
+                                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="{{ price.purchase_price|default:0 }}" required>
+                                    </div>"""
+        if old_edit_price_field_mob in content:
+            content = content.replace(old_edit_price_field_mob, new_edit_price_field_mob)
+            backup_file(mobile_settings)
+            with open(mobile_settings, 'w') as f:
+                f.write(content)
+            print("Added purchase_price field to Edit Price modal in mobile settings.")
+        else:
+            # Fallback without duplicate stock
+            old_edit_price_field_mob2 = """<div class="mb-2">
+                                        <label>Price</label>
+                                        <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Stock Quantity</label>
+                                        <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                                    </div>"""
+            if old_edit_price_field_mob2 in content:
+                content = content.replace(old_edit_price_field_mob2, new_edit_price_field_mob)
+                backup_file(mobile_settings)
+                with open(mobile_settings, 'w') as f:
+                    f.write(content)
+                print("Added purchase_price field to Edit Price modal (fallback) in mobile settings.")
+            else:
+                print("Warning: Could not find edit price block in mobile settings, skipping.")
+
+        # Add Selling Item modal
+        old_add_item_field_mob = """<div class="mb-2">
+                        <label>Price (per unit) *</label>
+                        <input type="number" name="price" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Stock Quantity</label>
+                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
+                    </div>"""
+        new_add_item_field_mob = """<div class="mb-2">
+                        <label>Price (per unit) *</label>
+                        <input type="number" name="price" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Stock Quantity</label>
+                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Purchase Price (cost per unit) *</label>
+                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
+                    </div>"""
+        if old_add_item_field_mob in content:
+            content = content.replace(old_add_item_field_mob, new_add_item_field_mob)
+            backup_file(mobile_settings)
+            with open(mobile_settings, 'w') as f:
+                f.write(content)
+            print("Added purchase_price field to Add Selling Item modal in mobile settings.")
+        else:
+            print("Warning: Could not find add item block in mobile settings, skipping.")
+
+    # 6. Update category detail templates to show profit
+    # Desktop category_detail.html
+    desktop_detail = "templates/desktop/category_detail.html"
+    if os.path.exists(desktop_detail):
+        with open(desktop_detail, 'r') as f:
+            content = f.read()
+        # Add total profit card
+        old_total_revenue_card = """<div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Revenue</div>
+            <div class="h4 fw-bold text-success">₹{{ total_revenue|floatformat:2 }}</div>
+        </div>
+    </div>"""
+        new_total_revenue_card = """<div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Revenue</div>
+            <div class="h4 fw-bold text-success">₹{{ total_revenue|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Cost</div>
+            <div class="h4 fw-bold text-danger">₹{{ total_cost|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 text-center">
+            <div class="text-muted small">Total Profit</div>
+            <div class="h4 fw-bold text-accent">₹{{ total_profit|floatformat:2 }}</div>
+        </div>
+    </div>"""
+        if old_total_revenue_card in content:
+            content = content.replace(old_total_revenue_card, new_total_revenue_card)
+            backup_file(desktop_detail)
+            with open(desktop_detail, 'w') as f:
+                f.write(content)
+            print("Added profit cards to desktop category_detail.")
+        else:
+            print("Warning: Could not find total revenue card in desktop category_detail, skipping.")
+
+        # In the table, add Cost and Profit columns
+        old_table_headers = """<tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Category Total</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>"""
+        new_table_headers = """<tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Category Total</th>
+                <th>Cost</th>
+                <th>Profit</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>"""
+        if old_table_headers in content:
+            content = content.replace(old_table_headers, new_table_headers)
+            print("Updated desktop table headers with Cost and Profit.")
+        else:
+            print("Warning: Could not find table headers in desktop category_detail, skipping.")
+
+        # Update table row to include cost and profit
+        old_table_row = """<tr>
+                <td>{{ entry.order.id }}</td>
+                <td>{{ entry.order.customer.name }}</td>
+                <td>{{ entry.order.created_at|date:"d M Y H:i" }}</td>
+                <td>₹{{ entry.total|floatformat:2 }}</td>
+                <td>
+                    <span class="badge {% if entry.order.status == 'completed' %}bg-success{% elif entry.order.status == 'ready' %}bg-warning{% else %}bg-secondary{% endif %}">
+                        {{ entry.order.status|title }}
+                    </span>
+                </td>
+                <td>
+                    {% if entry.order.payment_status == 'paid' %}
+                        <span class="badge bg-success">Paid</span>
+                    {% elif entry.order.payment_status == 'partial' %}
+                        <span class="badge bg-info">Partial</span>
+                    {% else %}
+                        <span class="badge bg-danger">Unpaid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                    <button class="btn btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}">Transcript</button>
+                </td>
+            </tr>"""
+        new_table_row = """<tr>
+                <td>{{ entry.order.id }}</td>
+                <td>{{ entry.order.customer.name }}</td>
+                <td>{{ entry.order.created_at|date:"d M Y H:i" }}</td>
+                <td>₹{{ entry.total|floatformat:2 }}</td>
+                <td>₹{{ entry.cost|floatformat:2 }}</td>
+                <td class="fw-bold {% if entry.profit >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ entry.profit|floatformat:2 }}</td>
+                <td>
+                    <span class="badge {% if entry.order.status == 'completed' %}bg-success{% elif entry.order.status == 'ready' %}bg-warning{% else %}bg-secondary{% endif %}">
+                        {{ entry.order.status|title }}
+                    </span>
+                </td>
+                <td>
+                    {% if entry.order.payment_status == 'paid' %}
+                        <span class="badge bg-success">Paid</span>
+                    {% elif entry.order.payment_status == 'partial' %}
+                        <span class="badge bg-info">Partial</span>
+                    {% else %}
+                        <span class="badge bg-danger">Unpaid</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                    <button class="btn btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}">Transcript</button>
+                </td>
+            </tr>"""
+        if old_table_row in content:
+            content = content.replace(old_table_row, new_table_row)
+            backup_file(desktop_detail)
+            with open(desktop_detail, 'w') as f:
+                f.write(content)
+            print("Updated desktop table row with Cost and Profit.")
+        else:
+            print("Warning: Could not find table row in desktop category_detail, skipping.")
+
+    # Mobile category_detail.html
+    mobile_detail = "templates/mobile/category_detail.html"
+    if os.path.exists(mobile_detail):
+        with open(mobile_detail, 'r') as f:
+            content = f.read()
+        # Add profit card
+        old_revenue_card = """<div class="stat-card">
+        <div class="number">₹{{ total_revenue|floatformat:2 }}</div>
+        <div class="label">Revenue</div>
+    </div>"""
+        new_revenue_card = """<div class="stat-card">
+        <div class="number">₹{{ total_revenue|floatformat:2 }}</div>
+        <div class="label">Revenue</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">₹{{ total_cost|floatformat:2 }}</div>
+        <div class="label">Cost</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">₹{{ total_profit|floatformat:2 }}</div>
+        <div class="label">Profit</div>
+    </div>"""
+        # We need to replace the stats-grid which has 3 items with 5? Actually we have 3 stats: Orders, Qty, Revenue. We'll add Cost and Profit as additional cards.
+        # Better: we'll find the stats-grid and insert after the revenue card.
+        if old_revenue_card in content:
+            content = content.replace(old_revenue_card, new_revenue_card)
+            backup_file(mobile_detail)
+            with open(mobile_detail, 'w') as f:
+                f.write(content)
+            print("Added profit cards to mobile category_detail.")
+        else:
+            print("Warning: Could not find revenue card in mobile category_detail, skipping.")
+
+        # Update order card to show profit
+        old_order_card = """<div class="order-card">
+    <div class="top">
+        <span class="id">#{{ entry.order.id }}</span>
+        <span class="amount">₹{{ entry.total|floatformat:2 }}</span>
+    </div>
+    <div class="meta">
+        <span>{{ entry.order.customer.name }}</span>
+        <span class="ms-2">{{ entry.order.created_at|date:"d M H:i" }}</span>
+        <span class="badge-status {% if entry.order.status == 'ready' %}ready{% elif entry.order.status == 'completed' %}completed{% else %}pending{% endif %}">{{ entry.order.status|title }}</span>
+        {% if entry.order.payment_status == 'partial' %}<span class="badge-status partial">Partial</span>{% endif %}
+    </div>
+    <div class="actions">
+        <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+        <button class="btn btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}">Transcript</button>
+    </div>
+</div>"""
+        new_order_card = """<div class="order-card">
+    <div class="top">
+        <span class="id">#{{ entry.order.id }}</span>
+        <span class="amount">₹{{ entry.total|floatformat:2 }}</span>
+    </div>
+    <div class="meta">
+        <span>{{ entry.order.customer.name }}</span>
+        <span class="ms-2">{{ entry.order.created_at|date:"d M H:i" }}</span>
+        <span class="badge-status {% if entry.order.status == 'ready' %}ready{% elif entry.order.status == 'completed' %}completed{% else %}pending{% endif %}">{{ entry.order.status|title }}</span>
+        {% if entry.order.payment_status == 'partial' %}<span class="badge-status partial">Partial</span>{% endif %}
+        <span class="ms-2">Profit: <strong class="{% if entry.profit >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ entry.profit|floatformat:2 }}</strong></span>
+    </div>
+    <div class="actions">
+        <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+        <button class="btn btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}">Transcript</button>
+    </div>
+</div>"""
+        if old_order_card in content:
+            content = content.replace(old_order_card, new_order_card)
+            backup_file(mobile_detail)
+            with open(mobile_detail, 'w') as f:
+                f.write(content)
+            print("Updated mobile order card with profit.")
+        else:
+            print("Warning: Could not find order card in mobile category_detail, skipping.")
+
+    print("\n=== Patcher completed successfully! ===")
+    print("Now run migrations:")
+    print("  python3 manage.py makemigrations chakki")
+    print("  python3 manage.py migrate")
+    print("Then restart your server.")
+    print("\nNew features:")
+    print("  - Purchase Price field added to SellingPrice model.")
+    print("  - Settings forms now include Purchase Price in Add/Edit Price and Add Selling Item modals.")
+    print("  - Category detail page shows Total Cost, Total Profit, and per-order profit.")
+    print("  - Profit is calculated as (Selling Price - Purchase Price) * Quantity.")
+
+if __name__ == "__main__":
     main()

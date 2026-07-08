@@ -285,8 +285,6 @@ def settings_view(request, **kwargs):
             desc = request.POST.get('selling_category_description', '')
             measurement = request.POST.get('measurement')
             price = request.POST.get('price')
-            stock = request.POST.get('stock') or 0
-            purchase_price = request.POST.get('purchase_price') or 0
             if name and measurement and price:
                 category = SellingCategory.objects.create(
                     tenant=request.tenant,
@@ -297,9 +295,7 @@ def settings_view(request, **kwargs):
                     tenant=request.tenant,
                     category=category,
                     measurement=measurement,
-                    price=price,
-                    stock=stock,
-                    purchase_price=purchase_price
+                    price=price
                 )
                 messages.success(request, f"Selling category '{name}' added with price.")
             else:
@@ -333,11 +329,9 @@ def settings_view(request, **kwargs):
             cat_id = request.POST.get('selling_category_id')
             measurement = request.POST.get('measurement')
             price = request.POST.get('price')
-            stock = request.POST.get('stock') or 0
-            purchase_price = request.POST.get('purchase_price') or 0
             if cat_id and measurement and price:
                 category = get_object_or_404(SellingCategory, id=cat_id, tenant=request.tenant)
-                SellingPrice.objects.create(tenant=request.tenant, category=category, measurement=measurement, price=price, stock=stock, purchase_price=purchase_price)
+                SellingPrice.objects.create(tenant=request.tenant, category=category, measurement=measurement, price=price)
                 messages.success(request, f"Price added for {category.name} ({measurement})")
             else:
                 messages.error(request, "All fields are required.")
@@ -347,16 +341,10 @@ def settings_view(request, **kwargs):
             price_id = request.POST.get('selling_price_id')
             measurement = request.POST.get('measurement')
             price = request.POST.get('price')
-            stock = request.POST.get('stock')
-            purchase_price = request.POST.get('purchase_price')
             if price_id and measurement and price:
                 selling_price = get_object_or_404(SellingPrice, id=price_id, tenant=request.tenant)
                 selling_price.measurement = measurement
                 selling_price.price = price
-                if stock is not None:
-                    selling_price.stock = stock
-                if purchase_price is not None:
-                    selling_price.purchase_price = purchase_price
                 selling_price.save()
                 messages.success(request, "Price updated.")
             else:
@@ -597,30 +585,7 @@ def add_order(request, **kwargs):
                         quantity=qty
                     )
                     item.save()
-        
-        # Validate stock for selling items
-        for i in range(1, item_count + 1):
-            if request.POST.get(f'item_type_{i}') == 'selling':
-                selling_price_id = request.POST.get(f'selling_price_{i}')
-                qty = Decimal(request.POST.get(f'quantity_{i}'))
-                if selling_price_id and qty:
-                    selling_price = get_object_or_404(SellingPrice, id=selling_price_id, tenant=request.tenant)
-                    if qty > selling_price.stock:
-                        messages.error(request, f"Insufficient stock for {selling_price.category.name}. Available: {selling_price.stock}")
-                        return redirect('add_order', schema_name=tenant.schema_name)
-
         order.save()  # triggers total recalculation
-
-        # Decrement stock for selling items
-        for i in range(1, item_count + 1):
-            if request.POST.get(f'item_type_{i}') == 'selling':
-                selling_price_id = request.POST.get(f'selling_price_{i}')
-                qty = Decimal(request.POST.get(f'quantity_{i}'))
-                if selling_price_id and qty:
-                    selling_price = get_object_or_404(SellingPrice, id=selling_price_id, tenant=request.tenant)
-                    selling_price.stock -= qty
-                    selling_price.save()
-
 
         if payment_type == 'full':
             order.amount_paid = order.total_amount
@@ -859,8 +824,8 @@ def check_ready_orders(request, **kwargs):
 def selling_prices_api(request, **kwargs):
     category_id = request.GET.get('category')
     if category_id:
-        prices = SellingPrice.objects.filter(category_id=category_id, tenant=request.tenant, stock__gt=0)
-        data = [{'id': p.id, 'measurement': p.get_measurement_display(), 'price': float(p.price), 'stock': float(p.stock)} for p in prices]
+        prices = SellingPrice.objects.filter(category_id=category_id, tenant=request.tenant)
+        data = [{'id': p.id, 'measurement': p.get_measurement_display(), 'price': float(p.price)} for p in prices]
         return JsonResponse(data, safe=False)
     return JsonResponse([], safe=False)
 
@@ -916,25 +881,14 @@ def selling_category_detail(request, category_id, **kwargs):
     total_orders = orders.count()
     total_qty = items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0.00')
     total_revenue = items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
-    total_cost = Decimal('0.00')
-    total_profit = Decimal('0.00')
 
     order_data = []
     for order in orders.order_by('-created_at'):
         order_items = items.filter(order=order)
         order_total = order_items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
-        order_cost = Decimal('0.00')
-        for item in order_items:
-            cost = item.quantity * item.selling_price.purchase_price
-            order_cost += cost
-        order_profit = order_total - order_cost
-        total_cost += order_cost
-        total_profit += order_profit
         order_data.append({
             'order': order,
             'total': order_total,
-            'cost': order_cost,
-            'profit': order_profit,
             'items': order_items,
         })
 
@@ -943,8 +897,6 @@ def selling_category_detail(request, category_id, **kwargs):
         'total_orders': total_orders,
         'total_qty': total_qty,
         'total_revenue': total_revenue,
-        'total_cost': total_cost,
-        'total_profit': total_profit,
         'order_data': order_data,
         'type': 'selling',
         'tenant': request.tenant,

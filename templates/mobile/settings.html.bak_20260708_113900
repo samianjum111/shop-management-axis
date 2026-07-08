@@ -177,10 +177,6 @@
                                         <label>Stock Quantity</label>
                                         <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
                                     </div>
-                                    <div class="mb-2">
-                                        <label>Purchase Price (cost per unit)</label>
-                                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="{{ price.purchase_price|default:0 }}" required>
-                                    </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -253,14 +249,6 @@
                             <div class="mb-2">
                                 <label>Price</label>
                                 <input type="number" name="price" step="0.01" class="form-control" required>
-                            </div>
-                            <div class="mb-2">
-                                <label>Purchase Price (cost per unit)</label>
-                                <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
-                            </div>
-                            <div class="mb-2">
-                                <label>Stock Quantity</label>
-                                <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
                             </div>
                             <div class="mb-2">
                                 <label>Stock Quantity</label>
@@ -354,14 +342,6 @@
                     <div class="mb-2">
                         <label>Price (per unit) *</label>
                         <input type="number" name="price" step="0.01" class="form-control" required>
-                    </div>
-                    <div class="mb-2">
-                        <label>Stock Quantity</label>
-                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
-                    </div>
-                    <div class="mb-2">
-                        <label>Purchase Price (cost per unit) *</label>
-                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
                     </div>
                 </div>
                 <div class="modal-footer">

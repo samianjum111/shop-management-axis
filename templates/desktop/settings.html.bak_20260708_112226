@@ -136,7 +136,6 @@
                             <td>{{ price.get_measurement_display }}</td>
                             <td>₹{{ price.price }}</td>
                             <td class="action-btns">
-                                <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="btn btn-outline-info btn-sm">Detail</a>
                                 <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editSellingPriceModal{{ price.id }}">Edit Price</button>
                                 <form method="post" style="display:inline;" onsubmit="return confirm('Delete this price?');">
                                     {% csrf_token %}
@@ -176,14 +175,6 @@
                                             <div class="mb-2">
                                                 <label>Price</label>
                                                 <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
-                                            </div>
-                                            <div class="mb-2">
-                                                <label>Stock Quantity</label>
-                                                <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
-                                            </div>
-                                            <div class="mb-2">
-                                                <label>Purchase Price (cost per unit)</label>
-                                                <input type="number" name="purchase_price" step="0.01" class="form-control" value="{{ price.purchase_price|default:0 }}" required>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -277,14 +268,6 @@
                     <div class="mb-2">
                         <label>Price (per unit) *</label>
                         <input type="number" name="price" step="0.01" class="form-control" required>
-                    </div>
-                    <div class="mb-2">
-                        <label>Stock Quantity</label>
-                        <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
-                    </div>
-                    <div class="mb-2">
-                        <label>Purchase Price (cost per unit) *</label>
-                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
                     </div>
                 </div>
                 <div class="modal-footer">
