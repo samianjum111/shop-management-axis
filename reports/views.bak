@@ -272,7 +272,6 @@ def customers(request, **kwargs):
     template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
     return render(request, template, context)
 
-
 # ===== ENHANCED ORDERS REPORT =====
 @login_required
 def orders_report(request, **kwargs):
@@ -437,11 +436,7 @@ def orders_report(request, **kwargs):
         'total_pending': total_pending,
         'avg_order_value': avg_order_value,
         'status_dist': status_dist,
-        'status_dist_keys': status_dist_keys,
-        'status_dist_values': status_dist_values,
         'payment_dist': payment_dist,
-        'payment_dist_keys': payment_dist_keys,
-        'payment_dist_values': payment_dist_values,
         'revenue_labels': revenue_labels,
         'revenue_data': revenue_data,
         'orders_data': orders_data,
