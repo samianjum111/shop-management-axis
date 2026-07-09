@@ -1,6 +1,8 @@
+
 {% extends "mobile/base.html" %}
 {% load static %}
-{% block title %}Customer Analytics | {{ tenant.name }}{% endblock %}
+{% block title %}Customers | {{ tenant.name }}{% endblock %}
+
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -126,29 +128,33 @@
     transform: scale(var(--tap-scale));
   }
 
-  /* ----- KPI Strip (horizontal scroll) ----- */
-  .kpi-strip {
-    display: flex;
+  /* ----- KPI Grid ----- */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.6rem;
-    overflow-x: auto;
-    padding: 0.2rem 0 0.8rem;
-    margin-bottom: 0.5rem;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
+    margin-bottom: 1.2rem;
   }
   .kpi-card {
-    flex: 0 0 120px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--card-radius);
-    padding: 0.8rem 0.4rem;
+    padding: 0.8rem 0.2rem;
     text-align: center;
     box-shadow: var(--card-shadow);
-    scroll-snap-align: start;
-    transition: transform 0.2s;
+    transition: all 0.2s;
   }
   .kpi-card:active {
     transform: scale(var(--tap-scale));
+  }
+  .kpi-card .icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 1.8;
+    display: block;
+    margin: 0 auto 0.1rem;
   }
   .kpi-card .number {
     font-size: 1.4rem;
@@ -162,14 +168,6 @@
     color: var(--muted);
     font-weight: 600;
     letter-spacing: 0.04em;
-  }
-  .kpi-card .icon {
-    display: block;
-    margin: 0 auto 0.1rem;
-    width: 1.2rem;
-    height: 1.2rem;
-    stroke: var(--accent);
-    fill: none;
   }
 
   /* ----- Carousel (slow, smooth) ----- */
@@ -517,13 +515,14 @@
 
   /* ===== Responsive ===== */
   @media (max-width: 400px) {
-    .kpi-card { flex: 0 0 100px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     .kpi-card .number { font-size: 1.2rem; }
     .customer-card .stats { grid-template-columns: 1fr 1fr; }
     .carousel-premium .carousel-item canvas { max-height: 150px; }
   }
   @media (max-width: 360px) {
-    .kpi-card { flex: 0 0 90px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+    .kpi-card { padding: 0.5rem 0.2rem; }
     .kpi-card .number { font-size: 1rem; }
     .filter-bar .search { min-width: 80px; }
   }
@@ -538,7 +537,7 @@
     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
     Customer Analytics
   </div>
-  <div class="hero-sub">{{ tenant.name }} · {{ customer_type|title }} customers</div>
+  <div class="hero-sub">{{ tenant.name }} · {{ tab|title }} customers</div>
   <div class="hero-badge">
     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     {{ total_customers }} total
@@ -547,16 +546,16 @@
 
 <!-- ===== TABS ===== -->
 <div class="tabs-premium">
-  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-premium {% if customer_type == 'regular' %}active{% endif %}">
-    Regular <span class="badge">{{ total_customers }}</span>
+  <a href="?tab=regular{% if search_q %}&search={{ search_q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-premium {% if tab == 'regular' %}active{% endif %}">
+    Regular <span class="badge">{{ regular_count }}</span>
   </a>
-  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-premium {% if customer_type == 'walkin' %}active{% endif %}">
-    Walk‑in <span class="badge">{{ total_customers }}</span>
+  <a href="?tab=walk{% if search_q %}&search={{ search_q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-premium {% if tab == 'walk' %}active{% endif %}">
+    Walk‑in <span class="badge">{{ walk_count }}</span>
   </a>
 </div>
 
-<!-- ===== KPI STRIP (horizontal) ===== -->
-<div class="kpi-strip">
+<!-- ===== KPI CARDS ===== -->
+<div class="kpi-grid">
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <div class="number">{{ total_customers }}</div>
@@ -589,7 +588,7 @@
   </div>
 </div>
 
-<!-- ===== CHARTS CAROUSEL (5 charts) ===== -->
+<!-- ===== CHARTS CAROUSEL ===== -->
 <div class="carousel-premium">
   <div class="carousel-title">
     <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><path d="M9 7l6 5-6 5V7z"/></svg>
@@ -601,7 +600,6 @@
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="1" aria-label="Orders"></button>
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="2" aria-label="Average"></button>
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="3" aria-label="Concentration"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="4" aria-label="Top Revenue Horizontal"></button>
     </div>
     <div class="carousel-inner">
       <div class="carousel-item active">
@@ -615,9 +613,6 @@
       </div>
       <div class="carousel-item">
         <canvas id="concentrationChart" height="180"></canvas>
-      </div>
-      <div class="carousel-item">
-        <canvas id="hbarChart" height="180"></canvas>
       </div>
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#chartCarousel" data-bs-slide="prev">
@@ -635,8 +630,8 @@
 <div class="filter-bar">
   <form method="get" class="search">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="text" name="search" placeholder="Search name/phone..." value="{{ search }}">
-    <input type="hidden" name="type" value="{{ customer_type }}">
+    <input type="text" name="search" placeholder="Search name/phone..." value="{{ search_q }}">
+    <input type="hidden" name="tab" value="{{ tab }}">
     <input type="hidden" name="sort" value="{{ sort }}">
     <input type="hidden" name="order" value="{{ order }}">
   </form>
@@ -653,10 +648,10 @@
       <option value="asc" {% if order == 'asc' %}selected{% endif %}>↑</option>
     </select>
     <button type="submit" class="btn" form="filterForm">Go</button>
-    <a href="?type={{ customer_type }}" class="btn-clear">Clear</a>
+    <a href="?tab={{ tab }}" class="btn-clear">Clear</a>
   </div>
   <form id="filterForm" method="get" style="display:none;">
-    <input type="hidden" name="type" value="{{ customer_type }}">
+    <input type="hidden" name="tab" value="{{ tab }}">
   </form>
 </div>
 
@@ -706,8 +701,8 @@
 {% if page_obj.has_other_pages %}
 <div class="pagination-premium">
   {% if page_obj.has_previous %}
-    <a href="?page=1&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>
-    <a href="?page={{ page_obj.previous_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>
+    <a href="?page=1&tab={{ tab }}{% if search_q %}&search={{ search_q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>
+    <a href="?page={{ page_obj.previous_page_number }}&tab={{ tab }}{% if search_q %}&search={{ search_q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>
   {% else %}
     <span class="disabled">&laquo;</span>
     <span class="disabled">‹</span>
@@ -716,8 +711,8 @@
   <span class="current">{{ page_obj.number }}</span>
 
   {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">›</a>
-    <a href="?page={{ page_obj.paginator.num_pages }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&raquo;</a>
+    <a href="?page={{ page_obj.next_page_number }}&tab={{ tab }}{% if search_q %}&search={{ search_q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">›</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}&tab={{ tab }}{% if search_q %}&search={{ search_q }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&raquo;</a>
   {% else %}
     <span class="disabled">›</span>
     <span class="disabled">&raquo;</span>
@@ -726,150 +721,121 @@
 {% endif %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // 1. Revenue Chart
-  new Chart(document.getElementById('revenueChart'), {
-    type: 'bar',
-    data: {
-      labels: {{ chart_labels_revenue|safe }},
-      datasets: [{
-        label: 'Revenue (₹)',
-        data: {{ chart_data_revenue }},
-        backgroundColor: 'rgba(245, 158, 11, 0.75)',
-        borderColor: '#f59e0b',
-        borderWidth: 2,
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); } } }
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Revenue Chart
+    new Chart(document.getElementById('revenueChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels_revenue|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ chart_data_revenue }},
+          backgroundColor: 'rgba(245, 158, 11, 0.75)',
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
       },
-      scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
-        x: { grid: { display: false } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); } } }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+          x: { grid: { display: false } }
+        }
       }
-    }
-  });
+    });
 
-  // 2. Orders Chart
-  new Chart(document.getElementById('ordersChart'), {
-    type: 'bar',
-    data: {
-      labels: {{ chart_labels_orders|safe }},
-      datasets: [{
-        label: 'Orders',
-        data: {{ chart_data_orders }},
-        backgroundColor: 'rgba(59, 130, 246, 0.75)',
-        borderColor: '#3b82f6',
-        borderWidth: 2,
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y + ' orders'; } } }
+    // 2. Orders Chart
+    new Chart(document.getElementById('ordersChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels_orders|safe }},
+        datasets: [{
+          label: 'Orders',
+          data: {{ chart_data_orders }},
+          backgroundColor: 'rgba(59, 130, 246, 0.75)',
+          borderColor: '#3b82f6',
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
       },
-      scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, stepSize: 1 },
-        x: { grid: { display: false } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y + ' orders'; } } }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, stepSize: 1 },
+          x: { grid: { display: false } }
+        }
       }
-    }
-  });
+    });
 
-  // 3. Average Order Chart
-  new Chart(document.getElementById('avgChart'), {
-    type: 'bar',
-    data: {
-      labels: {{ chart_labels_avg|safe }},
-      datasets: [{
-        label: 'Avg Order (₹)',
-        data: {{ chart_data_avg }},
-        backgroundColor: 'rgba(34, 197, 94, 0.75)',
-        borderColor: '#22c55e',
-        borderWidth: 2,
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); } } }
+    // 3. Average Order Chart
+    new Chart(document.getElementById('avgChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels_avg|safe }},
+        datasets: [{
+          label: 'Avg Order (₹)',
+          data: {{ chart_data_avg }},
+          backgroundColor: 'rgba(34, 197, 94, 0.75)',
+          borderColor: '#22c55e',
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
       },
-      scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
-        x: { grid: { display: false } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); } } }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+          x: { grid: { display: false } }
+        }
       }
-    }
-  });
+    });
 
-  // 4. Concentration Doughnut
-  new Chart(document.getElementById('concentrationChart'), {
-    type: 'doughnut',
-    data: {
-      labels: {{ concentration_labels|safe }},
-      datasets: [{
-        data: {{ concentration_data }},
-        backgroundColor: ['#f59e0b', '#94a3b8'],
-        borderColor: '#fff',
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 11 } } },
-        tooltip: {
-          callbacks: {
-            label: function(ctx) {
-              let total = ctx.dataset.data.reduce((a,b) => a + b, 0);
-              let percentage = ((ctx.parsed / total) * 100).toFixed(1);
-              return ctx.label + ': ₹' + ctx.parsed.toFixed(2) + ' (' + percentage + '%)';
+    // 4. Concentration Doughnut
+    new Chart(document.getElementById('concentrationChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ concentration_labels|safe }},
+        datasets: [{
+          data: {{ concentration_data }},
+          backgroundColor: ['#f59e0b', '#94a3b8'],
+          borderColor: '#fff',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                let total = ctx.dataset.data.reduce((a,b) => a + b, 0);
+                let percentage = ((ctx.parsed / total) * 100).toFixed(1);
+                return ctx.label + ': ₹' + ctx.parsed.toFixed(2) + ' (' + percentage + '%)';
+              }
             }
           }
-        }
-      },
-      cutout: '60%'
-    }
-  });
-
-  // 5. Horizontal Bar (Top 10 Revenue)
-  new Chart(document.getElementById('hbarChart'), {
-    type: 'bar',
-    data: {
-      labels: {{ hbar_labels_revenue|safe }},
-      datasets: [{
-        label: 'Revenue (₹)',
-        data: {{ hbar_data_revenue }},
-        backgroundColor: 'rgba(245, 158, 11, 0.7)',
-        borderColor: '#f59e0b',
-        borderWidth: 2,
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.x.toFixed(2); } } }
-      },
-      scales: {
-        x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
-        y: { grid: { display: false } }
+        },
+        cutout: '60%'
       }
-    }
+    });
   });
-});
 </script>
 {% endblock %}

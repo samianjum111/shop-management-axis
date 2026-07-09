@@ -12,14 +12,39 @@ from expenses.models import Expense
 
 
 @login_required
+@login_required
 def chakki_home(request, **kwargs):
     from django.core.paginator import Paginator
-    from django.db.models import Q
+    from django.db.models import Q, Sum
+    from django.utils import timezone
+    from datetime import timedelta
+    from decimal import Decimal
 
     tenant = request.tenant
-    orders = ChakkiOrder.objects.filter(tenant=request.tenant).exclude(status='cancelled').order_by('-created_at')
+    # Base queryset: all orders for tenant
+    all_orders = ChakkiOrder.objects.filter(tenant=request.tenant)
 
     status_filter = request.GET.get('status', 'all')
+    search_q = request.GET.get('search', '').strip()
+
+    # Apply search filter to base queryset if needed
+    if search_q:
+        all_orders = all_orders.filter(
+            Q(customer__name__icontains=search_q) |
+            Q(customer__phone__icontains=search_q) |
+            Q(id__icontains=search_q)
+        )
+
+    # Compute counts from all_orders (including search)
+    all_count = all_orders.exclude(status='cancelled').count()
+    pending_count = all_orders.filter(status='pending').count()
+    ready_count = all_orders.filter(status='ready').count()
+    partial_count = all_orders.filter(payment_status='partial').count()
+    completed_count = all_orders.filter(status='completed').count()
+    cancelled_count = all_orders.filter(status='cancelled').count()
+
+    # Apply status filter for the list
+    orders = all_orders
     if status_filter == 'pending':
         orders = orders.filter(status='pending')
     elif status_filter == 'ready':
@@ -28,30 +53,32 @@ def chakki_home(request, **kwargs):
         orders = orders.filter(payment_status='partial')
     elif status_filter == 'completed':
         orders = orders.filter(status='completed')
+    elif status_filter == 'cancelled':
+        orders = orders.filter(status='cancelled')
     else:
+        orders = orders.exclude(status='cancelled')
         status_filter = 'all'
 
-    search_q = request.GET.get('search', '').strip()
-    if search_q:
-        orders = orders.filter(
-            Q(customer__name__icontains=search_q) |
-            Q(customer__phone__icontains=search_q) |
-            Q(id__icontains=search_q)
-        )
-
-    all_count = orders.count()
-    pending_count = orders.filter(status='pending').count()
-    ready_count = orders.filter(status='ready').count()
-    partial_count = orders.filter(payment_status='partial').count()
-    completed_count = orders.filter(status='completed').count()
-    cancelled_count = ChakkiOrder.objects.filter(tenant=request.tenant, status='cancelled').count()
-
+    # Pagination
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
     try:
         page_obj = paginator.page(page_number)
     except:
         page_obj = paginator.page(1)
+
+    # Revenue stats (for dashboard)
+    total_revenue = all_orders.filter(status='completed').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+
+    # Daily order counts for last 7 days (using all orders)
+    today = timezone.now().date()
+    daily_labels = []
+    daily_counts = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        daily_labels.append(day.strftime('%a'))
+        count = ChakkiOrder.objects.filter(tenant=request.tenant, created_at__date=day).count()
+        daily_counts.append(count)
 
     context = {
         'page_obj': page_obj,
@@ -64,35 +91,13 @@ def chakki_home(request, **kwargs):
         'partial_count': partial_count,
         'completed_count': completed_count,
         'cancelled_count': cancelled_count,
+        'total_revenue': total_revenue,
+        'daily_labels': daily_labels,
+        'daily_counts': daily_counts,
     }
 
-    # ---- Added by patcher: chart & revenue stats ----
-    from django.db.models import Sum
-    from django.utils import timezone
-    from datetime import timedelta
-
-    # Total revenue
-    total_revenue = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
-
-    # Daily order counts for last 7 days
-    today = timezone.now().date()
-    daily_labels = []
-    daily_counts = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        daily_labels.append(day.strftime('%a'))
-        count = ChakkiOrder.objects.filter(tenant=request.tenant, created_at__date=day).count()
-        daily_counts.append(count)
-
-    # Add to context
-    context['total_revenue'] = total_revenue
-    context['daily_labels'] = daily_labels
-    context['daily_counts'] = daily_counts
-    # -------------------------------------------------
     template = 'mobile/chakki.html' if request.mobile else 'desktop/chakki.html'
     return render(request, template, context)
-
-
 @login_required
 def dashboard(request, **kwargs):
     tenant = request.tenant
@@ -469,8 +474,11 @@ def get_transcript_modal(request, order_id, **kwargs):
     return render(request, 'mobile/transcript_modal_content.html', context)
 
 
+
 @login_required
 def customer_list(request, **kwargs):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
     tenant = request.tenant
     tab = request.GET.get('tab', 'regular')
     q = request.GET.get('q', '').strip()
@@ -486,7 +494,7 @@ def customer_list(request, **kwargs):
         customer.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
         customer.total_orders = orders.count()
 
-    # Walk-in customers with pending balance (is_regular=False and remaining_amount > 0)
+    # Walk-in customers with pending balance
     walk_customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=False).order_by('name')
     if q:
         walk_customers = walk_customers.filter(
@@ -501,20 +509,31 @@ def customer_list(request, **kwargs):
             customer.total_orders = orders.count()
             walk_customers_with_pending.append(customer)
 
-    # Decide which list to display based on tab
+    # Choose which list to paginate
     if tab == 'walk':
-        customers = walk_customers_with_pending
+        customers_list = walk_customers_with_pending
     else:
-        customers = regular_customers
+        customers_list = regular_customers
         tab = 'regular'
 
+    # Pagination – 30 per page
+    paginator = Paginator(customers_list, 30)
+    page = request.GET.get('page')
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     context = {
-        'customers': customers,
-        'tenant': tenant,
+        'page_obj': page_obj,
         'tab': tab,
         'regular_count': regular_customers.count(),
         'walk_count': len(walk_customers_with_pending),
         'search_q': q,
+        'tenant': tenant,
+        'total_count': len(customers_list),
     }
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
@@ -754,45 +773,22 @@ def add_customer_from_order(request, order_id, **kwargs):
 
 @login_required
 def complete_order_action(request, order_id, **kwargs):
-    """Handle completion from pending list with confirmation and partial handling."""
+    """Unified completion: handles full and partial payments on one page."""
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
-    if order.status == 'completed':
-        messages.info(request, f"Order #{order.id} is already completed.")
+
+    # If order is completed and fully paid, nothing to do.
+    if order.status == 'completed' and order.remaining_amount == 0:
+        messages.info(request, f"Order #{order.id} is already completed and fully paid.")
         return redirect('chakki_home', schema_name=request.tenant.schema_name)
-
-    # If fully paid, show confirmation page
-    if order.remaining_amount == 0:
-        if request.method == 'POST':
-            order.status = 'completed'
-            order.completed_at = timezone.now()
-            order.save()
-            messages.success(request, f"Order #{order.id} Completed!")
-            return redirect('chakki_home', schema_name=request.tenant.schema_name)
-        # GET: show confirmation template
-        context = {'order': order, 'tenant': request.tenant, 'partial': False}
-        template = 'mobile/order_complete_confirm.html' if request.mobile else 'desktop/order_complete_confirm.html'
-        return render(request, template, context)
-
-    # Partial payment: redirect to completion page with options
-    return redirect('order_complete_partial', schema_name=request.tenant.schema_name, order_id=order.id)
-
-@login_required
-def order_complete_partial(request, order_id, **kwargs):
-    """Page for partial paid orders to choose payment and complete."""
-    order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
-    if order.status == 'completed':
-        messages.info(request, "Order already completed.")
-        return redirect('chakki_home', schema_name=request.tenant.schema_name)
-    if order.remaining_amount == 0:
-        return redirect('complete_order_action', schema_name=request.tenant.schema_name, order_id=order.id)
 
     if request.method == 'POST':
-        payment_choice = request.POST.get('payment_choice')  # 'full' or 'partial'
+        payment_choice = request.POST.get('payment_choice')
         if payment_choice == 'full':
-            # Pay full remaining
+            # Pay remaining in full
             order.amount_paid = order.total_amount
-            order.status = 'completed'
-            order.completed_at = timezone.now()
+            if order.status != 'completed':
+                order.status = 'completed'
+                order.completed_at = timezone.now()
             order.save()
             messages.success(request, f"Order #{order.id} completed with full payment.")
             return redirect('chakki_home', schema_name=request.tenant.schema_name)
@@ -804,24 +800,34 @@ def order_complete_partial(request, order_id, **kwargs):
                 if new_paid > order.total_amount:
                     new_paid = order.total_amount
                 order.amount_paid = new_paid
-                # Complete order regardless of full payment
-                order.status = 'completed'
-                order.completed_at = timezone.now()
+                # Only set status to completed if it wasn't already
+                if order.status != 'completed':
+                    order.status = 'completed'
+                    order.completed_at = timezone.now()
                 order.save()
-                messages.success(request, f"Order #{order.id} completed. Received ₹{receive_amount:.2f}. Remaining balance: ₹{order.remaining_amount:.2f}")
+                messages.success(request,
+                    f"Order #{order.id} completed. Received ₹{receive_amount:.2f}. "
+                    f"Remaining balance: ₹{order.remaining_amount:.2f}")
                 return redirect('chakki_home', schema_name=request.tenant.schema_name)
             else:
                 messages.error(request, "Please enter a valid amount to receive.")
         else:
             messages.error(request, "Invalid payment choice.")
+        # If error, re‑render the page with messages
 
+    # GET or after POST error: show the confirmation page with payment options if partial
     context = {
         'order': order,
-        'remaining': order.remaining_amount,
         'tenant': request.tenant,
+        'partial': order.remaining_amount > 0,   # flag for template
+        'remaining': order.remaining_amount,
     }
-    template = 'mobile/order_complete_partial.html' if request.mobile else 'desktop/order_complete_partial.html'
+    template = 'mobile/order_complete_confirm.html' if request.mobile else 'desktop/order_complete_confirm.html'
     return render(request, template, context)
+@login_required
+def order_complete_partial(request, order_id, **kwargs):
+    """Redirect to the unified complete_action."""
+    return redirect('complete_order_action', schema_name=request.tenant.schema_name, order_id=order_id)
 
 @login_required
 def walk_profile(request, **kwargs):

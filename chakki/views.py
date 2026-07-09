@@ -475,69 +475,124 @@ def get_transcript_modal(request, order_id, **kwargs):
 
 
 
+
 @login_required
 def customer_list(request, **kwargs):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db.models import Sum, Count, Q
+    from decimal import Decimal
 
     tenant = request.tenant
     tab = request.GET.get('tab', 'regular')
     q = request.GET.get('q', '').strip()
+    sort = request.GET.get('sort', 'spent')
+    order = request.GET.get('order', 'desc')
+    page = request.GET.get('page', 1)
 
-    # Regular customers (is_regular=True)
-    regular_customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=True).order_by('name')
+    # Base queryset: all customers
+    all_customers = ChakkiCustomer.objects.filter(tenant=tenant)
+    regular_customers = all_customers.filter(is_regular=True)
+    walkin_customers = all_customers.filter(is_regular=False)
+
+    # Apply search to each set (for counts later)
     if q:
-        regular_customers = regular_customers.filter(
-            Q(name__icontains=q) | Q(phone__icontains=q)
-        )
-    for customer in regular_customers:
-        orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer)
-        customer.total_pending = sum(o.remaining_amount for o in orders if o.status != 'completed')
-        customer.total_orders = orders.count()
+        all_customers = all_customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
+        regular_customers = regular_customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
+        walkin_customers = walkin_customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
 
-    # Walk-in customers with pending balance
-    walk_customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=False).order_by('name')
-    if q:
-        walk_customers = walk_customers.filter(
-            Q(name__icontains=q) | Q(phone__icontains=q)
-        )
-    walk_customers_with_pending = []
-    for customer in walk_customers:
-        orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer)
-        total_pending = sum(o.remaining_amount for o in orders if o.remaining_amount > 0)
-        if total_pending > 0:
-            customer.total_pending = total_pending
-            customer.total_orders = orders.count()
-            walk_customers_with_pending.append(customer)
-
-    # Choose which list to paginate
+    # Select which set to display
     if tab == 'walk':
-        customers_list = walk_customers_with_pending
+        customers_qs = walkin_customers
     else:
-        customers_list = regular_customers
+        customers_qs = regular_customers
         tab = 'regular'
 
-    # Pagination – 30 per page
-    paginator = Paginator(customers_list, 30)
-    page = request.GET.get('page')
+    # Build customer data with analytics
+    customer_data = []
+    total_revenue = Decimal('0')
+    total_pending_all = Decimal('0')
+    total_orders_all = 0
+
+    for c in customers_qs:
+        orders = ChakkiOrder.objects.filter(tenant=tenant, customer=c)
+        completed = orders.filter(status='completed')
+        total_spent = completed.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        total_orders = orders.count()
+        completed_orders = completed.count()
+        avg_order = total_spent / completed_orders if completed_orders > 0 else Decimal('0')
+        total_pending = Decimal('0')
+        for o in orders.exclude(status='completed'):
+            total_pending += o.remaining_amount
+        first_order = orders.order_by('created_at').first()
+        last_order = orders.order_by('-created_at').first()
+
+        customer_data.append({
+            'id': c.id,
+            'name': c.name,
+            'phone': c.phone or '—',
+            'address': c.address or '—',
+            'is_regular': c.is_regular,
+            'total_spent': total_spent,
+            'total_pending': total_pending,
+            'total_orders': total_orders,
+            'completed_orders': completed_orders,
+            'avg_order': avg_order,
+            'first_order': first_order.created_at if first_order else None,
+            'last_order': last_order.created_at if last_order else None,
+        })
+        total_revenue += total_spent
+        total_pending_all += total_pending
+        total_orders_all += total_orders
+
+    # Apply additional search (already filtered but safe)
+    if q:
+        customer_data = [c for c in customer_data if q.lower() in c['name'].lower() or q in c['phone']]
+
+    # Sorting
+    reverse = (order == 'desc')
+    if sort == 'name':
+        customer_data.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    elif sort == 'spent':
+        customer_data.sort(key=lambda x: x['total_spent'], reverse=reverse)
+    elif sort == 'orders':
+        customer_data.sort(key=lambda x: x['total_orders'], reverse=reverse)
+    elif sort == 'avg':
+        customer_data.sort(key=lambda x: x['avg_order'], reverse=reverse)
+    elif sort == 'pending':
+        customer_data.sort(key=lambda x: x['total_pending'], reverse=reverse)
+
+    # Paginate
+    paginator = Paginator(customer_data, 30)
     try:
         page_obj = paginator.page(page)
-    except PageNotAnInteger:
+    except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
+
+    total_customers = len(customer_data)
+    avg_customer_value = total_revenue / total_customers if total_customers else 0
+
+    # Counts for tabs (overall, not filtered by search)
+    regular_count = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=True).count()
+    walk_count = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=False).count()
 
     context = {
         'page_obj': page_obj,
+        'customer_data': page_obj.object_list,  # for cards
+        'total_customers': total_customers,
+        'total_revenue': total_revenue,
+        'total_pending_all': total_pending_all,
+        'avg_customer_value': avg_customer_value,
+        'total_orders_all': total_orders_all,
+        'regular_count': regular_count,
+        'walk_count': walk_count,
         'tab': tab,
-        'regular_count': regular_customers.count(),
-        'walk_count': len(walk_customers_with_pending),
         'search_q': q,
+        'sort': sort,
+        'order': order,
         'tenant': tenant,
-        'total_count': len(customers_list),
     }
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
-
 @login_required
 def customer_profile(request, customer_id, **kwargs):
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
