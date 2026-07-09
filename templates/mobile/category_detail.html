@@ -501,16 +501,24 @@
 
 <!-- ===== KPI STRIP ===== -->
 <div class="kpi-strip">
-  <div class="kpi-card">
-    <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-    <div class="number">{{ total_orders }}</div>
-    <div class="label">Orders</div>
-  </div>
-  <div class="kpi-card">
-    <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    <div class="number">{% if type == 'grinding' %}{{ total_kg|floatformat:2 }}{% else %}{{ total_qty|floatformat:2 }}{% endif %}</div>
-    <div class="label">{% if type == 'grinding' %}KG{% else %}Qty{% endif %}</div>
-  </div>
+  {% if type == 'selling' %}
+    <div class="kpi-card">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <div class="number">{{ total_qty|floatformat:2 }}</div>
+      <div class="label">Sold</div>
+    </div>
+    <div class="kpi-card">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <div class="number">{{ total_stock|floatformat:2 }}</div>
+      <div class="label">Remaining</div>
+    </div>
+{% else %}
+    <div class="kpi-card">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <div class="number">{{ total_kg|floatformat:2 }}</div>
+      <div class="label">KG</div>
+    </div>
+{% endif %}
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
