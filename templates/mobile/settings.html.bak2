@@ -1,5 +1,4 @@
 {% extends "mobile/base.html" %}
-{% load custom_filters %}
 {% load static %}
 {% block title %}Settings | {{ tenant.name }}{% endblock %}
 
@@ -89,7 +88,7 @@
         fill: none;
     }
 
-    /* ----- STATS STRIP (horizontal scroll) ----- */
+    /* ----- STATS ROW (horizontal scroll) ----- */
     .stats-strip {
         display: flex;
         gap: 0.6rem;
@@ -180,7 +179,7 @@
         color: #fff;
     }
 
-    /* ----- CATEGORY CARDS (with analytics) ----- */
+    /* ----- CATEGORY CARDS ----- */
     .category-card {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -233,37 +232,11 @@
         color: var(--muted);
         margin-top: 0.1rem;
     }
-    .category-card .analytics {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem 1rem;
-        margin-top: 0.4rem;
-        background: var(--surface-alt);
-        border-radius: 12px;
-        padding: 0.4rem 0.6rem;
-        font-size: 0.75rem;
-    }
-    .category-card .analytics .item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .category-card .analytics .item .label {
-        font-size: 0.55rem;
-        text-transform: uppercase;
-        color: var(--muted);
-        font-weight: 600;
-    }
-    .category-card .analytics .item .value {
-        font-weight: 700;
-        color: var(--text);
-        font-size: 0.9rem;
-    }
     .category-card .rate-row {
         display: flex;
         flex-wrap: wrap;
         gap: 0.4rem 0.8rem;
-        margin-top: 0.3rem;
+        margin-top: 0.4rem;
         font-size: 0.75rem;
         color: var(--text-secondary);
     }
@@ -511,17 +484,16 @@
 </div>
 
 <!-- ===== STATS STRIP ===== -->
-{% with grinding_count=categories|length selling_count=selling_categories|length %}
 <div class="stats-strip">
     <div class="stat-card">
         <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        <div class="number">{{ grinding_count }}</div>
-        <div class="label">Grinding</div>
+        <div class="number">{{ categories|length }}</div>
+        <div class="label">Grinding Cats</div>
     </div>
     <div class="stat-card">
         <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <div class="number">{{ selling_count }}</div>
-        <div class="label">Selling</div>
+        <div class="number">{{ selling_categories|length }}</div>
+        <div class="label">Selling Cats</div>
     </div>
     <div class="stat-card">
         <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
@@ -537,7 +509,6 @@
         <div class="label">Prices</div>
     </div>
 </div>
-{% endwith %}
 
 <!-- ===== TABS ===== -->
 <div class="settings-tabs" id="settingsTabs">
@@ -564,7 +535,6 @@
         </div>
 
         {% for cat in categories %}
-        {% with analytics=grinding_analytics|get_item:cat.id %}
         <div class="category-card">
             <div class="top">
                 <div>
@@ -573,21 +543,6 @@
                         {{ cat.name }}
                     </div>
                     <div class="desc">{{ cat.description|default:"No description" }}</div>
-                </div>
-            </div>
-            <!-- Analytics -->
-            <div class="analytics">
-                <div class="item">
-                    <span class="label">Orders</span>
-                    <span class="value">{{ analytics.total_orders|default:0 }}</span>
-                </div>
-                <div class="item">
-                    <span class="label">KG</span>
-                    <span class="value">{{ analytics.total_kg|floatformat:1|default:"0" }}</span>
-                </div>
-                <div class="item">
-                    <span class="label">Revenue</span>
-                    <span class="value">₹{{ analytics.total_revenue|floatformat:2|default:"0.00" }}</span>
                 </div>
             </div>
             <div class="rate-row">
@@ -605,7 +560,6 @@
                 </button>
             </div>
         </div>
-        {% endwith %}
 
         <!-- Edit Grinding Modal -->
         <div class="modal fade" id="editGrindingModal{{ cat.id }}" tabindex="-1" aria-hidden="true">
@@ -663,7 +617,6 @@
         </div>
 
         {% for cat in selling_categories %}
-        {% with analytics=selling_analytics|get_item:cat.id %}
         <div class="category-card">
             <div class="top">
                 <div>
@@ -674,26 +627,6 @@
                     <div class="desc">{{ cat.description|default:"No description" }}</div>
                 </div>
             </div>
-            <!-- Analytics -->
-            <div class="analytics">
-                <div class="item">
-                    <span class="label">Orders</span>
-                    <span class="value">{{ analytics.total_orders|default:0 }}</span>
-                </div>
-                <div class="item">
-                    <span class="label">Qty</span>
-                    <span class="value">{{ analytics.total_qty|floatformat:1|default:"0" }}</span>
-                </div>
-                <div class="item">
-                    <span class="label">Revenue</span>
-                    <span class="value">₹{{ analytics.total_revenue|floatformat:2|default:"0.00" }}</span>
-                </div>
-                <div class="item">
-                    <span class="label">Profit</span>
-                    <span class="value">₹{{ analytics.total_profit|floatformat:2|default:"0.00" }}</span>
-                </div>
-            </div>
-            <!-- Prices -->
             <div class="rate-row">
                 <span class="rate-item"><span class="label">Prices</span></span>
             </div>
@@ -756,14 +689,7 @@
             {% empty %}
             <div class="text-muted small">No prices defined.</div>
             {% endfor %}
-            <!-- Actions -->
-            <div class="actions">
-                <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="btn-sm btn-outline-info">
-                    <i class="fas fa-chart-bar"></i> Detail
-                </a>
-            </div>
         </div>
-        {% endwith %}
         {% empty %}
         <div class="empty-state">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
