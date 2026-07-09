@@ -542,9 +542,27 @@ def customers(request, **kwargs):
     avg_customer_value = total_revenue / total_customers if total_customers else 0
     total_orders_all = sum(c['total_orders'] for c in customer_data)
 
-    top_10 = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)[:10]
-    chart_labels = [c['name'] for c in top_10]
-    chart_data = [float(c['total_spent']) for c in top_10]
+    # ---- Chart 1: Top 10 Revenue (bar) ----
+    top_10_revenue = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)[:10]
+    chart_labels_revenue = [c['name'] for c in top_10_revenue]
+    chart_data_revenue = [float(c['total_spent']) for c in top_10_revenue]
+
+    # ---- Chart 2: Top 10 Orders (bar) ----
+    top_10_orders = sorted(customer_data, key=lambda x: x['total_orders'], reverse=True)[:10]
+    chart_labels_orders = [c['name'] for c in top_10_orders]
+    chart_data_orders = [c['total_orders'] for c in top_10_orders]
+
+    # ---- Chart 3: Top 10 Avg Order (bar) ----
+    top_10_avg = sorted(customer_data, key=lambda x: x['avg_order'], reverse=True)[:10]
+    chart_labels_avg = [c['name'] for c in top_10_avg]
+    chart_data_avg = [float(c['avg_order']) for c in top_10_avg]
+
+    # ---- Chart 4: Revenue Concentration (doughnut) ----
+    sorted_by_revenue = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)
+    top5_revenue = sum(c['total_spent'] for c in sorted_by_revenue[:5])
+    rest_revenue = total_revenue - top5_revenue
+    concentration_labels = ['Top 5 Customers', 'Other Customers']
+    concentration_data = [float(top5_revenue), float(rest_revenue)]
 
     context = {
         'page_obj': page_obj,
@@ -558,15 +576,18 @@ def customers(request, **kwargs):
         'search': search,
         'sort': sort,
         'order': order,
-        'chart_labels': chart_labels,
-        'chart_data': chart_data,
+        'chart_labels_revenue': chart_labels_revenue,
+        'chart_data_revenue': chart_data_revenue,
+        'chart_labels_orders': chart_labels_orders,
+        'chart_data_orders': chart_data_orders,
+        'chart_labels_avg': chart_labels_avg,
+        'chart_data_avg': chart_data_avg,
+        'concentration_labels': concentration_labels,
+        'concentration_data': concentration_data,
         'tenant': tenant,
     }
     template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
     return render(request, template, context)
-
-
-# ===== ENHANCED ORDERS REPORT =====
 @login_required
 def orders_report(request, **kwargs):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
