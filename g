@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-patcher_reports_revenue.py
-Overwrites reports/templates/mobile/reports_revenue.html
-with a full premium, mega‑depth mobile design for revenue analytics.
-Run: python3 patcher_reports_revenue.py
+patcher_reports_dashboard.py
+Overwrites reports/templates/mobile/reports_dashboard.html
+with a full premium, mega‑depth mobile reports dashboard.
+Run: python3 patcher_reports_dashboard.py
 """
 
 import os
 
-TARGET = "reports/templates/mobile/reports_revenue.html"
+TARGET = "reports/templates/mobile/reports_dashboard.html"
 
 NEW_HTML = '''{% extends "mobile/base.html" %}
 {% load static %}
-{% block title %}Revenue Analytics | {{ tenant.name }}{% endblock %}
+{% block title %}Reports Dashboard | {{ tenant.name }}{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  /* ===== PREMIUM MOBILE REVENUE REPORT – FULL DEPTH ===== */
+  /* ===== PREMIUM MOBILE REPORTS DASHBOARD – FULL DEPTH ===== */
   :root {
     --hero-grad: linear-gradient(145deg, #0f1a2e, #1a2d4a);
     --accent-grad: linear-gradient(135deg, #f59e0b, #d97706);
@@ -311,7 +311,43 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     transform: scale(1.3);
   }
 
-  /* ----- ORDERS TABLE (cards) ----- */
+  /* ----- QUICK REPORTS CARDS ----- */
+  .quick-reports {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+  .quick-report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 0.9rem 0.5rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    text-decoration: none;
+    color: var(--text);
+    transition: var(--transition);
+  }
+  .quick-report-card:active {
+    transform: scale(var(--tap-scale));
+  }
+  .quick-report-card .icon {
+    font-size: 1.8rem;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+  .quick-report-card .label {
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .quick-report-card .desc {
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  /* ----- ORDERS LIST (cards) ----- */
   .order-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -374,7 +410,6 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
   .badge-paid { background: #d4edda; color: #155724; }
   .badge-partial { background: #d1ecf1; color: #0c5460; }
   .badge-unpaid { background: #f8d7da; color: #b02a37; }
-
   .order-card .actions {
     display: flex;
     flex-wrap: wrap;
@@ -400,28 +435,6 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     border: 1px solid var(--accent);
   }
   .btn-outline-primary:active {
-    transform: scale(var(--tap-scale));
-  }
-  .btn-success {
-    background: #28a745;
-    color: #fff;
-  }
-  .btn-success:active {
-    transform: scale(var(--tap-scale));
-  }
-  .btn-warning {
-    background: #ffc107;
-    color: #212529;
-  }
-  .btn-warning:active {
-    transform: scale(var(--tap-scale));
-  }
-  .btn-secondary-outline {
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary-outline:active {
     transform: scale(var(--tap-scale));
   }
 
@@ -494,40 +507,13 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     .kpi-card { flex: 0 0 110px; }
     .kpi-card .number { font-size: 1.1rem; }
     .carousel-premium .carousel-item canvas { max-height: 150px; }
+    .quick-reports { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 360px) {
     .kpi-card { flex: 0 0 100px; }
     .kpi-card .number { font-size: 1rem; }
   }
-
-  /* ===== FORMATTED NUMBERS (K, M, B) ===== */
-  .formatted-number {
-    cursor: default;
-  }
 </style>
-
-<script>
-  // Auto-format KPI numbers (K, M, B) on load
-  document.addEventListener('DOMContentLoaded', function() {
-    function formatNumber(num) {
-      if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-      if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-      if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-      return num.toString();
-    }
-    document.querySelectorAll('.kpi-card .number').forEach(el => {
-      const rawText = el.textContent.trim();
-      const rawNum = parseFloat(rawText.replace(/[₹,]/g, ''));
-      if (!isNaN(rawNum)) {
-        const formatted = formatNumber(rawNum);
-        const hasCurrency = rawText.includes('₹');
-        el.innerHTML = (hasCurrency ? '₹' : '') + formatted;
-        el.title = (hasCurrency ? '₹' : '') + rawNum.toFixed(2);
-        el.style.cursor = 'default';
-      }
-    });
-  });
-</script>
 {% endblock %}
 
 {% block body %}
@@ -535,13 +521,13 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 <!-- ===== HERO ===== -->
 <div class="hero-section">
   <div class="hero-title">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    Revenue Analytics
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><path d="M9 7l6 5-6 5V7z"/></svg>
+    Reports Dashboard
   </div>
-  <div class="hero-sub">{{ tenant.name }} · {{ customer_type|title }} customers</div>
+  <div class="hero-sub">{{ tenant.name }} · Overview</div>
   <div class="hero-badge">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    ₹{{ total_revenue|floatformat:2 }} total
+    {{ total_orders }} orders
   </div>
 </div>
 
@@ -558,9 +544,9 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     <div class="label">Orders</div>
   </div>
   <div class="kpi-card">
-    <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    <div class="number">₹{{ total_paid|floatformat:0 }}</div>
-    <div class="label">Paid</div>
+    <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    <div class="number">{{ avg_order_value|floatformat:2 }}</div>
+    <div class="label">Avg Order</div>
   </div>
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
@@ -573,9 +559,9 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     <div class="label">Profit</div>
   </div>
   <div class="kpi-card">
-    <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-    <div class="number">{{ avg_order_value|floatformat:2 }}</div>
-    <div class="label">Avg Order</div>
+    <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <div class="number">{{ total_customers }}</div>
+    <div class="label">Customers</div>
   </div>
 </div>
 
@@ -593,7 +579,6 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 <!-- ===== FILTER BODY ===== -->
 <div class="filter-body" id="filterBody">
   <form method="get" id="filterForm">
-    <input type="hidden" name="customer_type" value="{{ customer_type }}">
     <div class="form-group">
       <label>From</label>
       <input type="date" name="start_date" value="{{ start_date|default:'' }}">
@@ -626,17 +611,19 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
   <div id="chartCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000" data-bs-touch="true">
     <div class="carousel-indicators">
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Revenue Trend"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="1" aria-label="Revenue by Category"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="2" aria-label="Top Customers"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="1" aria-label="Orders Trend"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="2" aria-label="Order Status"></button>
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="3" aria-label="Payment Status"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="4" aria-label="Order Status"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="4" aria-label="Top Categories"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="5" aria-label="Top Customers"></button>
     </div>
     <div class="carousel-inner">
-      <div class="carousel-item active"><canvas id="revenueTrendChart" height="180"></canvas></div>
+      <div class="carousel-item active"><canvas id="revenueChart" height="180"></canvas></div>
+      <div class="carousel-item"><canvas id="ordersChart" height="180"></canvas></div>
+      <div class="carousel-item"><canvas id="statusChart" height="180"></canvas></div>
+      <div class="carousel-item"><canvas id="paymentChart" height="180"></canvas></div>
       <div class="carousel-item"><canvas id="categoryChart" height="180"></canvas></div>
       <div class="carousel-item"><canvas id="customerChart" height="180"></canvas></div>
-      <div class="carousel-item"><canvas id="paymentChart" height="180"></canvas></div>
-      <div class="carousel-item"><canvas id="orderStatusChart" height="180"></canvas></div>
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#chartCarousel" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -649,7 +636,32 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
   </div>
 </div>
 
+<!-- ===== QUICK REPORTS ===== -->
+<div class="quick-reports">
+  <a href="/portal/{{ tenant.schema_name }}/reports/revenue/" class="quick-report-card">
+    <span class="icon"><i class="fas fa-coins"></i></span>
+    <span class="label">Revenue</span>
+    <span class="desc">Detailed revenue analysis</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/reports/orders/" class="quick-report-card">
+    <span class="icon"><i class="fas fa-clipboard-list"></i></span>
+    <span class="label">Orders</span>
+    <span class="desc">Order status &amp; trends</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/reports/customers/" class="quick-report-card">
+    <span class="icon"><i class="fas fa-users"></i></span>
+    <span class="label">Customers</span>
+    <span class="desc">Top spenders &amp; analytics</span>
+  </a>
+  <a href="/portal/{{ tenant.schema_name }}/reports/categories/" class="quick-report-card">
+    <span class="icon"><i class="fas fa-tags"></i></span>
+    <span class="label">Categories</span>
+    <span class="desc">Performance by category</span>
+  </a>
+</div>
+
 <!-- ===== ORDERS LIST ===== -->
+<h5 class="fw-bold mb-2">Recent Orders</h5>
 {% for order in page_obj %}
 <div class="order-card">
   <div class="top">
@@ -677,14 +689,7 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     </span>
   </div>
   <div class="actions">
-    {% if order.status != 'completed' %}
-      <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-sm btn-success">✅ Complete</a>
-    {% endif %}
-    {% if order.status == 'completed' and order.payment_status == 'partial' %}
-      <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-sm btn-warning">💰 Collect Pending</a>
-    {% endif %}
     <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn-sm btn-outline-primary">View</a>
-    <button class="btn-sm btn-secondary-outline view-transcript" data-order-id="{{ order.id }}">📄 Transcript</button>
   </div>
 </div>
 {% empty %}
@@ -717,25 +722,6 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 </div>
 {% endif %}
 
-<!-- ===== TRANSCRIPT MODAL ===== -->
-<div class="modal fade" id="transcriptModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Order Transcript</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="transcriptModalBody">
-        <div class="text-center py-4">Loading...</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="printTranscriptBtn">Print</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // ----- Filter Toggle -----
@@ -751,8 +737,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ----- Charts -----
   function initCharts() {
-    // 1. Revenue Trend (line)
-    new Chart(document.getElementById('revenueTrendChart'), {
+    // 1. Revenue Trend
+    new Chart(document.getElementById('revenueChart'), {
       type: 'line',
       data: {
         labels: {{ revenue_labels|safe }},
@@ -773,7 +759,62 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    // 2. Revenue by Category (bar)
+    // 2. Orders Trend
+    new Chart(document.getElementById('ordersChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ orders_labels|safe }},
+        datasets: [{
+          label: 'Orders',
+          data: {{ orders_data }},
+          backgroundColor: 'rgba(59,130,246,0.7)',
+          borderColor: '#3b82f6',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, stepSize: 1 } }
+      }
+    });
+
+    // 3. Order Status
+    new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ order_labels|safe }},
+        datasets: [{
+          data: {{ order_data }},
+          backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
+      }
+    });
+
+    // 4. Payment Status
+    new Chart(document.getElementById('paymentChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ payment_labels|safe }},
+        datasets: [{
+          data: {{ payment_data }},
+          backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
+      }
+    });
+
+    // 5. Top Categories
     new Chart(document.getElementById('categoryChart'), {
       type: 'bar',
       data: {
@@ -794,7 +835,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    // 3. Top Customers (bar)
+    // 6. Top Customers
     new Chart(document.getElementById('customerChart'), {
       type: 'bar',
       data: {
@@ -814,86 +855,9 @@ document.addEventListener('DOMContentLoaded', function() {
         scales: { y: { beginAtZero: true } }
       }
     });
-
-    // 4. Payment Status (doughnut)
-    new Chart(document.getElementById('paymentChart'), {
-      type: 'doughnut',
-      data: {
-        labels: {{ payment_labels|safe }},
-        datasets: [{
-          data: {{ payment_data }},
-          backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
-      }
-    });
-
-    // 5. Order Status (doughnut)
-    new Chart(document.getElementById('orderStatusChart'), {
-      type: 'doughnut',
-      data: {
-        labels: {{ order_labels|safe }},
-        datasets: [{
-          data: {{ order_data }},
-          backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
-      }
-    });
   }
 
   initCharts();
-
-  // ----- Transcript Modal -----
-  const modal = document.getElementById('transcriptModal');
-  const modalBody = document.getElementById('transcriptModalBody');
-  const printBtn = document.getElementById('printTranscriptBtn');
-
-  document.querySelectorAll('.view-transcript').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      const orderId = this.dataset.orderId;
-      if (!orderId) return;
-      modalBody.innerHTML = '<div class="text-center py-4">Loading...</div>';
-      fetch(`/portal/{{ tenant.schema_name }}/chakki/transcript-modal/${orderId}/`)
-        .then(response => response.text())
-        .then(html => {
-          modalBody.innerHTML = html;
-          var bsModal = new bootstrap.Modal(modal);
-          bsModal.show();
-        })
-        .catch(() => {
-          modalBody.innerHTML = '<div class="alert alert-danger">Error loading transcript.</div>';
-          var bsModal = new bootstrap.Modal(modal);
-          bsModal.show();
-        });
-    });
-  });
-
-  if (printBtn) {
-    printBtn.addEventListener('click', function() {
-      const content = modalBody.querySelector('.transcript-container');
-      if (!content) return;
-      const win = window.open('', '_blank');
-      if (!win) {
-        alert('Please allow pop‑ups for printing.');
-        return;
-      }
-      win.document.write('<html><head><title>Transcript</title><style>body { font-family: Arial, sans-serif; padding: 20px; } .watermark-text { display: none; }</style></head><body>');
-      win.document.write(content.outerHTML);
-      win.document.write('</body></html>');
-      win.document.close();
-      win.print();
-    });
-  }
 });
 </script>
 
@@ -909,7 +873,7 @@ def main():
         f.write(NEW_HTML)
 
     print(f"✅ Successfully updated {TARGET}")
-    print("   New premium mobile revenue report installed.")
+    print("   New premium mobile reports dashboard installed.")
 
 if __name__ == "__main__":
     main()
