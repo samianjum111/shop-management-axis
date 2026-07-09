@@ -1,0 +1,21 @@
+{% extends "mobile/base.html" %}
+{% block title %}Create Regular Customer | {{ tenant.name }}{% endblock %}
+{% block body %}
+<h5 class="fw-bold mb-3">Create Regular Customer</h5>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-2">
+        <label class="form-label">Name *</label>
+        <input type="text" name="name" class="form-control" required>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Phone *</label>
+        <input type="text" name="phone" class="form-control" required>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Address</label>
+        <textarea name="address" class="form-control" rows="2"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary-custom w-100">Create Customer</button>
+</form>
+{% endblock %}

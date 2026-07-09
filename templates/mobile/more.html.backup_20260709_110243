@@ -1,0 +1,299 @@
+{% extends "mobile/base.html" %}
+{% block title %}More | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+
+<style>
+  /* ===== Premium Global ===== */
+  :root {
+    --premium-gradient: linear-gradient(145deg, #ffffff, #f8faff);
+    --card-shadow: 0 8px 24px rgba(0,20,50,0.06), 0 2px 6px rgba(0,0,0,0.02);
+    --card-hover-shadow: 0 16px 40px rgba(0,20,50,0.10);
+    --accent-gradient: linear-gradient(135deg, #6C63FF, #4A3FCF);
+    --border-radius-lg: 20px;
+  }
+
+  .premium-header {
+    padding: 0.5rem 0 0.2rem;
+    background: var(--premium-gradient);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+    padding: 1.2rem 1rem 0.5rem;
+    border-bottom: 2px solid rgba(108,99,255,0.15);
+  }
+
+  .section-title {
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 1.6rem 0 0.6rem;
+    color: var(--text-secondary);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.2rem;
+  }
+  .section-title .icon {
+    font-size: 1.2rem;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(108,99,255,0.3), transparent);
+    margin-left: 0.5rem;
+  }
+
+  .more-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+    margin-top: 0.2rem;
+  }
+
+  .more-card.premium-card {
+    background: var(--surface);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(108,99,255,0.08);
+    border-radius: var(--border-radius-lg);
+    padding: 1.4rem 0.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    box-shadow: var(--card-shadow);
+    transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .more-card.premium-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-gradient);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .more-card.premium-card:active {
+    transform: scale(0.95);
+  }
+  .more-card.premium-card:hover {
+    border-color: rgba(108,99,255,0.3);
+    box-shadow: var(--card-hover-shadow);
+    transform: translateY(-2px);
+  }
+  .more-card.premium-card:hover::before {
+    opacity: 1;
+  }
+  .more-card.premium-card .icon {
+    font-size: 2.2rem;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    transition: transform 0.2s;
+  }
+  .more-card.premium-card:hover .icon {
+    transform: scale(1.08);
+  }
+  .more-card.premium-card .label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .more-card.premium-card .desc {
+    font-size: 0.65rem;
+    color: var(--muted);
+    opacity: 0.7;
+    font-weight: 500;
+  }
+
+  /* Badge-like counts (optional) */
+  .badge-count {
+    background: var(--accent-gradient);
+    color: white;
+    padding: 0.1rem 0.6rem;
+    border-radius: 30px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    margin-left: 0.3rem;
+    display: inline-block;
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 480px) {
+    .more-grid {
+      gap: 0.7rem;
+    }
+    .more-card.premium-card {
+      padding: 1rem 0.3rem;
+    }
+    .more-card.premium-card .icon {
+      font-size: 1.8rem;
+    }
+    .more-card.premium-card .label {
+      font-size: 0.75rem;
+    }
+  }
+</style>
+
+{% endblock %}
+
+
+{% block body %}
+<!-- ===== Premium Header ===== -->
+<div class="premium-header">
+    <h5 class="fw-bold mb-1">✨ More</h5>
+    <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.5rem; opacity:0.8;">
+        Quick access to all sections
+    </p>
+</div>
+
+<!-- ===== Customers ===== -->
+<div class="section-title">
+    <span class="icon"><i class="fas fa-users"></i></span> Customers
+</div>
+<div class="more-grid">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-user-plus"></i></div>
+        <span class="label">Create Customer</span>
+        <span class="desc">Add a new regular customer</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/customers/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-address-book"></i></div>
+        <span class="label">View Customers</span>
+        <span class="desc">Manage all customers</span>
+    </a>
+</div>
+
+<!-- ===== Orders ===== -->
+<div class="section-title">
+    <span class="icon"><i class="fas fa-wheat-awn"></i></span> Orders
+</div>
+<div class="more-grid">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-plus-circle"></i></div>
+        <span class="label">New Order</span>
+        <span class="desc">Create a new order</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-clock"></i></div>
+        <span class="label">Pending</span>
+        <span class="desc">{{ pending_count }} pending</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+        <span class="label">Ready</span>
+        <span class="desc">{{ ready_count }} ready</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-check-circle"></i></div>
+        <span class="label">Completed</span>
+        <span class="desc">{{ completed_count }} done</span>
+    </a>
+</div>
+
+<!-- ===== Finance & Expenses ===== -->
+<div class="section-title">
+    <span class="icon"><i class="fas fa-coins"></i></span> Finance &amp; Expenses
+</div>
+<div class="more-grid">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-chart-pie"></i></div>
+        <span class="label">Dashboard</span>
+        <span class="desc">Overview</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-receipt"></i></div>
+        <span class="label">Daily Expenses</span>
+        <span class="desc">Add &amp; view daily</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
+        <span class="label">Loans Given</span>
+        <span class="desc">Udhaar</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <span class="label">Loans Taken</span>
+        <span class="desc">Borrowed</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-bell"></i></div>
+        <span class="label">Reminders</span>
+        <span class="desc">Pending</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-users"></i></div>
+        <span class="label">Workers</span>
+        <span class="desc">Manage staff</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+        <span class="label">Attendance</span>
+        <span class="desc">Daily attendance</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/payments/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-credit-card"></i></div>
+        <span class="label">Pending Payments</span>
+        <span class="desc">Due salaries</span>
+    </a>
+</div>
+
+<!-- ===== Reports ===== -->
+<div class="section-title">
+    <span class="icon"><i class="fas fa-chart-pie"></i></span> Reports
+</div>
+<div class="more-grid">
+    <a href="/portal/{{ tenant.schema_name }}/reports/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-chart-simple"></i></div>
+        <span class="label">Dashboard</span>
+        <span class="desc">Overview</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/reports/revenue/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-coins"></i></div>
+        <span class="label">Revenue</span>
+        <span class="desc">Income details</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/reports/categories/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-tags"></i></div>
+        <span class="label">Categories</span>
+        <span class="desc">Performance</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/reports/customers/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-users"></i></div>
+        <span class="label">Customers</span>
+        <span class="desc">Top spenders</span>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/reports/orders/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+        <span class="label">Orders</span>
+        <span class="desc">Status report</span>
+    </a>
+</div>
+
+<!-- ===== Settings ===== -->
+<div class="section-title">
+    <span class="icon"><i class="fas fa-cog"></i></span> Settings
+</div>
+<div class="more-grid">
+    <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="more-card premium-card">
+        <div class="icon"><i class="fas fa-sliders-h"></i></div>
+        <span class="label">Settings</span>
+        <span class="desc">Rates &amp; categories</span>
+    </a>
+</div>
+{% endblock %}
+

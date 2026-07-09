@@ -1,64 +1,373 @@
 {% extends "desktop/base.html" %}
 {% block title %}Add Worker | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Add Worker Styles ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .page-header .sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .btn-back {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+  }
+  .btn-back:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .form-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    padding: 2rem 2rem 1.8rem;
+    transition: 0.25s;
+  }
+  .form-card:hover {
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+  }
+
+  .form-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  .form-section-title i {
+    margin-right: 0.4rem;
+    color: var(--accent);
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .form-group label .required {
+    color: #e74c3c;
+    margin-left: 0.2rem;
+  }
+  .form-group .input-wrap {
+    position: relative;
+  }
+  .form-group .input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.95rem;
+    z-index: 2;
+    transition: 0.2s;
+  }
+  .form-group .input-wrap input,
+  .form-group .input-wrap select,
+  .form-group .input-wrap textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem 0.6rem 2.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .form-group .input-wrap input:focus,
+  .form-group .input-wrap select:focus,
+  .form-group .input-wrap textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    background: var(--surface);
+  }
+  .form-group .input-wrap input::placeholder,
+  .form-group .input-wrap textarea::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .form-group .input-wrap textarea {
+    padding-left: 2.6rem;
+    min-height: 70px;
+    resize: vertical;
+  }
+  .form-group .input-wrap select {
+    appearance: none;
+    padding-right: 2.4rem;
+    cursor: pointer;
+  }
+  .form-group .input-wrap select + i.fa-chevron-down {
+    right: 14px;
+    left: auto;
+    pointer-events: none;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 2.2rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(26,42,58,0.15);
+  }
+  .btn-save:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(26,42,58,0.2);
+  }
+  .btn-save i {
+    font-size: 1rem;
+  }
+  .btn-cancel {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .btn-cancel:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-card { padding: 1.2rem; }
+    .page-header h2 { font-size: 1.4rem; }
+    .form-actions { flex-direction: column; }
+    .btn-save, .btn-cancel { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 576px) {
+    .form-card { padding: 1rem; border-radius: 14px; }
+    .form-group .input-wrap input,
+    .form-group .input-wrap select,
+    .form-group .input-wrap textarea {
+      padding: 0.5rem 0.6rem 0.5rem 2rem;
+      font-size: 0.85rem;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h5 class="fw-bold">Add Worker</h5>
-<form method="post">
+
+<!-- ====== PAGE HEADER ====== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-user-plus"></i> Add Worker</h2>
+    <p class="sub">Add a new worker to your staff</p>
+  </div>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Back to Workers
+  </a>
+</div>
+
+<!-- ====== FORM CARD ====== -->
+<div class="form-card">
+  <form method="post">
     {% csrf_token %}
-    <div class="form-group">
-        <label>Name *</label>
-        <input type="text" name="name" class="form-control" value="{{ name|default:"" }}" required>
-    </div>
-    <div class="form-group">
-        <label>Father Name</label>
-        <input type="text" name="father_name" class="form-control" value="{{ father_name|default:"" }}">
-    </div>
-    <div class="form-group">
-        <label>CNIC</label>
-        <input type="text" name="cnic" class="form-control" value="{{ cnic|default:"" }}">
-    </div>
-    <div class="form-group">
-        <label>Phone</label>
-        <input type="text" name="phone" class="form-control" value="{{ phone|default:"" }}">
-    </div>
-    <div class="form-group">
-        <label>Address</label>
-        <textarea name="address" class="form-control">{{ address|default:"" }}</textarea>
-    </div>
-    <div class="form-group">
-        <label>Category</label>
-        <select name="category" class="form-control">
-            <option value="">None</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if category_id|add:"0" == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-            {% endfor %}
-        </select>
+
+    <!-- Section: Personal Details -->
+    <div class="row">
+      <div class="col-12">
+        <div class="form-section-title"><i class="fas fa-id-card"></i> Personal Details</div>
+      </div>
     </div>
 
-    <div class="form-group">
-        <label>Joining Date</label>
-        <input type="date" name="joining_date" class="form-control" value="{% if joining_date %}{{ joining_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-user"></i>
+            <input type="text" name="name" value="{{ name|default:'' }}" required placeholder="e.g., Muhammad Ali">
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Father Name</label>
+          <div class="input-wrap">
+            <i class="fas fa-user-friends"></i>
+            <input type="text" name="father_name" value="{{ father_name|default:'' }}" placeholder="e.g., Ahmad Khan">
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>CNIC</label>
+          <div class="input-wrap">
+            <i class="fas fa-id-card"></i>
+            <input type="text" name="cnic" value="{{ cnic|default:'' }}" placeholder="e.g., 12345-6789012-3">
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Phone</label>
+          <div class="input-wrap">
+            <i class="fas fa-phone"></i>
+            <input type="text" name="phone" value="{{ phone|default:'' }}" placeholder="e.g., 03XX-XXXXXXX">
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="form-group">
+          <label>Address</label>
+          <div class="input-wrap">
+            <i class="fas fa-map-marker-alt" style="top:18px; transform:none;"></i>
+            <textarea name="address" rows="2" placeholder="Complete address">{{ address|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <div class="form-group">
-        <label>Status</label>
-        <select name="status" class="form-control">
-            <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
-            <option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspended</option>
-            <option value="resigned" {% if status == "resigned" %}selected{% endif %}>Resigned</option>
-        </select>
+
+    <!-- Section: Work Details -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="form-section-title"><i class="fas fa-briefcase"></i> Work Details</div>
+      </div>
     </div>
-    <div class="form-group">
-        <label>Salary Type</label>
-        <select name="salary_type" class="form-control">
-            <option value="daily" {% if salary_type == "daily" %}selected{% endif %}>Daily</option>
-            <option value="monthly" {% if salary_type == "monthly" %}selected{% endif %}>Monthly</option>
-        </select>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Category</label>
+          <div class="input-wrap">
+            <i class="fas fa-tags"></i>
+            <select name="category">
+              <option value="">None</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if category_id|add:"0" == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Joining Date <span class="required">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-calendar-alt"></i>
+            <input type="date" name="joining_date" value="{% if joining_date %}{{ joining_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Status</label>
+          <div class="input-wrap">
+            <i class="fas fa-circle"></i>
+            <select name="status">
+              <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+              <option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspended</option>
+              <option value="resigned" {% if status == "resigned" %}selected{% endif %}>Resigned</option>
+            </select>
+            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Salary Type</label>
+          <div class="input-wrap">
+            <i class="fas fa-money-bill-wave"></i>
+            <select name="salary_type">
+              <option value="daily" {% if salary_type == "daily" %}selected{% endif %}>Daily</option>
+              <option value="monthly" {% if salary_type == "monthly" %}selected{% endif %}>Monthly</option>
+            </select>
+            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Salary Amount (₹)</label>
+          <div class="input-wrap">
+            <i class="fas fa-rupee-sign"></i>
+            <input type="number" name="salary_amount" step="0.01" value="{{ salary_amount|default:'' }}" placeholder="e.g., 25000">
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-        <label>Salary Amount</label>
-        <input type="number" name="salary_amount" step="0.01" class="form-control" value="{{ salary_amount|default:"" }}">
+
+    <!-- ====== ACTIONS ====== -->
+    <div class="form-actions">
+      <button type="submit" class="btn-save">
+        <i class="fas fa-save"></i> Save Worker
+      </button>
+      <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="btn-cancel">
+        <i class="fas fa-times"></i> Cancel
+      </a>
     </div>
-    
-    <button type="submit" class="btn btn-primary w-100">Save</button>
-</form>
+
+  </form>
+</div>
+
 {% endblock %}

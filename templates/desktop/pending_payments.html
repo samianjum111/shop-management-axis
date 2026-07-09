@@ -1,207 +1,515 @@
 {% extends "desktop/base.html" %}
+{% load static %}
 {% block title %}Pending Payments | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Pending Payments ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  /* Analytics Cards */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+  }
+  .analytics-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem 0.8rem;
+    text-align: center;
+    box-shadow: var(--expense-shadow);
+    transition: all 0.25s ease;
+  }
+  .analytics-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--expense-hover-shadow);
+    border-color: var(--accent);
+  }
+  .analytics-card .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .analytics-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .analytics-card .icon {
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+    display: block;
+  }
+  @media (max-width: 576px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Table */
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--expense-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 700px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium .pending-row {
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .table-premium .pending-row:hover {
+    background: var(--bg);
+  }
+  .table-premium .amount-highlight {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .badge-daily { background: #cce5ff; color: #004085; }
+  .badge-weekly { background: #fff3cd; color: #856404; }
+  .badge-monthly { background: #d4edda; color: #155724; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* Pagination */
+  .pagination-premium {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .pagination-premium .step-links a,
+  .pagination-premium .step-links .current,
+  .pagination-premium .step-links .disabled {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: 0.2s;
+  }
+  .pagination-premium .step-links a:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .pagination-premium .step-links .current {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .pagination-premium .step-links .disabled {
+    color: var(--muted);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Modal */
+  .modal-content {
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+  }
+  .modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+  }
+  .modal-footer .btn {
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+  }
+  .modal-footer .btn-secondary {
+    background: var(--surface-alt);
+    border: none;
+    color: var(--text-secondary);
+  }
+  .modal-footer .btn-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+  .modal .badge {
+    font-weight: 600;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 40px;
+  }
+
+  .btn-premium-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    cursor: pointer;
+  }
+  .btn-premium-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .analytics-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>💳 Pending Payments</h2>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="btn btn-outline-secondary">Back to Workers</a>
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-hand-holding-usd"></i> Pending Payments</h2>
+  <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="btn-outline-premium">
+    <i class="fas fa-arrow-left"></i> Back to Workers
+  </a>
 </div>
 
-<!-- Analytics -->
-<div class="row g-3 mb-3">
-    <div class="col-md-6">
-        <div class="card p-3 text-center">
-            <small class="text-muted">Total Pending</small>
-            <h3>₹{{ total_pending_sum|floatformat:2 }}</h3>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card p-3 text-center">
-            <small class="text-muted">Workers with Pending</small>
-            <h3>{{ worker_count }}</h3>
-        </div>
-    </div>
+<!-- ===== ANALYTICS CARDS ===== -->
+<div class="analytics-grid">
+  <div class="analytics-card">
+    <span class="icon"><i class="fas fa-coins"></i></span>
+    <div class="label">Total Pending</div>
+    <div class="value">₹{{ total_pending_sum|floatformat:2 }}</div>
+  </div>
+  <div class="analytics-card">
+    <span class="icon"><i class="fas fa-users"></i></span>
+    <div class="label">Workers with Pending</div>
+    <div class="value">{{ worker_count }}</div>
+  </div>
 </div>
 
-<!-- Table -->
-<div class="table-responsive">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Father</th>
-                <th>CNIC</th>
-                <th>Salary Type</th>
-                <th>Pending Amount</th>
-                <th>Due Since</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in page_obj %}
-            <tr class="pending-row" data-worker-id="{{ item.worker.id }}" style="cursor:pointer;">
-                <td>{{ item.worker.name }}</td>
-                <td>{{ item.worker.father_name|default:"-" }}</td>
-                <td>{{ item.worker.cnic|default:"-" }}</td>
-                <td><span class="badge bg-{% if item.worker.salary_type == 'daily' %}primary{% elif item.worker.salary_type == 'weekly' %}warning{% else %}info{% endif %}">{{ item.worker.salary_type|title }}</span></td>
-                <td><strong>₹{{ item.total_pending|floatformat:2 }}</strong></td>
-                <td>{{ item.due_date|date:"d M Y" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6" class="text-center text-muted">No pending payments</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- ===== TABLE ===== -->
+<div class="table-container">
+  <table class="table-premium">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Father</th>
+        <th>CNIC</th>
+        <th>Salary Type</th>
+        <th>Pending Amount</th>
+        <th>Due Since</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in page_obj %}
+      <tr class="pending-row" data-worker-id="{{ item.worker.id }}" style="cursor:pointer;">
+        <td><strong>{{ item.worker.name }}</strong></td>
+        <td>{{ item.worker.father_name|default:"—" }}</td>
+        <td>{{ item.worker.cnic|default:"—" }}</td>
+        <td>
+          <span class="badge-premium
+            {% if item.worker.salary_type == 'daily' %}badge-daily
+            {% elif item.worker.salary_type == 'weekly' %}badge-weekly
+            {% else %}badge-monthly{% endif %}">
+            {{ item.worker.salary_type|title }}
+          </span>
+        </td>
+        <td class="amount-highlight">₹{{ item.total_pending|floatformat:2 }}</td>
+        <td>{{ item.due_date|date:"d M Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6">
+          <div class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <p>No pending payments! 🎉</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
-<!-- Pagination -->
+<!-- ===== PAGINATION ===== -->
 {% if page_obj.has_other_pages %}
-<nav>
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page=1">&laquo; first</a></li>
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">prev</a></li>
-        {% endif %}
-        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
-        {% if page_obj.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">next</a></li>
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a></li>
-        {% endif %}
-    </ul>
-</nav>
+<div class="pagination-premium">
+  <div class="step-links">
+    {% if page_obj.has_previous %}
+      <a href="?page=1">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}">Prev</a>
+    {% else %}
+      <span class="disabled">&laquo; First</span>
+      <span class="disabled">Prev</span>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+    {% else %}
+      <span class="disabled">Next</span>
+      <span class="disabled">Last &raquo;</span>
+    {% endif %}
+  </div>
+</div>
 {% endif %}
 
-<!-- Detail Modal -->
+<!-- ===== DETAIL MODAL ===== -->
 <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="detailModalLabel">Worker Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="detailModalBody">
-                <!-- Filled by JavaScript -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user-cog" style="color:var(--accent);margin-right:0.4rem;"></i> Worker Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="detailModalBody">
+        <!-- filled by JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
     </div>
+  </div>
 </div>
 
+<!-- ===== DATA FOR JAVASCRIPT ===== -->
 {{ page_obj.object_list|json_script:"pendingData" }}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const modalBody = document.getElementById('detailModalBody');
-    const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  const modalBody = document.getElementById('detailModalBody');
+  const modal = new bootstrap.Modal(document.getElementById('detailModal'));
 
-    const dataScript = document.getElementById('pendingData');
-    if (!dataScript) return;
-    let pendingItems = [];
-    try {
-        pendingItems = JSON.parse(dataScript.textContent);
-    } catch(e) { console.error('Error parsing pending data', e); }
+  const dataScript = document.getElementById('pendingData');
+  if (!dataScript) return;
+  let pendingItems = [];
+  try {
+    pendingItems = JSON.parse(dataScript.textContent);
+  } catch(e) {
+    console.error('Error parsing pending data', e);
+  }
 
-    const itemMap = {};
-    pendingItems.forEach(item => {
-        itemMap[item.worker.id] = item;
+  const itemMap = {};
+  pendingItems.forEach(item => {
+    itemMap[item.worker.id] = item;
+  });
+
+  document.querySelectorAll('.pending-row').forEach(row => {
+    row.addEventListener('click', function() {
+      const workerId = parseInt(this.dataset.workerId);
+      const item = itemMap[workerId];
+      if (!item) {
+        modalBody.innerHTML = '<div class="alert alert-danger">Data not found.</div>';
+        modal.show();
+        return;
+      }
+
+      // Build modal content
+      let html = `
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Phone:</strong> ${item.worker.phone || '—'}</p>
+            <p><strong>Address:</strong> ${item.worker.address || '—'}</p>
+            <p><strong>Joining:</strong> ${item.worker.joining_date}</p>
+            <p><strong>Salary:</strong> ₹${item.worker.salary_amount}/${item.worker.salary_type}</p>
+          </div>
+          <div class="col-md-6">
+            <h6 class="fw-bold">Pending Periods (oldest first)</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead><tr><th>Period</th><th>Due</th><th>Paid</th><th>Remaining</th></tr></thead>
+                <tbody>
+                  ${item.pending_periods.map(p => `
+                    <tr>
+                      <td>${p.start} - ${p.end}</td>
+                      <td>₹${parseFloat(p.due).toFixed(2)}</td>
+                      <td>₹${parseFloat(p.paid).toFixed(2)}</td>
+                      <td class="fw-bold text-danger">₹${parseFloat(p.remaining).toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <h6 class="fw-bold">Attendance (last 30 days)</h6>
+            <div class="d-flex flex-wrap gap-1">
+              ${item.attendance_history.map(a => `
+                <span class="badge ${a.status === 'present' ? 'bg-success' : 'bg-danger'}" style="font-size:0.7rem;">
+                  ${a.date}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6 class="fw-bold">Payment History</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead><tr><th>Date</th><th>Amount</th><th>Period</th></tr></thead>
+                <tbody>
+                  ${item.payment_history.map(p => `
+                    <tr>
+                      <td>${p.payment_date}</td>
+                      <td>₹${parseFloat(p.amount).toFixed(2)}</td>
+                      <td>${p.period_start} - ${p.period_end}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/pay/${item.worker.id}/" class="mt-3 border-top pt-3">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">Amount (₹)</label>
+              <input type="number" name="amount" step="0.01" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">Payment Date</label>
+              <input type="date" name="payment_date" class="form-control form-control-sm" value="{{ today|date:'Y-m-d' }}" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-bold">Period Start</label>
+              <input type="date" name="period_start" class="form-control form-control-sm" value="${item.pending_periods.length ? item.pending_periods[0].start : ''}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-bold">Period End</label>
+              <input type="date" name="period_end" class="form-control form-control-sm" value="${item.pending_periods.length ? item.pending_periods[0].end : ''}">
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn-premium-primary w-100">Pay Now</button>
+            </div>
+          </div>
+        </form>
+      `;
+      modalBody.innerHTML = html;
+      modal.show();
     });
-
-    document.querySelectorAll('.pending-row').forEach(row => {
-        row.addEventListener('click', function() {
-            const workerId = parseInt(this.dataset.workerId);
-            const item = itemMap[workerId];
-            if (!item) {
-                modalBody.innerHTML = '<div class="alert alert-danger">Data not found.</div>';
-                modal.show();
-                return;
-            }
-            // Build modal content
-            let html = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Phone:</strong> ${item.worker.phone || '-'}</p>
-                        <p><strong>Address:</strong> ${item.worker.address || '-'}</p>
-                        <p><strong>Joining:</strong> ${item.worker.joining_date}</p>
-                        <p><strong>Salary:</strong> ₹${item.worker.salary_amount}/${item.worker.salary_type}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Pending Periods (oldest first)</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead><tr><th>Period</th><th>Due</th><th>Paid</th><th>Remaining</th></tr></thead>
-                                <tbody>
-                                    ${item.pending_periods.map(p => `
-                                        <tr>
-                                            <td>${p.start} - ${p.end}</td>
-                                            <td>₹${parseFloat(p.due).toFixed(2)}</td>
-                                            <td>₹${parseFloat(p.paid).toFixed(2)}</td>
-                                            <td>₹${parseFloat(p.remaining).toFixed(2)}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Attendance (last 30 days)</h6>
-                        <div class="d-flex flex-wrap gap-1">
-                            ${item.attendance_history.map(a => `
-                                <span class="badge ${a.status === 'present' ? 'bg-success' : 'bg-danger'}" style="font-size:0.7rem;">
-                                    ${a.date}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Payment History</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead><tr><th>Date</th><th>Amount</th><th>Period</th></tr></thead>
-                                <tbody>
-                                    ${item.payment_history.map(p => `
-                                        <tr>
-                                            <td>${p.payment_date}</td>
-                                            <td>₹${parseFloat(p.amount).toFixed(2)}</td>
-                                            <td>${p.period_start} - ${p.period_end}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/pay/${item.worker.id}/" class="mt-3">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.path }}">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label small">Amount (₹)</label>
-                            <input type="number" name="amount" step="0.01" class="form-control form-control-sm" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Payment Date</label>
-                            <input type="date" name="payment_date" class="form-control form-control-sm" value="{{ today|date:'Y-m-d' }}" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Period Start</label>
-                            <input type="date" name="period_start" class="form-control form-control-sm" value="${item.pending_periods.length ? item.pending_periods[0].start : ''}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Period End</label>
-                            <input type="date" name="period_end" class="form-control form-control-sm" value="${item.pending_periods.length ? item.pending_periods[0].end : ''}">
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">Pay Now</button>
-                        </div>
-                    </div>
-                </form>
-            `;
-            modalBody.innerHTML = html;
-            modal.show();
-        });
-    });
+  });
 });
 </script>
+
 {% endblock %}

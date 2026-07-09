@@ -1,0 +1,232 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}New Order - Customer Selection | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Selection Page Styles ===== */
+  .selection-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 2rem 0;
+  }
+
+  .selection-container {
+    max-width: 800px;
+    width: 100%;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .page-header p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  .selection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .selection-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .selection-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent);
+    opacity: 0;
+    transition: 0.3s;
+  }
+  .selection-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  }
+  .selection-card:hover::before {
+    opacity: 1;
+  }
+  .selection-card:active {
+    transform: scale(0.97);
+  }
+
+  .selection-card .icon-wrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6rem;
+    margin-bottom: 0.5rem;
+    transition: 0.3s;
+  }
+  .selection-card .icon-wrap.walkin {
+    background: #fef3e2;
+    color: #e67e22;
+  }
+  .selection-card .icon-wrap.regular {
+    background: #e3f0fd;
+    color: #2980b9;
+  }
+  .selection-card:hover .icon-wrap.walkin {
+    background: #e67e22;
+    color: #fff;
+  }
+  .selection-card:hover .icon-wrap.regular {
+    background: #2980b9;
+    color: #fff;
+  }
+
+  .selection-card .title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+  .selection-card .desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .selection-card .badge-feature {
+    display: inline-block;
+    background: var(--accent-light, #f0f4f8);
+    color: var(--accent);
+    padding: 0.2rem 0.8rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-top: 0.3rem;
+  }
+
+  .selection-card .arrow {
+    position: absolute;
+    bottom: 1rem;
+    right: 1.2rem;
+    font-size: 1.2rem;
+    color: var(--muted);
+    transition: 0.3s;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  .selection-card:hover .arrow {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--accent);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .selection-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .selection-card {
+      padding: 2rem 1.2rem;
+    }
+    .selection-card .icon-wrap {
+      width: 64px;
+      height: 64px;
+      font-size: 2rem;
+    }
+    .page-header h2 {
+      font-size: 1.6rem;
+    }
+    .selection-wrapper {
+      min-height: auto;
+      padding: 1rem 0;
+    }
+  }
+  @media (max-width: 576px) {
+    .selection-card .title {
+      font-size: 1.1rem;
+    }
+    .selection-card .desc {
+      font-size: 0.8rem;
+    }
+    .selection-card .icon-wrap {
+      width: 56px;
+      height: 56px;
+      font-size: 1.6rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="selection-wrapper">
+  <div class="selection-container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h2><i class="fas fa-user-plus"></i> New Order</h2>
+      <p>Choose how you want to create this order</p>
+    </div>
+
+    <!-- Selection Cards -->
+    <div class="selection-grid">
+      <!-- Walk-in Customer -->
+      <a href="?walkin=1" class="selection-card">
+        <div class="icon-wrap walkin">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="title">Walk‑in Customer</div>
+        <div class="desc">New customer, no saved profile<br>Enter details now</div>
+        <span class="badge-feature"><i class="fas fa-bolt"></i> Quick Entry</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </a>
+
+      <!-- Regular Customer (updated text) -->
+      <a href="?select=1" class="selection-card">
+        <div class="icon-wrap regular">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div class="title">Regular Customer</div>
+        <div class="desc">Choose from your saved customers<br>View Saved Customers &amp; pending balance</div>
+        <span class="badge-feature"><i class="fas fa-address-book"></i> Saved Profile</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

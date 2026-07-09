@@ -1,83 +1,681 @@
-
 {% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Settings | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Settings Page ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.5rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+  }
+
+  .settings-tabs {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .settings-tabs .nav-link {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 40px 40px 0 0;
+    transition: all 0.2s ease;
+  }
+  .settings-tabs .nav-link:hover {
+    color: var(--text);
+    background: var(--surface-alt);
+  }
+  .settings-tabs .nav-link.active {
+    color: var(--accent);
+    background: var(--surface);
+    border-bottom: 3px solid var(--accent);
+  }
+  .settings-tabs .nav-link i {
+    margin-right: 0.4rem;
+  }
+
+  .tab-pane .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .tab-pane .section-header h5 {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin: 0;
+  }
+  .tab-pane .section-header h5 i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--expense-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 600px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium .action-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  /* Button styles for table actions */
+  .btn-sm-premium {
+    padding: 0.25rem 0.9rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+  }
+  .btn-sm-outline-primary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-sm-outline-primary:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+  }
+  .btn-sm-outline-info {
+    background: transparent;
+    color: #0dcaf0;
+    border: 1px solid #0dcaf0;
+  }
+  .btn-sm-outline-info:hover {
+    background: #0dcaf0;
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  /* Modal styling */
+  .modal-content {
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--expense-hover-shadow);
+  }
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+  }
+  .modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .modal-header .modal-title i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+  }
+  .modal-footer .btn {
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+  }
+  .modal-footer .btn-secondary {
+    background: var(--surface-alt);
+    border: none;
+    color: var(--text-secondary);
+  }
+  .modal-footer .btn-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+  .modal-footer .btn-primary {
+    background: var(--accent);
+    border: none;
+  }
+  .modal-footer .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .modal .form-group {
+    margin-bottom: 1rem;
+  }
+  .modal .form-group label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .modal .form-group .form-control,
+  .modal .form-group .form-select {
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    width: 100%;
+  }
+  .modal .form-group .form-control:focus,
+  .modal .form-group .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    outline: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 2.5rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .actions { justify-content: flex-start; }
+    .settings-tabs .nav-link { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+    .tab-pane .section-header { flex-direction: column; align-items: stretch; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .settings-tabs .nav-link { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>⚙️ Settings</h2>
 
-<!-- Rates Section -->
-<div class="card mb-4">
-    <div class="card-header">
-        <h5>Grinding & Cleaning Rates</h5>
-    </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="update_rates">
-            <div class="row">
-                <div class="col-md-6">
-                    <label>Grinding per KG</label>
-                    <input name="grinding_rate" value="{{ setting.grinding_rate }}" class="form-control" step="0.01" type="number" required>
-                </div>
-                <div class="col-md-6">
-                    <label>Cleaning per KG</label>
-                    <input name="cleaning_rate" value="{{ setting.cleaning_rate }}" class="form-control" step="0.01" type="number" required>
-                </div>
-            </div>
-            <button class="btn btn-primary mt-3">Save Rates</button>
-        </form>
-    </div>
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-cog"></i> Settings</h2>
+  <div class="actions">
+    <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-outline-premium" style="text-decoration:none;">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
 </div>
 
-<!-- Categories Section -->
-<div class="card">
-    <div class="card-header">
-        <h5>Categories</h5>
-    </div>
-    <div class="card-body">
-        <!-- Add Category Form -->
-        <form method="post" class="row g-2 mb-3">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="add_category">
-            <div class="col-md-4">
-                <input type="text" name="category_name" class="form-control" placeholder="Category name" required>
-            </div>
-            <div class="col-md-4">
-                <input type="text" name="category_description" class="form-control" placeholder="Description (optional)">
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-success">Add Category</button>
-            </div>
-        </form>
+<!-- ===== TABS ===== -->
+<ul class="nav nav-tabs settings-tabs" id="settingsTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="grinding-tab" data-bs-toggle="tab" data-bs-target="#grinding" type="button" role="tab">
+      <i class="fas fa-tools"></i> Grinding Categories
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="selling-tab" data-bs-toggle="tab" data-bs-target="#selling" type="button" role="tab">
+      <i class="fas fa-shopping-cart"></i> Selling Items
+    </button>
+  </li>
+</ul>
 
-        <!-- Existing Categories List -->
-        <table class="table table-bordered">
-            <thead>
-                <tr><th>Name</th><th>Description</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-                {% for cat in categories %}
-                <tr>
-                    <form method="post" class="row g-1">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="edit_category">
-                        <input type="hidden" name="category_id" value="{{ cat.id }}">
-                        <td><input type="text" name="category_name" value="{{ cat.name }}" class="form-control form-control-sm"></td>
-                        <td><input type="text" name="category_description" value="{{ cat.description }}" class="form-control form-control-sm"></td>
-                        <td>
-                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="if(confirm('Delete this category?')) { document.getElementById('delete_{{ cat.id }}').submit(); }">Delete</button>
-                        </td>
-                    </form>
-                    <form method="post" id="delete_{{ cat.id }}" style="display:none;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="delete_category">
-                        <input type="hidden" name="category_id" value="{{ cat.id }}">
-                    </form>
-                </tr>
-                {% empty %}
-                <tr><td colspan="3">No categories yet. Add one above.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="tab-content">
+
+  <!-- ===== GRINDING TAB ===== -->
+  <div class="tab-pane fade show active" id="grinding" role="tabpanel">
+    <div class="section-header">
+      <h5><i class="fas fa-list"></i> Grinding Categories</h5>
+      <button class="btn-premium" data-bs-toggle="modal" data-bs-target="#addGrindingModal">
+        <i class="fas fa-plus"></i> Add Grinding Category
+      </button>
     </div>
+
+    <div class="table-container">
+      <table class="table-premium">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Grinding Rate (per KG)</th>
+            <th>Cleaning Rate (per KG)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categories %}
+          <tr>
+            <td><strong>{{ cat.name }}</strong></td>
+            <td>{{ cat.description|default:"—" }}</td>
+            <td>₹{{ cat.grinding_rate|floatformat:2 }}</td>
+            <td>{% if cat.cleaning_rate %}₹{{ cat.cleaning_rate|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td>
+              <div class="action-btns">
+                <a href="{% url 'grinding_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="btn-sm-premium btn-sm-outline-info">
+                  <i class="fas fa-chart-bar"></i> Detail
+                </a>
+                <button class="btn-sm-premium btn-sm-outline-primary" data-bs-toggle="modal" data-bs-target="#editGrindingModal{{ cat.id }}">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Edit Grinding Modal -->
+          <div class="modal fade" id="editGrindingModal{{ cat.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="edit_category">
+                  <input type="hidden" name="category_id" value="{{ cat.id }}">
+                  <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Grinding Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="form-group">
+                      <label>Name</label>
+                      <input type="text" name="category_name" class="form-control" value="{{ cat.name }}" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Description</label>
+                      <input type="text" name="category_description" class="form-control" value="{{ cat.description }}">
+                    </div>
+                    <div class="form-group">
+                      <label>Grinding Rate (per KG)</label>
+                      <input type="number" name="grinding_rate" step="0.01" class="form-control" value="{{ cat.grinding_rate }}" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Cleaning Rate (per KG) – optional</label>
+                      <input type="number" name="cleaning_rate" step="0.01" class="form-control" value="{{ cat.cleaning_rate|default:'' }}" placeholder="Leave blank for none">
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No grinding categories added yet.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SELLING TAB ===== -->
+  <div class="tab-pane fade" id="selling" role="tabpanel">
+    <div class="section-header">
+      <h5><i class="fas fa-tags"></i> Selling Items (Prices per measurement)</h5>
+      <button class="btn-premium" data-bs-toggle="modal" data-bs-target="#addSellingModal">
+        <i class="fas fa-plus"></i> Add Selling Item
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table class="table-premium">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Measurement</th>
+            <th>Price</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in selling_categories %}
+            {% for price in cat.prices.all %}
+            <tr>
+              <td><strong>{{ cat.name }}</strong></td>
+              <td>{{ cat.description|default:"—" }}</td>
+              <td>{{ price.get_measurement_display }}</td>
+              <td>₹{{ price.price|floatformat:2 }}</td>
+              <td>
+                <div class="action-btns">
+                  <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="btn-sm-premium btn-sm-outline-info">
+                    <i class="fas fa-chart-bar"></i> Detail
+                  </a>
+                  <button class="btn-sm-premium btn-sm-outline-primary" data-bs-toggle="modal" data-bs-target="#editSellingPriceModal{{ price.id }}">
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Edit Price Modal -->
+            <div class="modal fade" id="editSellingPriceModal{{ price.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit_selling_price">
+                    <input type="hidden" name="selling_price_id" value="{{ price.id }}">
+                    <div class="modal-header">
+                      <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Price</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="form-group">
+                        <label>Measurement</label>
+                        <select name="measurement" class="form-select">
+                          <option value="kg" {% if price.measurement == 'kg' %}selected{% endif %}>KG</option>
+                          <option value="liter" {% if price.measurement == 'liter' %}selected{% endif %}>Liter</option>
+                          <option value="gram" {% if price.measurement == 'gram' %}selected{% endif %}>Gram</option>
+                          <option value="packet" {% if price.measurement == 'packet' %}selected{% endif %}>Packet</option>
+                          <option value="dozen" {% if price.measurement == 'dozen' %}selected{% endif %}>Dozen</option>
+                          <option value="piece" {% if price.measurement == 'piece' %}selected{% endif %}>Piece</option>
+                          <option value="bottle" {% if price.measurement == 'bottle' %}selected{% endif %}>Bottle</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Price</label>
+                        <input type="number" name="price" step="0.01" class="form-control" value="{{ price.price }}" required>
+                      </div>
+                      <div class="form-group">
+                        <label>Stock Quantity</label>
+                        <input type="number" name="stock" step="0.01" class="form-control" value="{{ price.stock|default:0 }}" required>
+                      </div>
+                      <div class="form-group">
+                        <label>Purchase Price (cost per unit)</label>
+                        <input type="number" name="purchase_price" step="0.01" class="form-control" value="{{ price.purchase_price|default:0 }}" required>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <i class="fas fa-inbox"></i>
+                  <p>No selling items added yet.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Add Grinding Modal -->
+<div class="modal fade" id="addGrindingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_category">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Grinding Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" name="category_name" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="category_description" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Grinding Rate (per KG) *</label>
+            <input type="number" name="grinding_rate" step="0.01" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Cleaning Rate (per KG) – optional</label>
+            <input type="number" name="cleaning_rate" step="0.01" class="form-control" placeholder="Leave blank for none">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Selling Item Modal -->
+<div class="modal fade" id="addSellingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_selling_category_with_price">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Selling Item</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Category Name *</label>
+            <input type="text" name="selling_category_name" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="selling_category_description" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Measurement *</label>
+            <select name="measurement" class="form-select" required>
+              <option value="kg">KG</option>
+              <option value="liter">Liter</option>
+              <option value="gram">Gram</option>
+              <option value="packet">Packet</option>
+              <option value="dozen">Dozen</option>
+              <option value="piece">Piece</option>
+              <option value="bottle">Bottle</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Price (per unit) *</label>
+            <input type="number" name="price" step="0.01" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Stock Quantity</label>
+            <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
+          </div>
+          <div class="form-group">
+            <label>Purchase Price (cost per unit) *</label>
+            <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Selling Category Modals (one per category) -->
+{% for cat in selling_categories %}
+<div class="modal fade" id="editSellingCatModal{{ cat.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit_selling_category">
+        <input type="hidden" name="selling_category_id" value="{{ cat.id }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Selling Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="selling_category_name" class="form-control" value="{{ cat.name }}" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="selling_category_description" class="form-control" value="{{ cat.description }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Add Selling Price Modals (for each existing category) -->
+{% for cat in selling_categories %}
+<div class="modal fade" id="addSellingPriceModal{{ cat.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_selling_price">
+        <input type="hidden" name="selling_category_id" value="{{ cat.id }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Price for {{ cat.name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Measurement</label>
+            <select name="measurement" class="form-select" required>
+              <option value="kg">KG</option>
+              <option value="liter">Liter</option>
+              <option value="gram">Gram</option>
+              <option value="packet">Packet</option>
+              <option value="dozen">Dozen</option>
+              <option value="piece">Piece</option>
+              <option value="bottle">Bottle</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Price</label>
+            <input type="number" name="price" step="0.01" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Purchase Price (cost per unit)</label>
+            <input type="number" name="purchase_price" step="0.01" class="form-control" value="0" required>
+          </div>
+          <div class="form-group">
+            <label>Stock Quantity</label>
+            <input type="number" name="stock" step="0.01" class="form-control" value="0" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Price</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
 {% endblock %}

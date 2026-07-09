@@ -1,0 +1,605 @@
+{% extends "mobile/base.html" %}
+{% load static %}
+{% block title %}Category Performance | {{ tenant.name }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  /* ===== Premium Mobile Design ===== */
+  :root {
+    --hero-grad: linear-gradient(145deg, #0f1a2e, #1a2d4a);
+    --accent-grad: linear-gradient(135deg, #f59e0b, #d97706);
+    --card-radius: 18px;
+    --card-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    --tap-scale: 0.96;
+  }
+
+  /* ----- Hero ----- */
+  .hero-section {
+    background: var(--hero-grad);
+    border-radius: var(--card-radius);
+    padding: 1.4rem 1.2rem;
+    color: #fff;
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-section::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .hero-section .hero-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .hero-section .hero-title i {
+    color: #f59e0b;
+  }
+  .hero-section .hero-sub {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-section .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    padding: 0.2rem 1rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-top: 0.4rem;
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ----- KPI Strip (horizontal scroll) ----- */
+  .kpi-strip {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding: 0.2rem 0 0.8rem;
+    margin-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .kpi-card {
+    flex: 0 0 120px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 0.8rem 0.4rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    scroll-snap-align: start;
+    transition: transform 0.2s;
+  }
+  .kpi-card:active {
+    transform: scale(var(--tap-scale));
+  }
+  .kpi-card .number {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .kpi-card .label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .kpi-card .icon {
+    display: block;
+    margin: 0 auto 0.1rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke: var(--accent);
+    fill: none;
+  }
+
+  /* ----- Filter Bar ----- */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .filter-bar .search-box {
+    flex: 2;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--bg);
+    border-radius: 30px;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .filter-bar .search-box:focus-within {
+    border-color: #f59e0b;
+  }
+  .filter-bar .search-box input {
+    border: none;
+    background: transparent;
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+    width: 100%;
+    outline: none;
+    color: var(--text);
+  }
+  .filter-bar .search-box i {
+    color: var(--muted);
+  }
+  .filter-bar select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 0.75rem;
+    color: var(--text);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236b7280' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 1.6rem;
+    flex: 1;
+    min-width: 60px;
+  }
+  .filter-bar .btn-sort {
+    background: var(--accent-grad);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 0.25rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: 0 4px 12px rgba(245,158,11,0.25);
+  }
+  .filter-bar .btn-sort:active {
+    transform: scale(var(--tap-scale));
+  }
+  .filter-bar .btn-clear {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* ----- Carousel (charts) ----- */
+  .carousel-premium {
+    background: var(--surface);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.4rem 0.8rem;
+    margin-bottom: 1.2rem;
+    box-shadow: var(--card-shadow);
+  }
+  .carousel-premium .carousel-title {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.2rem;
+  }
+  .carousel-premium .carousel-title i {
+    color: #f59e0b;
+  }
+  .carousel-premium .carousel-inner {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .carousel-premium .carousel-item canvas {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 200px;
+  }
+  .carousel-premium .carousel-control-prev,
+  .carousel-premium .carousel-control-next {
+    width: 8%;
+    opacity: 0.7;
+  }
+  .carousel-premium .carousel-control-prev-icon,
+  .carousel-premium .carousel-control-next-icon {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 50%;
+    padding: 0.2rem;
+  }
+  .carousel-premium .carousel-indicators {
+    position: relative;
+    bottom: -0.2rem;
+    margin-top: 0.3rem;
+  }
+  .carousel-premium .carousel-indicators button {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--muted);
+    border: none;
+    margin: 0 5px;
+    transition: all 0.3s;
+  }
+  .carousel-premium .carousel-indicators button.active {
+    background-color: #f59e0b;
+    transform: scale(1.3);
+  }
+
+  /* ----- Category Cards (compact) ----- */
+  .category-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.6rem;
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s;
+  }
+  .category-card:active {
+    transform: scale(var(--tap-scale));
+  }
+  .category-card .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.2rem;
+  }
+  .category-card .name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+  .category-card .type-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 30px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .type-badge.grinding {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .type-badge.selling {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .category-card .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  .category-card .stats .label {
+    color: var(--muted);
+  }
+  .category-card .stats .value {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .category-card .action-link {
+    display: block;
+    text-align: right;
+    margin-top: 0.3rem;
+    color: #f59e0b;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .category-card .action-link i {
+    font-size: 0.6rem;
+    margin-left: 0.2rem;
+  }
+  .category-card .action-link:active {
+    color: #d97706;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--border);
+  }
+
+  /* ----- Responsive tweaks ----- */
+  @media (max-width: 400px) {
+    .kpi-card { flex: 0 0 100px; }
+    .kpi-card .number { font-size: 1.2rem; }
+    .filter-bar .search-box { min-width: 80px; }
+    .category-card .stats { font-size: 0.65rem; }
+    .carousel-premium .carousel-item canvas { max-height: 150px; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ===== HERO ===== -->
+<div class="hero-section">
+  <div class="hero-title">
+    <i class="fas fa-chart-pie"></i> Category Performance
+  </div>
+  <div class="hero-sub">{{ tenant.name }} · Analytics</div>
+  <div class="hero-badge">
+    <i class="fas fa-layer-group"></i> {{ total_categories }} categories
+  </div>
+</div>
+
+<!-- ===== KPI STRIP (horizontal) ===== -->
+<div class="kpi-strip">
+  <div class="kpi-card">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <div class="number">{{ total_categories }}</div>
+    <div class="label">Categories</div>
+  </div>
+  <div class="kpi-card">
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
+    <div class="label">Revenue</div>
+  </div>
+  <div class="kpi-card">
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    <div class="number">{{ total_orders }}</div>
+    <div class="label">Orders</div>
+  </div>
+  <div class="kpi-card">
+    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <div class="number">₹{{ total_profit|floatformat:0 }}</div>
+    <div class="label">Profit</div>
+  </div>
+  <div class="kpi-card">
+    <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    <div class="number">₹{{ avg_revenue|floatformat:2 }}</div>
+    <div class="label">Avg / Category</div>
+  </div>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <form method="get" class="search-box" style="flex:2;">
+    <i class="fas fa-search"></i>
+    <input type="text" name="search" placeholder="Search category..." value="{{ search }}">
+  </form>
+  <select name="sort">
+    <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
+    <option value="revenue" {% if sort == 'revenue' %}selected{% endif %}>Revenue</option>
+    <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Orders</option>
+    <option value="profit" {% if sort == 'profit' %}selected{% endif %}>Profit</option>
+  </select>
+  <select name="order">
+    <option value="asc" {% if order == 'asc' %}selected{% endif %}>↑</option>
+    <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓</option>
+  </select>
+  <button type="submit" class="btn-sort">Go</button>
+  <a href="?" class="btn-clear">Clear</a>
+</div>
+
+<!-- ===== CHARTS CAROUSEL ===== -->
+<div class="carousel-premium">
+  <div class="carousel-title">
+    <i class="fas fa-chart-line"></i> Charts
+  </div>
+  <div id="chartCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000" data-bs-touch="true">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Revenue"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="1" aria-label="Orders"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="2" aria-label="Profit"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="3" aria-label="Distribution"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="4" aria-label="Top Categories"></button>
+    </div>
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <canvas id="revenueChart"></canvas>
+      </div>
+      <div class="carousel-item">
+        <canvas id="ordersChart"></canvas>
+      </div>
+      <div class="carousel-item">
+        <canvas id="profitChart"></canvas>
+      </div>
+      <div class="carousel-item">
+        <canvas id="doughnutChart"></canvas>
+      </div>
+      <div class="carousel-item">
+        <canvas id="hbarChart"></canvas>
+      </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#chartCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#chartCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== CATEGORY CARDS ===== -->
+{% for cat in categories %}
+<div class="category-card">
+  <div class="top">
+    <span class="name">{{ cat.name }}</span>
+    <span class="type-badge {{ cat.type }}">{{ cat.type }}</span>
+  </div>
+  <div class="stats">
+    <span class="label">Orders</span><span class="value">{{ cat.total_orders }}</span>
+    <span class="label">Qty</span><span class="value">{{ cat.total_quantity|floatformat:1 }} {{ cat.quantity_unit }}</span>
+    <span class="label">Revenue</span><span class="value">₹{{ cat.total_revenue|floatformat:2 }}</span>
+    <span class="label">Profit</span><span class="value">{% if cat.total_profit is not None %}₹{{ cat.total_profit|floatformat:2 }}{% else %}—{% endif %}</span>
+  </div>
+  <a href="{% url cat.url_name schema_name=tenant.schema_name category_id=cat.id %}" class="action-link">
+    View Details <i class="fas fa-chevron-right"></i>
+  </a>
+</div>
+{% empty %}
+<div class="empty-state"><i class="fas fa-inbox"></i>No categories found.</div>
+{% endfor %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize all charts
+  // 1. Revenue Bar
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels_revenue|safe }},
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: {{ chart_data_revenue }},
+        backgroundColor: 'rgba(245, 158, 11, 0.75)',
+        borderColor: '#f59e0b',
+        borderWidth: 2,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  // 2. Orders Bar
+  new Chart(document.getElementById('ordersChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels_orders|safe }},
+      datasets: [{
+        label: 'Orders',
+        data: {{ chart_data_orders }},
+        backgroundColor: 'rgba(59, 130, 246, 0.75)',
+        borderColor: '#3b82f6',
+        borderWidth: 2,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, stepSize: 1, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  // 3. Profit Bar (only if data exists)
+  const profitLabels = {{ chart_labels_profit|safe }};
+  const profitData = {{ chart_data_profit }};
+  if (profitLabels.length > 0) {
+    new Chart(document.getElementById('profitChart'), {
+      type: 'bar',
+      data: {
+        labels: profitLabels,
+        datasets: [{
+          label: 'Profit (₹)',
+          data: profitData,
+          backgroundColor: 'rgba(34, 197, 94, 0.75)',
+          borderColor: '#22c55e',
+          borderWidth: 2,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+      }
+    });
+  } else {
+    document.getElementById('profitChart').parentElement.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No profit data available</div>';
+  }
+
+  // 4. Doughnut (Revenue Distribution)
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ doughnut_labels|safe }},
+      datasets: [{
+        data: {{ doughnut_data }},
+        backgroundColor: ['#f59e0b', '#3b82f6', '#22c55e', '#ef4444', '#8b5cf6', '#94a3b8'],
+        borderColor: '#fff',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              let total = ctx.dataset.data.reduce((a,b) => a + b, 0);
+              let percentage = ((ctx.parsed / total) * 100).toFixed(1);
+              return ctx.label + ': ₹' + ctx.parsed.toFixed(2) + ' (' + percentage + '%)';
+            }
+          }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // 5. Horizontal Bar (Top 10 Revenue)
+  new Chart(document.getElementById('hbarChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ hbar_labels|safe }},
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: {{ hbar_data }},
+        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+        borderColor: '#f59e0b',
+        borderWidth: 2,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

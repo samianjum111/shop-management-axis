@@ -6,12 +6,12 @@
 
 {% block extra_head %}
 <style>
-    /* ===== Status Tabs (Horizontal Scrollable Pills) ===== */
+    /* ===== Status Tabs (Premium) ===== */
     .status-tabs {
         display: flex;
-        gap: 0.4rem;
+        gap: 0.5rem;
         overflow-x: auto;
-        padding: 0.3rem 0 0.6rem;
+        padding: 0.3rem 0 0.8rem;
         margin-bottom: 0.5rem;
         scrollbar-width: thin;
         -webkit-overflow-scrolling: touch;
@@ -20,7 +20,7 @@
     }
     .status-tabs .tab {
         flex: 0 0 auto;
-        padding: 0.4rem 0.9rem;
+        padding: 0.45rem 1.1rem;
         border-radius: 2rem;
         font-size: 0.8rem;
         font-weight: 600;
@@ -28,32 +28,42 @@
         color: var(--text-secondary);
         border: 1px solid var(--border);
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.25s ease;
         white-space: nowrap;
         scroll-snap-align: start;
-    }
-    .status-tabs .tab.active {
-        background: var(--accent);
-        color: white;
-        border-color: var(--accent);
-        box-shadow: 0 2px 8px rgba(230, 126, 34, 0.25);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
     }
     .status-tabs .tab .badge {
-        margin-left: 0.3rem;
         background: var(--muted);
         color: white;
         border-radius: 30px;
-        padding: 0.05rem 0.45rem;
+        padding: 0.05rem 0.5rem;
         font-size: 0.65rem;
-        font-weight: 600;
+        font-weight: 700;
+    }
+    .status-tabs .tab.active {
+        background: var(--gradient-accent);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 4px 16px rgba(230, 126, 34, 0.3);
     }
     .status-tabs .tab.active .badge {
-        background: rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.25);
+    }
+    .status-tabs .tab:not(.active):hover {
+        background: var(--surface-alt);
+        border-color: var(--accent-light);
+    }
+    .status-tabs .tab i {
+        font-size: 0.9rem;
     }
 
     /* ===== Local Search ===== */
     .local-search {
-        margin-bottom: 0.8rem;
+        margin-bottom: 1rem;
     }
     .local-search .search-input {
         background: var(--surface);
@@ -64,16 +74,17 @@
         align-items: center;
         transition: all 0.2s;
         gap: 0.3rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     .local-search .search-input:focus-within {
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.12);
+        box-shadow: 0 0 0 4px rgba(230,126,34,0.12);
     }
     .local-search .search-input input {
         border: none;
         background: transparent;
         width: 100%;
-        padding: 0.4rem 0.2rem;
+        padding: 0.5rem 0.2rem;
         font-size: 0.9rem;
         color: var(--text);
         outline: none;
@@ -100,7 +111,7 @@
         color: var(--accent);
     }
 
-    /* ===== Order Cards ===== */
+    /* ===== Order Cards (Premium) ===== */
     .orders-container {
         margin-top: 0.5rem;
     }
@@ -108,16 +119,23 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 0.8rem 1rem;
-        margin-bottom: 0.6rem;
-        box-shadow: var(--shadow);
-        transition: all 0.2s ease;
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.7rem;
+        box-shadow: var(--card-shadow);
+        transition: all 0.25s ease;
         display: flex;
         flex-direction: column;
         gap: 0.3rem;
+        border-left: 5px solid var(--border);
+        position: relative;
+        overflow: hidden;
     }
     .order-card:active {
         transform: scale(0.98);
+    }
+    .order-card:hover {
+        box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+        border-color: var(--accent-light);
     }
     .order-card .top-row {
         display: flex;
@@ -128,19 +146,49 @@
         font-weight: 700;
         font-size: 1rem;
         color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
     }
-    .order-card .order-id .badge-status {
+    /* Badge status – premium pill */
+    .order-card .badge-status {
         font-size: 0.6rem;
-        font-weight: 600;
-        padding: 0.15rem 0.6rem;
+        font-weight: 700;
+        padding: 0.2rem 0.7rem;
         border-radius: 30px;
-        margin-left: 0.4rem;
         vertical-align: middle;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .badge-status.ready { background: #fef3e2; color: #d35400; }
-    .badge-status.completed { background: #e8f8f0; color: #1e7e34; }
-    .badge-status.pending { background: #f1f3f5; color: #495057; }
-    .badge-status.partial { background: #e3f0fd; color: #2980b9; }
+    .badge-status.ready {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #f59e0b;
+    }
+    .badge-status.completed {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #10b981;
+    }
+    .badge-status.pending {
+        background: #f1f5f9;
+        color: #1e293b;
+        border: 1px solid #94a3b8;
+    }
+    .badge-status.partial {
+        background: #ede9fe;
+        color: #4c1d95;
+        border: 1px solid #8b5cf6;
+    }
+    .badge-status.cancelled {
+        background: #fee2e2;
+        color: #7f1d1d;
+        border: 1px solid #ef4444;
+    }
 
     .order-card .customer-info {
         font-size: 0.9rem;
@@ -151,7 +199,7 @@
         flex-wrap: wrap;
     }
     .order-card .customer-info .name {
-        font-weight: 500;
+        font-weight: 600;
         color: var(--text);
     }
     .order-card .details {
@@ -164,9 +212,15 @@
     .order-card .details .meta {
         font-size: 0.7rem;
         color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+    .order-card .details .meta i {
+        font-size: 0.6rem;
     }
     .order-card .details .amount {
-        font-weight: 700;
+        font-weight: 800;
         font-size: 1.1rem;
         color: var(--accent);
     }
@@ -188,14 +242,16 @@
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 0.2rem;
+        gap: 0.3rem;
     }
     .btn-action.primary {
-        background: var(--accent);
+        background: var(--gradient-accent);
         color: white;
+        box-shadow: 0 3px 8px rgba(230,126,34,0.25);
     }
     .btn-action.primary:hover {
         background: var(--accent-hover);
+        transform: translateY(-1px);
     }
     .btn-action.outline {
         background: transparent;
@@ -208,6 +264,7 @@
     .btn-action.success {
         background: #28a745;
         color: white;
+        box-shadow: 0 3px 8px rgba(40,167,69,0.25);
     }
     .btn-action.success:hover {
         background: #218838;
@@ -219,6 +276,17 @@
     }
     .btn-action.secondary:hover {
         background: var(--border);
+    }
+    /* Strong "Collect Pending" button */
+    .btn-action.collect-pending {
+        background: var(--gradient-accent);
+        color: white;
+        box-shadow: 0 3px 8px rgba(230,126,34,0.35);
+        font-weight: 700;
+    }
+    .btn-action.collect-pending:hover {
+        background: var(--accent-hover);
+        transform: scale(1.02);
     }
 
     /* ===== Pagination ===== */
@@ -275,6 +343,12 @@
         background: var(--surface);
         border-radius: var(--radius);
         border: 1px solid var(--border);
+    }
+    .empty-state i {
+        display: block;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--muted);
     }
 
     /* ===== Transcript Modal ===== */
@@ -380,22 +454,93 @@
             padding: 0;
         }
     }
+
+    /* ----- PREMIUM STATUS CARD STYLES (subtle but distinct) ----- */
+    .order-card {
+        transition: all 0.3s ease;
+        border-left-width: 5px;
+        border-left-style: solid;
+        position: relative;
+    }
+    /* Ready – strong pulse */
+    .order-card-ready {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+        animation: pulse-ready-strong 1.2s ease-in-out infinite;
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+    }
+    .order-card-ready .badge-status.ready {
+        background: #fcd34d;
+        color: #78350f;
+        border-color: #d97706;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+    @keyframes pulse-ready-strong {
+        0% { background: #fffbeb; border-left-color: #f59e0b; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15); }
+        50% { background: #fef3c7; border-left-color: #d97706; box-shadow: 0 6px 24px rgba(245, 158, 11, 0.35); }
+        100% { background: #fffbeb; border-left-color: #f59e0b; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15); }
+    }
+    /* Partial */
+    .order-card-partial {
+        border-left-color: #8b5cf6;
+        background: #f5f3ff;
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.10);
+    }
+    /* Pending / Unpaid */
+    .order-card-pending-unpaid {
+        border-left-color: #94a3b8;
+        background: #f8fafc;
+        box-shadow: 0 4px 16px rgba(148, 163, 184, 0.08);
+    }
+    /* Completed & Fully Paid */
+    .order-card-completed-paid {
+        border-left-color: #22c55e;
+        background: #f0fdf4;
+        box-shadow: 0 4px 16px rgba(34, 197, 94, 0.10);
+    }
+    /* Cancelled */
+    .order-card-cancelled {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+        opacity: 0.7;
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.06);
+        text-decoration: line-through;
+    }
+    .order-card-cancelled .amount {
+        text-decoration: line-through;
+        color: #b91c1c;
+    }
+
+    /* ===== Responsive fine-tune ===== */
+    @media (max-width: 400px) {
+        .order-card {
+            padding: 0.7rem 0.8rem;
+        }
+        .status-tabs .tab {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.8rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block body %}
 <div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="fw-bold mb-0">📋 Orders</h5>
-    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn btn-primary-custom btn-sm">+ New</a>
+    <h5 class="fw-bold mb-0"><i class="fas fa-wheat-awn me-1"></i> Orders</h5>
+    <div>
+        <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn btn-primary-custom btn-sm"><i class="fas fa-plus me-1"></i> New</a>
+        <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="btn btn-secondary btn-sm ms-2"><i class="fas fa-cog"></i></a>
+    </div>
 </div>
 
 <!-- Status Tabs (Horizontal scroll) -->
 <div class="status-tabs">
-    <a href="?status=all{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'all' %}active{% endif %}">All <span class="badge">{{ all_count }}</span></a>
-    <a href="?status=pending{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'pending' %}active{% endif %}">Pending <span class="badge">{{ pending_count }}</span></a>
-    <a href="?status=ready{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'ready' %}active{% endif %}">Ready <span class="badge">{{ ready_count }}</span></a>
-    <a href="?status=partial{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'partial' %}active{% endif %}">Partial <span class="badge">{{ partial_count }}</span></a>
-    <a href="?status=completed{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'completed' %}active{% endif %}">Completed <span class="badge">{{ completed_count }}</span></a>
+    <a href="?status=all{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "all" %}active{% endif %}"><i class="fas fa-list-ul"></i> All <span class="badge">{{ all_count }}</span></a>
+    <a href="?status=pending{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "pending" %}active{% endif %}"><i class="fas fa-clock"></i> Pending <span class="badge">{{ pending_count }}</span></a>
+    <a href="?status=ready{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "ready" %}active{% endif %}"><i class="fas fa-check-circle"></i> Ready <span class="badge">{{ ready_count }}</span></a>
+    <a href="?status=partial{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "partial" %}active{% endif %}"><i class="fas fa-hand-holding-usd"></i> Partial <span class="badge">{{ partial_count }}</span></a>
+    <a href="?status=completed{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == "completed" %}active{% endif %}"><i class="fas fa-check-double"></i> Completed <span class="badge">{{ completed_count }}</span></a>
+    <a href="?status=cancelled{% if search_q %}&search={{ search_q }}{% endif %}" class="tab {% if status_filter == 'cancelled' %}active{% endif %}"><i class="fas fa-times-circle"></i> Cancelled <span class="badge">{{ cancelled_count }}</span></a>
 </div>
 
 <!-- Local Search -->
@@ -413,36 +558,57 @@
 <!-- Order Cards -->
 <div class="orders-container">
     {% for order in page_obj %}
-    <div class="order-card" data-order-id="{{ order.id }}">
+    <div class="order-card 
+        {% if order.status == 'cancelled' %}order-card-cancelled
+        {% elif order.payment_status == 'partial' %}order-card-partial
+        {% elif order.status == 'ready' %}order-card-ready
+        {% elif order.status == 'pending' and order.payment_status == 'unpaid' %}order-card-pending-unpaid
+        {% elif order.status == 'completed' and order.payment_status == 'paid' %}order-card-completed-paid
+        {% else %}order-card-pending-unpaid{% endif %}" 
+        data-order-id="{{ order.id }}">
         <div class="top-row">
             <span class="order-id">
                 #{{ order.id }}
-                {% if order.status == 'ready' %}<span class="badge-status ready">Ready</span>
-                {% elif order.status == 'completed' %}<span class="badge-status completed">Done</span>
-                {% elif order.payment_status == 'partial' %}<span class="badge-status partial">Partial</span>
-                {% else %}<span class="badge-status pending">Pending</span>{% endif %}
+                {# Badge: if partial -> show partial, else if completed -> done, else if ready -> ready, else pending #}
+                {% if order.payment_status == 'partial' %}
+                    <span class="badge-status partial"><i class="fas fa-hand-holding-usd"></i> Partial</span>
+                {% elif order.status == 'completed' %}
+                    <span class="badge-status completed"><i class="fas fa-check-circle"></i> Done</span>
+                {% elif order.status == 'ready' %}
+                    <span class="badge-status ready"><i class="fas fa-check-circle"></i> Ready</span>
+                {% elif order.status == 'cancelled' %}
+                    <span class="badge-status cancelled"><i class="fas fa-times-circle"></i> Cancelled</span>
+                {% else %}
+                    <span class="badge-status pending"><i class="fas fa-clock"></i> Pending</span>
+                {% endif %}
             </span>
             <span class="amount">₹{{ order.total_amount }}</span>
         </div>
         <div class="customer-info">
-            <span class="name">{{ order.customer.name }}</span>
+            <span class="name"><i class="fas fa-user me-1"></i>{{ order.customer.name }}</span>
             <span class="text-muted">•</span>
-            <span>{{ order.customer.phone|default:"N/A" }}</span>
+            <span><i class="fas fa-phone me-1"></i>{{ order.customer.phone|default:"N/A" }}</span>
         </div>
         <div class="details">
-            <span class="meta">Ready: {{ order.ready_time|date:"d M H:i" }}</span>
-            <span class="meta">Created: {{ order.created_at|date:"d M H:i" }}</span>
+            <span class="meta"><i class="far fa-clock"></i> Ready: {{ order.ready_time|date:"d M H:i" }}</span>
+            <span class="meta"><i class="far fa-calendar-alt"></i> {{ order.created_at|date:"d M H:i" }}</span>
         </div>
         <div class="actions">
-            {% if order.status != 'completed' %}
-                <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn-action primary">💰 Collect</a>
+            {% if order.status != 'completed' and order.payment_status != 'partial' %}
+                <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action primary"><i class="fas fa-check"></i> Complete</a>
             {% endif %}
-            <button class="btn-action secondary view-transcript" data-order-id="{{ order.id }}">📄 Transcript</button>
+            {% if order.payment_status == 'partial' %}
+                <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action collect-pending"><i class="fas fa-hand-holding-usd"></i> Collect Pending</a>
+            {% endif %}
+            {% if order.can_cancel %}
+            <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn-action outline" onclick="return confirm('Cancel this order?')"><i class="fas fa-times"></i> Cancel</a>
+            {% endif %}
+            <button class="btn-action secondary view-transcript" data-order-id="{{ order.id }}"><i class="fas fa-file-alt"></i> Transcript</button>
         </div>
     </div>
     {% empty %}
     <div class="empty-state">
-        <i class="fas fa-inbox fa-2x mb-2" style="display:block; color:var(--muted);"></i>
+        <i class="fas fa-inbox"></i>
         No orders found matching your criteria.
     </div>
     {% endfor %}
@@ -508,20 +674,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeBtn = document.getElementById('closeTranscriptModal');
     const printBtn = document.getElementById('printTranscript');
 
-    // ----- Open modal on view transcript button click -----
+    // Open modal on view transcript button click
     document.querySelectorAll('.view-transcript').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
             const orderId = this.dataset.orderId;
             if (!orderId) {
                 alert('Order ID not found.');
                 return;
             }
-            // Fetch transcript content
+            modalBody.innerHTML = '<div style="text-align:center; padding:20px;">Loading...</div>';
             fetch(`/portal/{{ tenant.schema_name }}/chakki/transcript-modal/${orderId}/`)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
+                    if (!response.ok) throw new Error('Network response was not ok');
                     return response.text();
                 })
                 .then(html => {
@@ -529,14 +694,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     modal.classList.add('open');
                 })
                 .catch(err => {
-                    console.error('Fetch error:', err);
+                    console.error('Transcript fetch error:', err);
                     modalBody.innerHTML = '<div style="padding:20px;text-align:center;color:red;">Error loading transcript. Please try again.</div>';
                     modal.classList.add('open');
                 });
         });
     });
 
-    // ----- Close modal -----
+    // Close modal
     function closeModal() {
         modal.classList.remove('open');
         modalBody.innerHTML = '<div style="text-align:center; padding:20px;">Loading...</div>';
@@ -548,14 +713,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ----- Print -----
+    // Print
     if (printBtn) {
         printBtn.addEventListener('click', function() {
             window.print();
         });
     }
 
-    // ----- Download (with format selector) -----
+    // Download with format selector
     const downloadBtn = document.getElementById('downloadTranscriptBtn');
     const formatSelect = document.getElementById('downloadFormat');
     if (downloadBtn && formatSelect) {
@@ -567,7 +732,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Transcript content not loaded yet.');
                     return;
                 }
-                // Check if html2canvas is available
                 if (typeof html2canvas === 'undefined') {
                     alert('html2canvas library not loaded. Please check your internet connection.');
                     return;
@@ -608,7 +772,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ----- Keyboard shortcut to close -----
+    // Keyboard shortcut to close
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && modal.classList.contains('open')) {
             closeModal();

@@ -2,8 +2,14 @@ def tenant_processor(request):
     return {'tenant': getattr(request, 'tenant', None)}
 
 from chakki.models import ChakkiOrder
+
 def chakki_counts(request):
-    orders = ChakkiOrder.objects.all()
+    from chakki.models import ChakkiOrder
+    # Filter by tenant if available
+    if hasattr(request, 'tenant') and request.tenant:
+        orders = ChakkiOrder.objects.filter(tenant=request.tenant)
+    else:
+        orders = ChakkiOrder.objects.all()
     pending_count = orders.filter(status='pending').count()
     ready_count = orders.filter(status='ready').count()
     partial_count = orders.filter(payment_status='partial').count()
@@ -16,6 +22,7 @@ def chakki_counts(request):
         'completed_count': completed_count,
         'ready_orders': ready_orders,
     }
+
 
 from django.utils import timezone
 def today_context(request):

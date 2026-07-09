@@ -13,4 +13,26 @@ urlpatterns = [
     path('settings/', views.settings_view, name='chakki_settings'),
     path('search/', views.search, name='chakki_search'),
     path('transcript-modal/<int:order_id>/', views.get_transcript_modal, name='get_transcript_modal'),
+
+
+    path('customers/', views.customer_list, name='customer_list'),
+    path('customer/<int:customer_id>/', views.customer_profile, name='customer_profile'),
+    path('order/add/', views.add_order, name='add_order'),
+    path('order/confirmation/<int:order_id>/', views.order_confirmation, name='order_confirmation'),
+    path('customer/add-from-order/<int:order_id>/', views.add_customer_from_order, name='add_customer_from_order'),
+
+
+    path('complete-action/<int:order_id>/', views.complete_order_action, name='complete_order_action'),
+    path('complete-partial/<int:order_id>/', views.order_complete_partial, name='order_complete_partial'),
+    path('walk-profile/', views.walk_profile, name='walk_profile'),
+    path('convert-walk/<int:customer_id>/', views.convert_walk_to_regular, name='convert_walk_to_regular'),
+
+    path('customer/create/', views.create_customer, name='create_customer'),
+    path('check-ready/', views.check_ready_orders, name='check_ready_orders'),
+    path('api/selling-prices/', views.selling_prices_api, name='selling_prices_api'),
+
+    # Category detail pages
+    path('category/grinding/<int:category_id>/', views.grinding_category_detail, name='grinding_category_detail'),
+    path('category/selling/<int:category_id>/', views.selling_category_detail, name='selling_category_detail'),
+        path('cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
 ]

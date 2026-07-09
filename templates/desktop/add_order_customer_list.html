@@ -1,0 +1,376 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Select Regular Customer | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Customer List Styles ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .page-header .sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .btn-back {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.5rem 1.4rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-back:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .btn-back i {
+    font-size: 0.9rem;
+  }
+
+  /* Search */
+  .search-wrap {
+    margin-bottom: 1.8rem;
+  }
+  .search-wrap .input-group {
+    max-width: 480px;
+    background: var(--surface);
+    border-radius: 60px;
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+    transition: 0.25s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+  .search-wrap .input-group:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+  }
+  .search-wrap .input-group input {
+    border: none;
+    padding: 0.7rem 0.8rem 0.7rem 1rem;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    flex: 1;
+  }
+  .search-wrap .input-group input::placeholder {
+    color: var(--muted);
+  }
+  .search-wrap .input-group .input-group-text {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 0.7rem 0.8rem 0.7rem 1.2rem;
+  }
+  .search-wrap .input-group .btn-search {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 1.6rem;
+    font-weight: 600;
+    border-radius: 0 60px 60px 0;
+    transition: 0.2s;
+    cursor: pointer;
+  }
+  .search-wrap .input-group .btn-search:hover {
+    background: var(--accent-hover);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-bar .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .stats-bar .stat strong {
+    font-size: 1.1rem;
+    color: var(--text);
+    font-weight: 700;
+  }
+  .stats-bar .stat .num {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1.2rem;
+  }
+
+  /* Customer Cards - Grid */
+  .customer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+
+  .customer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    transition: 0.25s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    text-decoration: none;
+    color: var(--text);
+    position: relative;
+    overflow: hidden;
+  }
+  .customer-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: 0.25s;
+  }
+  .customer-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.07);
+    border-color: var(--accent);
+  }
+  .customer-card:hover::after {
+    opacity: 1;
+  }
+  .customer-card .top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .customer-card .name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.3;
+  }
+  .customer-card .name i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+    font-size: 0.9rem;
+  }
+  .customer-card .badge-pending {
+    background: #fef3e2;
+    color: #d35400;
+    padding: 0.2rem 0.7rem;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .customer-card .badge-none {
+    background: #e8f8f0;
+    color: #1e7e34;
+    padding: 0.2rem 0.7rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .customer-card .details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .customer-card .details span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .customer-card .details i {
+    color: var(--muted);
+    width: 16px;
+    font-size: 0.8rem;
+  }
+  .customer-card .actions {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .btn-select {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.3rem 1.4rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .btn-select:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(26,42,58,0.2);
+    color: #fff;
+  }
+  .btn-select i {
+    font-size: 0.7rem;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+    color: var(--muted);
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    grid-column: 1 / -1;
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .empty-state p {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+    .page-header h2 { font-size: 1.4rem; }
+    .search-wrap .input-group { max-width: 100%; }
+    .search-wrap .input-group .btn-search span { display: none; }
+    .search-wrap .input-group .btn-search { padding: 0.7rem 1.2rem; }
+    .customer-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 0.8rem; font-size: 0.8rem; }
+    .customer-card { padding: 1rem; }
+    .customer-card .top { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+    .customer-card .badge-pending, .customer-card .badge-none { align-self: flex-start; }
+  }
+  @media (max-width: 576px) {
+    .customer-card .details { flex-direction: column; gap: 0.2rem; }
+    .btn-select { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ====== PAGE HEADER ====== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-users"></i> Select Regular Customer</h2>
+    <p class="sub">Choose a customer to create a new order</p>
+  </div>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Back
+  </a>
+</div>
+
+<!-- ====== SEARCH ====== -->
+<div class="search-wrap">
+  <form method="get" class="input-group">
+    <span class="input-group-text"><i class="fas fa-search"></i></span>
+    <input type="text" name="q" placeholder="Search by name or phone number..." value="{{ request.GET.q|default:'' }}">
+    <button type="submit" class="btn-search">
+      <i class="fas fa-search"></i> <span>Search</span>
+    </button>
+  </form>
+</div>
+
+<!-- ====== STATS ====== -->
+<div class="stats-bar">
+  <div class="stat">
+    Total: <strong>{{ customers|length }}</strong>
+  </div>
+  <div class="stat">
+    <i class="fas fa-user-check" style="color:#2e7d32;"></i> Regular customers
+  </div>
+  {% if request.GET.q %}
+  <div class="stat">
+    <i class="fas fa-filter" style="color:var(--accent);"></i> Filtered by "{{ request.GET.q }}"
+    <a href="?" class="btn btn-sm btn-outline-secondary ms-1" style="border-radius:30px; padding:0.1rem 0.6rem; font-size:0.7rem;">Clear</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ====== CUSTOMER GRID ====== -->
+<div class="customer-grid">
+  {% for customer in customers %}
+  <div class="customer-card">
+    <div class="top">
+      <div class="name">
+        <i class="fas fa-user-circle"></i> {{ customer.name }}
+      </div>
+      {% if customer.total_pending > 0 %}
+        <span class="badge-pending">₹{{ customer.total_pending|floatformat:2 }} pending</span>
+      {% else %}
+        <span class="badge-none"><i class="fas fa-check-circle"></i> No due</span>
+      {% endif %}
+    </div>
+
+    <div class="details">
+      <span><i class="fas fa-phone"></i> {{ customer.phone|default:"No phone" }}</span>
+      <span><i class="fas fa-map-marker-alt"></i> {{ customer.address|default:"No address" }}</span>
+    </div>
+
+    <div class="actions">
+      <a href="/portal/{{ tenant.schema_name }}/chakki/order/add/?customer_id={{ customer.id }}" class="btn-select">
+        <i class="fas fa-plus-circle"></i> Select
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state">
+    <i class="fas fa-users-slash"></i>
+    <p>No customers found.</p>
+    <p style="font-size:0.85rem; margin-top:0.3rem;">
+      <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" style="color:var(--accent); font-weight:600;">Create a new customer</a>
+    </p>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,601 @@
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q, Avg
+from django.utils import timezone
+from datetime import timedelta
+from decimal import Decimal
+from chakki.models import ChakkiOrder, ChakkiCategory, SellingCategory, ChakkiCustomer, SellingOrderItem, ChakkiOrderItem
+from expenses.models import Expense
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from datetime import datetime
+
+@login_required
+def dashboard(request, **kwargs):
+    tenant = request.tenant
+    orders = ChakkiOrder.objects.filter(tenant=tenant)
+    completed_orders = orders.filter(status='completed')
+    pending_orders = orders.filter(status='pending')
+    ready_orders = orders.filter(status='ready')
+
+    total_revenue = completed_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+    total_pending = Decimal('0')
+    for order in orders.exclude(status='completed'):
+        total_pending += order.remaining_amount
+
+    total_orders = orders.count()
+    completed_count = completed_orders.count()
+
+    # Revenue over last 30 days
+    today = timezone.now().date()
+    revenue_labels = []
+    revenue_data = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        revenue_labels.append(day.strftime('%d %b'))
+        day_total = orders.filter(
+            status='completed',
+            created_at__date=day
+        ).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        revenue_data.append(float(day_total))
+
+    # Order status counts
+    status_data = {
+        'Pending': orders.filter(status='pending').count(),
+        'Ready': orders.filter(status='ready').count(),
+        'Completed': orders.filter(status='completed').count(),
+        'Cancelled': orders.filter(status='cancelled').count(),
+    }
+
+    # Recent orders
+    recent_orders = orders.order_by('-created_at')[:10]
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_pending': total_pending,
+        'total_orders': total_orders,
+        'completed_count': completed_count,
+        'revenue_labels': revenue_labels,
+        'revenue_data': revenue_data,
+        'status_data': status_data,
+        'recent_orders': recent_orders,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_dashboard.html' if request.mobile else 'desktop/reports_dashboard.html'
+    return render(request, template, context)
+
+@login_required
+
+@login_required
+
+@login_required
+
+@login_required
+
+@login_required
+def revenue(request, **kwargs):
+    from django.db.models import Sum, Count, Avg, Q
+    from decimal import Decimal
+    from datetime import datetime, timedelta
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.utils import timezone
+    from chakki.models import ChakkiOrder, ChakkiOrderItem, SellingOrderItem, ChakkiCustomer
+
+    tenant = request.tenant
+
+    # ---------- Base queryset: all orders (including cancelled) ----------
+    all_orders = ChakkiOrder.objects.filter(tenant=tenant)
+    # For revenue calculations we use only completed orders
+    completed_orders = all_orders.filter(status='completed')
+
+    # ---------- Filters ----------
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    customer_type = request.GET.get('customer_type', 'all')  # all, regular, walkin
+
+    if customer_type == 'regular':
+        all_orders = all_orders.filter(customer__is_regular=True)
+        completed_orders = completed_orders.filter(customer__is_regular=True)
+    elif customer_type == 'walkin':
+        all_orders = all_orders.filter(customer__is_regular=False)
+        completed_orders = completed_orders.filter(customer__is_regular=False)
+
+    # Date range
+    if start_date:
+        try:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            all_orders = all_orders.filter(created_at__date__gte=start_date_obj)
+            completed_orders = completed_orders.filter(created_at__date__gte=start_date_obj)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            all_orders = all_orders.filter(created_at__date__lte=end_date_obj)
+            completed_orders = completed_orders.filter(created_at__date__lte=end_date_obj)
+        except ValueError:
+            pass
+
+    # ---------- KPIs ----------
+    total_revenue = completed_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+    total_orders = all_orders.count()
+    total_completed = completed_orders.count()
+    total_customers = all_orders.values('customer').distinct().count()
+    avg_order_value = completed_orders.aggregate(Avg('total_amount'))['total_amount__avg'] or Decimal('0')
+    total_paid = all_orders.aggregate(Sum('amount_paid'))['amount_paid__sum'] or Decimal('0')
+    total_pending = Decimal('0')
+    for o in all_orders.exclude(status='completed'):
+        total_pending += o.remaining_amount
+
+    # Profit for completed orders (selling items only – grinding has no cost currently)
+    total_profit = Decimal('0')
+    for order in completed_orders:
+        for item in order.selling_items.all():
+            total_profit += item.total - (item.quantity * item.selling_price.purchase_price)
+
+    # ---------- Revenue by Day (trend) ----------
+    today = timezone.now().date()
+    if start_date and end_date:
+        start = start_date_obj
+        end = end_date_obj
+        days = (end - start).days + 1
+    else:
+        start = today - timedelta(days=29)
+        end = today
+        days = 30
+
+    revenue_by_day = {}
+    for i in range(days):
+        day = start + timedelta(days=i)
+        day_total = completed_orders.filter(created_at__date=day).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        revenue_by_day[day.strftime('%d %b')] = float(day_total)
+
+    # ---------- Revenue by Category (Top 10) ----------
+    cat_revenue = {}
+    grinding_items = ChakkiOrderItem.objects.filter(order__in=completed_orders, tenant=tenant)
+    for item in grinding_items:
+        name = item.category.name
+        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.item_total
+    selling_items = SellingOrderItem.objects.filter(order__in=completed_orders, tenant=tenant)
+    for item in selling_items:
+        name = item.selling_price.category.name
+        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.total
+    sorted_cats = sorted(cat_revenue.items(), key=lambda x: x[1], reverse=True)[:10]
+    cat_labels = [c[0] for c in sorted_cats]
+    cat_data = [float(c[1]) for c in sorted_cats]
+
+    # ---------- Revenue by Customer (Top 10) ----------
+    cust_revenue = {}
+    for order in completed_orders:
+        cid = order.customer.id
+        cust_revenue[cid] = cust_revenue.get(cid, Decimal('0')) + order.total_amount
+    sorted_cust = sorted(cust_revenue.items(), key=lambda x: x[1], reverse=True)[:10]
+    cust_labels = []
+    cust_data = []
+    for cid, rev in sorted_cust:
+        customer = ChakkiCustomer.objects.get(id=cid)
+        cust_labels.append(customer.name)
+        cust_data.append(float(rev))
+
+    # ---------- Payment Status Distribution (completed orders) ----------
+    payment_status_dist = {
+        'Paid': completed_orders.filter(payment_status='paid').count(),
+        'Partial': completed_orders.filter(payment_status='partial').count(),
+        'Unpaid': completed_orders.filter(payment_status='unpaid').count(),
+    }
+
+    # ---------- Order Status Distribution (all orders) ----------
+    order_status_dist = {
+        'Pending': all_orders.filter(status='pending').count(),
+        'Ready': all_orders.filter(status='ready').count(),
+        'Completed': all_orders.filter(status='completed').count(),
+        'Cancelled': all_orders.filter(status='cancelled').count(),
+    }
+
+    # ---------- Orders Table (all orders, paginated) ----------
+    paginator = Paginator(all_orders.order_by('-created_at'), 30)
+    page = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.page(page)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'total_completed': total_completed,
+        'total_customers': total_customers,
+        'avg_order_value': avg_order_value,
+        'total_paid': total_paid,
+        'total_pending': total_pending,
+        'total_profit': total_profit,
+        'revenue_by_day': revenue_by_day,
+        'cat_labels': cat_labels,
+        'cat_data': cat_data,
+        'cust_labels': cust_labels,
+        'cust_data': cust_data,
+        'payment_status_dist': payment_status_dist,
+        'order_status_dist': order_status_dist,
+        'page_obj': page_obj,
+        'start_date': start_date,
+        'end_date': end_date,
+        'customer_type': customer_type,
+        'tenant': tenant,
+        'has_data': total_completed > 0,  # flag for template
+    }
+    template = 'mobile/reports_revenue.html' if request.mobile else 'desktop/reports_revenue.html'
+    return render(request, template, context)
+@login_required
+def categories(request, **kwargs):
+    tenant = request.tenant
+
+    # Get search and sort parameters
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'name')  # name, revenue, orders, profit
+    order = request.GET.get('order', 'asc')  # asc or desc
+
+    grinding_cats = ChakkiCategory.objects.filter(tenant=tenant)
+    selling_cats = SellingCategory.objects.filter(tenant=tenant)
+
+    all_categories = []
+
+    # Process grinding categories
+    for cat in grinding_cats:
+        items = cat.chakkiorderitem_set.filter(tenant=tenant)
+        total_kg = items.aggregate(Sum('total_kg'))['total_kg__sum'] or Decimal('0')
+        total_revenue = items.aggregate(Sum('item_total'))['item_total__sum'] or Decimal('0')
+        total_orders = items.values('order').distinct().count()
+        all_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'type': 'grinding',
+            'url_name': 'grinding_category_detail',
+            'total_quantity': total_kg,
+            'quantity_unit': 'KG',
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'total_profit': None,
+        })
+
+    # Process selling categories
+    for cat in selling_cats:
+        selling_items = SellingOrderItem.objects.filter(selling_price__category=cat, tenant=tenant)
+        total_qty = selling_items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0')
+        total_revenue = selling_items.aggregate(Sum('total'))['total__sum'] or Decimal('0')
+        total_orders = selling_items.values('order').distinct().count()
+        total_cost = Decimal('0')
+        for item in selling_items:
+            total_cost += item.quantity * item.selling_price.purchase_price
+        total_profit = total_revenue - total_cost
+        all_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'type': 'selling',
+            'url_name': 'selling_category_detail',
+            'total_quantity': total_qty,
+            'quantity_unit': 'Qty',
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'total_profit': total_profit,
+        })
+
+    # Apply search filter
+    if search:
+        all_categories = [c for c in all_categories if search.lower() in c['name'].lower()]
+
+    # Apply sorting
+    reverse = (order == 'desc')
+    if sort == 'name':
+        all_categories.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    elif sort == 'revenue':
+        all_categories.sort(key=lambda x: x['total_revenue'], reverse=reverse)
+    elif sort == 'orders':
+        all_categories.sort(key=lambda x: x['total_orders'], reverse=reverse)
+    elif sort == 'profit':
+        all_categories.sort(key=lambda x: x['total_profit'] or Decimal('0'), reverse=reverse)
+
+    # Aggregated KPIs
+    total_categories = len(all_categories)
+    total_revenue = sum(c['total_revenue'] for c in all_categories)
+    total_orders = sum(c['total_orders'] for c in all_categories)
+    total_profit = sum(c['total_profit'] or Decimal('0') for c in all_categories)
+    avg_revenue = total_revenue / total_categories if total_categories else 0
+
+    # For chart: category name vs revenue
+    chart_labels = [c['name'] for c in all_categories]
+    chart_data = [float(c['total_revenue']) for c in all_categories]
+
+    context = {
+        'categories': all_categories,
+        'total_categories': total_categories,
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'total_profit': total_profit,
+        'avg_revenue': avg_revenue,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_categories.html' if request.mobile else 'desktop/reports_categories.html'
+    return render(request, template, context)
+
+@login_required
+def customers(request, **kwargs):
+    tenant = request.tenant
+    customer_type = request.GET.get('type', 'regular')
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'spent')
+    order = request.GET.get('order', 'desc')
+
+    if customer_type == 'regular':
+        customers_qs = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=True)
+    else:
+        customers_qs = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=False)
+
+    customer_data = []
+    for c in customers_qs:
+        orders = ChakkiOrder.objects.filter(tenant=tenant, customer=c)
+        completed = orders.filter(status='completed')
+        total_spent = completed.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        total_orders = orders.count()
+        completed_orders = completed.count()
+        avg_order = total_spent / completed_orders if completed_orders > 0 else Decimal('0')
+        total_pending = Decimal('0')
+        for o in orders.exclude(status='completed'):
+            total_pending += o.remaining_amount
+        first_order = orders.order_by('created_at').first()
+        last_order = orders.order_by('-created_at').first()
+        customer_data.append({
+            'id': c.id,
+            'name': c.name,
+            'phone': c.phone or '—',
+            'address': c.address or '—',
+            'is_regular': c.is_regular,
+            'total_spent': total_spent,
+            'total_pending': total_pending,
+            'total_orders': total_orders,
+            'completed_orders': completed_orders,
+            'avg_order': avg_order,
+            'first_order': first_order.created_at if first_order else None,
+            'last_order': last_order.created_at if last_order else None,
+        })
+
+    if search:
+        customer_data = [c for c in customer_data if search.lower() in c['name'].lower() or search in c['phone']]
+
+    reverse = (order == 'desc')
+    if sort == 'name':
+        customer_data.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    elif sort == 'spent':
+        customer_data.sort(key=lambda x: x['total_spent'], reverse=reverse)
+    elif sort == 'orders':
+        customer_data.sort(key=lambda x: x['total_orders'], reverse=reverse)
+    elif sort == 'avg':
+        customer_data.sort(key=lambda x: x['avg_order'], reverse=reverse)
+    elif sort == 'pending':
+        customer_data.sort(key=lambda x: x['total_pending'], reverse=reverse)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(customer_data, 30)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    total_customers = len(customer_data)
+    total_revenue = sum(c['total_spent'] for c in customer_data)
+    total_pending_all = sum(c['total_pending'] for c in customer_data)
+    avg_customer_value = total_revenue / total_customers if total_customers else 0
+    total_orders_all = sum(c['total_orders'] for c in customer_data)
+
+    top_10 = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)[:10]
+    chart_labels = [c['name'] for c in top_10]
+    chart_data = [float(c['total_spent']) for c in top_10]
+
+    context = {
+        'page_obj': page_obj,
+        'customer_data': page_obj.object_list,
+        'total_customers': total_customers,
+        'total_revenue': total_revenue,
+        'total_pending_all': total_pending_all,
+        'avg_customer_value': avg_customer_value,
+        'total_orders_all': total_orders_all,
+        'customer_type': customer_type,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
+    return render(request, template, context)
+
+
+# ===== ENHANCED ORDERS REPORT =====
+@login_required
+def orders_report(request, **kwargs):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db.models import Q, Sum, Count, Avg
+    from decimal import Decimal
+    from datetime import datetime, timedelta
+
+    tenant = request.tenant
+    customer_type = request.GET.get('customer_type', 'all')  # all, regular, walkin
+
+    orders = ChakkiOrder.objects.filter(tenant=tenant)
+    if customer_type == 'regular':
+        orders = orders.filter(customer__is_regular=True)
+    elif customer_type == 'walkin':
+        orders = orders.filter(customer__is_regular=False)
+    # else all
+
+    # ----- Filters -----
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    status = request.GET.get('status')
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'created_at')
+    order = request.GET.get('order', 'desc')
+    page = request.GET.get('page', 1)
+
+    if start_date:
+        try:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            orders = orders.filter(created_at__date__gte=start_date_obj)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            orders = orders.filter(created_at__date__lte=end_date_obj)
+        except ValueError:
+            pass
+    if status and status != 'all':
+        orders = orders.filter(status=status)
+    if search:
+        orders = orders.filter(
+            Q(customer__name__icontains=search) |
+            Q(customer__phone__icontains=search) |
+            Q(id__icontains=search)
+        )
+
+    # ----- Aggregates -----
+    total_orders = orders.count()
+    completed_orders = orders.filter(status='completed')
+    total_revenue = completed_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+    total_paid = orders.aggregate(Sum('amount_paid'))['amount_paid__sum'] or Decimal('0')
+    total_pending = Decimal('0')
+    for o in orders.exclude(status='completed'):
+        total_pending += o.remaining_amount
+    avg_order_value = completed_orders.aggregate(Avg('total_amount'))['total_amount__avg'] or Decimal('0')
+
+    # Status distribution
+    status_dist = {
+        'Pending': orders.filter(status='pending').count(),
+        'Ready': orders.filter(status='ready').count(),
+        'Completed': orders.filter(status='completed').count(),
+        'Cancelled': orders.filter(status='cancelled').count(),
+    }
+
+    # Payment status distribution
+    payment_dist = {
+        'Unpaid': orders.filter(payment_status='unpaid').count(),
+        'Partial': orders.filter(payment_status='partial').count(),
+        'Paid': orders.filter(payment_status='paid').count(),
+    }
+
+    # Convert dict keys/values to lists for template
+    status_dist_keys = list(status_dist.keys())
+    status_dist_values = list(status_dist.values())
+    payment_dist_keys = list(payment_dist.keys())
+    payment_dist_values = list(payment_dist.values())
+
+    # Revenue trend last 30 days
+    today = timezone.now().date()
+    revenue_labels = []
+    revenue_data = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        revenue_labels.append(day.strftime('%d %b'))
+        day_total = completed_orders.filter(created_at__date=day).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        revenue_data.append(float(day_total))
+
+    # Orders trend last 30 days
+    orders_data = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        count = orders.filter(created_at__date=day).count()
+        orders_data.append(count)
+
+    # Top 10 customers by revenue (completed orders)
+    top_customers = {}
+    for order in completed_orders:
+        cid = order.customer.id
+        top_customers[cid] = top_customers.get(cid, Decimal('0')) + order.total_amount
+    top_customers_list = sorted(top_customers.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_customer_labels = []
+    top_customer_data = []
+    for cid, rev in top_customers_list:
+        customer = ChakkiCustomer.objects.get(id=cid)
+        top_customer_labels.append(customer.name)
+        top_customer_data.append(float(rev))
+
+    # Top 5 categories by revenue (both grinding and selling)
+    cat_revenue = {}
+    grinding_items = ChakkiOrderItem.objects.filter(order__in=completed_orders, tenant=tenant)
+    for item in grinding_items:
+        name = item.category.name
+        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.item_total
+    selling_items = SellingOrderItem.objects.filter(order__in=completed_orders, tenant=tenant)
+    for item in selling_items:
+        name = item.selling_price.category.name
+        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.total
+    top_cats = sorted(cat_revenue.items(), key=lambda x: x[1], reverse=True)[:5]
+    cat_labels = [cat for cat, _ in top_cats]
+    cat_data = [float(rev) for _, rev in top_cats]
+
+    # ----- Sorting for table -----
+    if sort == 'id':
+        sort_field = 'id'
+    elif sort == 'customer':
+        sort_field = 'customer__name'
+    elif sort == 'total':
+        sort_field = 'total_amount'
+    elif sort == 'paid':
+        sort_field = 'amount_paid'
+    elif sort == 'remaining':
+        sort_field = 'remaining_amount'   # not a DB field, handled below
+    elif sort == 'status':
+        sort_field = 'status'
+    elif sort == 'payment_status':
+        sort_field = 'payment_status'
+    else:
+        sort_field = 'created_at'
+
+    if sort_field == 'remaining_amount':
+        orders_list = list(orders)
+        orders_list.sort(key=lambda o: o.remaining_amount, reverse=(order == 'desc'))
+    else:
+        if order == 'desc':
+            sort_field = '-' + sort_field
+        orders_list = orders.order_by(sort_field)
+
+    # ----- Pagination -----
+    paginator = Paginator(orders_list, 30)
+    try:
+        page_obj = paginator.page(page)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    context = {
+        'page_obj': page_obj,
+        'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'total_paid': total_paid,
+        'total_pending': total_pending,
+        'avg_order_value': avg_order_value,
+        'status_dist': status_dist,
+        'status_dist_keys': status_dist_keys,
+        'status_dist_values': status_dist_values,
+        'payment_dist': payment_dist,
+        'payment_dist_keys': payment_dist_keys,
+        'payment_dist_values': payment_dist_values,
+        'revenue_labels': revenue_labels,
+        'revenue_data': revenue_data,
+        'orders_data': orders_data,
+        'top_customer_labels': top_customer_labels,
+        'top_customer_data': top_customer_data,
+        'cat_labels': cat_labels,
+        'cat_data': cat_data,
+        'tenant': tenant,
+        'start_date': start_date,
+        'end_date': end_date,
+        'status': status,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'customer_type': customer_type,
+    }
+    template = 'mobile/reports_orders.html' if request.mobile else 'desktop/reports_orders.html'
+    return render(request, template, context)

@@ -1,0 +1,532 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Customer Analytics | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+
+  .tabs-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.3rem;
+  }
+  .tab-link {
+    padding: 0.5rem 1.5rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .tab-link:hover {
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .tab-link.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(26,42,58,0.2);
+  }
+  .tab-link .badge {
+    margin-left: 0.4rem;
+    background: rgba(0,0,0,0.08);
+    color: var(--text-secondary);
+    border-radius: 30px;
+    padding: 0.05rem 0.5rem;
+    font-weight: 600;
+    font-size: 0.7rem;
+  }
+  .tab-link.active .badge {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem 0.8rem;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    transition: 0.25s;
+  }
+  .kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.07);
+    border-color: var(--accent);
+  }
+  .kpi-card .icon {
+    font-size: 1.8rem;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .kpi-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .kpi-card .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0.6rem 1.2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+  .filter-bar .search-box {
+    flex: 1;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg);
+    border-radius: 40px;
+    padding: 0.2rem 0.8rem;
+    border: 1px solid var(--border);
+    transition: 0.2s;
+  }
+  .filter-bar .search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
+  }
+  .filter-bar .search-box input {
+    border: none;
+    background: transparent;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    width: 100%;
+    outline: none;
+    color: var(--text);
+  }
+  .filter-bar .search-box i {
+    color: var(--muted);
+  }
+  .filter-bar .sort-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .filter-bar .sort-options select {
+    padding: 0.3rem 1rem;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+  }
+  .filter-bar .sort-options select:focus {
+    border-color: var(--accent);
+  }
+  .filter-bar .btn-apply {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.3rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .filter-bar .btn-apply:hover {
+    background: var(--accent-hover);
+  }
+  .filter-bar .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.3rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  .filter-bar .btn-clear:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  .table-wrap {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  }
+  .table-wrap .table {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+  }
+  .table-wrap .table thead th {
+    background: var(--surface-alt);
+    border-bottom: 2px solid var(--border);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 0.8rem;
+    white-space: nowrap;
+  }
+  .table-wrap .table td {
+    vertical-align: middle;
+    padding: 0.7rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-wrap .table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-wrap .table tbody tr:hover {
+    background: var(--bg);
+  }
+
+  .badge-pending {
+    background: #fef3e2;
+    color: #d35400;
+    padding: 0.2rem 0.7rem;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: inline-block;
+  }
+  .badge-none {
+    background: #e8f8f0;
+    color: #1e7e34;
+    padding: 0.2rem 0.7rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+  }
+  .customer-link {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .customer-link:hover {
+    text-decoration: underline;
+  }
+
+  .pagination-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .pagination-wrap .step-links a,
+  .pagination-wrap .step-links .current,
+  .pagination-wrap .step-links .disabled {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: 0.2s;
+  }
+  .pagination-wrap .step-links a:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .pagination-wrap .step-links .current {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .pagination-wrap .step-links .disabled {
+    color: var(--muted);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  @media (max-width: 992px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-bar .search-box { min-width: 100%; }
+    .filter-bar .sort-options { justify-content: space-between; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 576px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h2><i class="fas fa-users"></i> Customer Analytics</h2>
+</div>
+
+<!-- Tabs -->
+<div class="tabs-bar">
+  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">
+    Regular <span class="badge">{{ total_customers }}</span>
+  </a>
+  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">
+    Walk‑in <span class="badge">{{ total_customers }}</span>
+  </a>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-user-friends"></i></span>
+    <div class="number">{{ total_customers }}</div>
+    <div class="label">Customers</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-rupee-sign"></i></span>
+    <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
+    <div class="label">Revenue</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-hourglass-half"></i></span>
+    <div class="number">₹{{ total_pending_all|floatformat:0 }}</div>
+    <div class="label">Pending</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-chart-line"></i></span>
+    <div class="number">₹{{ avg_customer_value|floatformat:2 }}</div>
+    <div class="label">Avg Value</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-shopping-cart"></i></span>
+    <div class="number">{{ total_orders_all }}</div>
+    <div class="label">Total Orders</div>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="chart-container">
+  <canvas id="customerChart" height="250"></canvas>
+</div>
+
+<!-- Filter -->
+<div class="filter-bar">
+  <form method="get" class="search-box">
+    <i class="fas fa-search"></i>
+    <input type="text" name="search" placeholder="Search by name or phone..." value="{{ search }}">
+    <input type="hidden" name="type" value="{{ customer_type }}">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="order" value="{{ order }}">
+    <button type="submit" style="display:none;"></button>
+  </form>
+  <div class="sort-options">
+    <select name="sort" onchange="this.form.submit()" form="filterForm">
+      <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
+      <option value="spent" {% if sort == 'spent' %}selected{% endif %}>Revenue</option>
+      <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Orders</option>
+      <option value="avg" {% if sort == 'avg' %}selected{% endif %}>Avg Order</option>
+      <option value="pending" {% if sort == 'pending' %}selected{% endif %}>Pending</option>
+    </select>
+    <select name="order" onchange="this.form.submit()" form="filterForm">
+      <option value="asc" {% if order == 'asc' %}selected{% endif %}>Asc</option>
+      <option value="desc" {% if order == 'desc' %}selected{% endif %}>Desc</option>
+    </select>
+    <button type="submit" class="btn-apply" form="filterForm">Apply</button>
+    <a href="?type={{ customer_type }}" class="btn-clear">Clear</a>
+  </div>
+  <form id="filterForm" method="get" style="display:none;">
+    <input type="hidden" name="type" value="{{ customer_type }}">
+  </form>
+</div>
+
+<!-- Customer Table -->
+<div class="table-wrap">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Phone</th>
+          <th>Total Orders</th>
+          <th>Total Spent</th>
+          <th>Avg Order</th>
+          <th>Pending</th>
+          <th>Last Order</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page_obj %}
+        <tr>
+          <td><a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="customer-link">{{ c.name }}</a></td>
+          <td>{{ c.phone }}</td>
+          <td>{{ c.total_orders }}</td>
+          <td>₹{{ c.total_spent|floatformat:2 }}</td>
+          <td>₹{{ c.avg_order|floatformat:2 }}</td>
+          <td>
+            {% if c.total_pending > 0 %}
+              <span class="badge-pending">₹{{ c.total_pending|floatformat:2 }}</span>
+            {% else %}
+              <span class="badge-none">No due</span>
+            {% endif %}
+          </td>
+          <td>{{ c.last_order|date:"d M Y"|default:"—" }}</td>
+          <td>
+            <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-user"></i> View Profile
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <i class="fas fa-users-slash"></i>
+              <p>No customers found.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-wrap">
+  <div class="step-links">
+    {% if page_obj.has_previous %}
+      <a href="?page=1&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Prev</a>
+    {% else %}
+      <span class="disabled">&laquo; First</span>
+      <span class="disabled">Prev</span>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Last &raquo;</a>
+    {% else %}
+      <span class="disabled">Next</span>
+      <span class="disabled">Last &raquo;</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('customerChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ chart_data }},
+          backgroundColor: 'rgba(26,42,58,0.7)',
+          borderColor: 'var(--accent)',
+          borderWidth: 2,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: 'Top 10 Customers by Revenue',
+            color: '#6b7280',
+            font: { size: 14, weight: '600' }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  });
+</script>
+
+{% endblock %}

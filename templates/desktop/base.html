@@ -1,314 +1,825 @@
-
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{% block title %}SaaS System{% endblock %}</title>
+    <title>{% block title %}Axis · {{ tenant.name }}{% endblock %}</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <style>
-        body { background: #f8f9fa; }
-        .sidebar { 
-            background: #2c3e50; 
-            min-height: 100vh; 
-            padding-top: 20px;
+        /* ===== VARIABLES – dark blue accent ===== */
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 72px;
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --text: #0b1a2e;
+            --text-secondary: #3a4a62;
+            --muted: #8896a8;
+            --border: #dce1e8;
+            --shadow: 0 4px 24px rgba(0,0,0,0.04);
+            --radius: 14px;
+            --accent: #1a2a3a;
+            --accent-hover: #2c3e50;
+            --nav-dark: #0b1a2e;
+            --nav-light: #13273f;
+            --nav-text: #b0c4de;
+            --nav-text-hover: #ffffff;
         }
-        .sidebar .nav-link {
-            color: #ecf0f1;
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin: 2px 10px;
+
+        * { box-sizing: border-box; margin: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* ---------- SIDEBAR ---------- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--nav-dark) 0%, var(--nav-light) 100%);
+            color: var(--nav-text);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            overflow: hidden;
+            box-shadow: 4px 0 30px rgba(0,0,0,0.12);
+        }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+        .sidebar .brand {
             display: flex;
             align-items: center;
+            gap: 14px;
+            padding: 1.2rem 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            min-height: 80px;
+            transition: padding 0.3s;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .sidebar.collapsed .brand {
+            padding: 1.2rem 0.5rem;
+            justify-content: center;
+        }
+        .sidebar .brand .logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+            transition: width 0.3s, height 0.3s;
+        }
+        .sidebar.collapsed .brand .logo-img { width: 40px; height: 40px; }
+        .sidebar .brand .brand-text {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #fff;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            letter-spacing: -0.02em;
+        }
+        .sidebar .brand .brand-text small {
+            display: block;
+            font-weight: 400;
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .sidebar.collapsed .brand .brand-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .sidebar .nav-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.8rem 0.6rem;
+            margin-bottom: 80px;
+        }
+        .sidebar .nav-wrapper::-webkit-scrollbar { width: 3px; }
+        .sidebar .nav-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+        }
+
+        .sidebar .nav-link {
+            color: var(--nav-text);
+            padding: 0.6rem 0.8rem;
+            border-radius: 0.6rem;
+            margin: 0.1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-decoration: none;
+            white-space: nowrap;
+            position: relative;
+            cursor: pointer;
         }
         .sidebar .nav-link:hover {
-            background: #34495e;
+            background: rgba(255,255,255,0.07);
+            color: #fff;
         }
-        .sidebar .nav-link i {
-            width: 25px;
+        .sidebar .nav-link i, .sidebar .nav-link .svg-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+        .sidebar .nav-link .nav-label { transition: opacity 0.2s; }
+        .sidebar.collapsed .nav-link .nav-label {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
         }
         .sidebar .nav-link .badge {
             margin-left: auto;
+            font-weight: 600;
+            padding: 0.15rem 0.6rem;
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            transition: opacity 0.2s;
+        }
+        .sidebar.collapsed .nav-link .badge {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .sidebar .collapse-menu {
+            padding-left: 2.2rem;
         }
         .sidebar .collapse-menu .nav-link {
-            padding-left: 30px;
+            font-size: 0.82rem;
+            padding: 0.4rem 0.6rem;
+            color: rgba(255,255,255,0.55);
+            border-left: 2px solid transparent;
         }
+        .sidebar .collapse-menu .nav-link:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border-left-color: #f5a623;
+        }
+        .sidebar .collapse-menu .nav-link i { font-size: 0.9rem; width: 20px; }
+
+        .sidebar.collapsed .collapse-menu { display: none !important; }
+
+        .sidebar .nav-link[data-bs-toggle="collapse"]::after {
+            content: "\f078";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.7rem;
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+        .sidebar .nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
+            transform: rotate(180deg);
+        }
+        .sidebar.collapsed .nav-link[data-bs-toggle="collapse"]::after { display: none; }
+
+        .sidebar .nav-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+            margin: 0.4rem 0.8rem;
+        }
+
+        /* ---------- PROFILE IN SIDEBAR ---------- */
+        .sidebar .profile-wrapper {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.8rem 1.2rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            background: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .sidebar.collapsed .profile-wrapper {
+            justify-content: center;
+            padding: 0.8rem 0.5rem;
+        }
+        .sidebar .profile-wrapper .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.15);
+        }
+        .sidebar .profile-wrapper .avatar:hover {
+            transform: scale(1.05);
+            border-color: #f5a623;
+        }
+        .sidebar .profile-wrapper .user-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .sidebar.collapsed .profile-wrapper .user-name {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        /* Dropdown menu – dark theme, placement controlled by JS */
+        .sidebar .profile-wrapper .dropdown-menu {
+            min-width: 180px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            padding: 0.5rem 0;
+            background: var(--nav-light);
+            color: #e2e8f0;
+        }
+        .sidebar .profile-wrapper .dropdown-menu .dropdown-item {
+            font-size: 0.9rem;
+            padding: 0.4rem 1rem;
+            color: #e2e8f0;
+        }
+        .sidebar .profile-wrapper .dropdown-menu .dropdown-item:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+        .sidebar .profile-wrapper .dropdown-menu .dropdown-item i {
+            margin-right: 0.5rem;
+            width: 18px;
+            text-align: center;
+        }
+        .sidebar .profile-wrapper .dropdown-menu .dropdown-divider {
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        /* ---------- MAIN CONTENT ---------- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar.collapsed ~ .main-content {
+            margin-left: var(--sidebar-collapsed);
+        }
+
+        /* ========== HEADER ========== */
         .header {
-            background: white;
-            border-bottom: 1px solid #dee2e6;
-            padding: 10px 20px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.4rem 1.8rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 900;
+            min-height: 70px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
         .header .search-box {
-            width: 300px;
+            width: 280px;
+            position: relative;
         }
-        .header .notifications {
+        .header .search-box input {
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            padding: 0.4rem 1.2rem 0.4rem 2.6rem;
+            font-size: 0.9rem;
+            background: var(--bg);
+            width: 100%;
+            transition: 0.2s;
+        }
+        .header .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(26,42,58,0.12);
+            outline: none;
+        }
+        .header .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .header .actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .btn-new-order {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            padding: 0.4rem 1.4rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 4px 12px rgba(26,42,58,0.2);
+        }
+        .btn-new-order:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26,42,58,0.25);
+            color: #fff;
+        }
+
+        .header .notif {
+            position: relative;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+        .header .notif .badge {
+            position: absolute;
+            top: -6px;
+            right: -10px;
+            background: #ef4444;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            color: #fff;
+            font-weight: 600;
+        }
+        .header .notif .dropdown-menu {
+            min-width: 280px;
+            max-height: 380px;
+            overflow-y: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .header .profile-dropdown {
             position: relative;
             cursor: pointer;
         }
-        .header .notifications .badge {
-            position: absolute;
-            top: -5px;
-            right: -10px;
-            background: #e74c3c;
+        .header .profile-dropdown .avatar {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            font-size: 0.7rem;
-            padding: 3px 6px;
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            border: 2px solid rgba(0,0,0,0.05);
         }
-        .header .notifications .dropdown-menu {
-            min-width: 300px;
-            max-height: 400px;
-            overflow-y: auto;
+        .header .profile-dropdown .avatar:hover {
+            transform: scale(1.05);
+            border-color: #f5a623;
         }
-        .main-content {
-            padding: 20px;
+        .header .profile-dropdown .dropdown-menu {
+            min-width: 180px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            padding: 0.5rem 0;
         }
+        .header .profile-dropdown .dropdown-item {
+            font-size: 0.9rem;
+            padding: 0.4rem 1rem;
+            color: var(--text);
+        }
+        .header .profile-dropdown .dropdown-item:hover {
+            background: var(--bg);
+        }
+        .header .profile-dropdown .dropdown-item i {
+            margin-right: 0.5rem;
+            width: 18px;
+            text-align: center;
+        }
+
+        /* PAGE CONTENT */
+        .page-content {
+            padding: 1.8rem;
+            flex: 1;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: var(--sidebar-collapsed);
+            }
+            .sidebar .brand .brand-text,
+            .sidebar .nav-link .nav-label,
+            .sidebar .nav-link .badge,
+            .sidebar .profile-wrapper .user-name {
+                opacity: 0;
+                width: 0;
+                overflow: hidden;
+            }
+            .sidebar .profile-wrapper { justify-content: center; }
+            .main-content { margin-left: var(--sidebar-collapsed); }
+            .header .search-box { width: 150px; }
+            .header .actions { gap: 0.8rem; }
+            .btn-new-order span { display: none; }
+        }
+
+        /* ---------- UTILITY ---------- */
         .blink {
             animation: blink 1s step-end infinite;
         }
         @keyframes blink {
             50% { opacity: 0; }
         }
-        @media (max-width: 768px) {
-            .sidebar { min-height: auto; width: 100%; }
-            .header .search-box { width: 100%; }
+        .card {
+            border: none;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.07);
         }
     </style>
     {% block extra_head %}{% endblock %}
 
-    <!-- PWA Meta & Manifest -->
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#343a40">
+    <meta name="theme-color" content="#0b1a2e">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
 </head>
 <body>
-<div class="container-fluid">
-<div class="row">
-    <nav class="col-md-2 d-md-block sidebar">
-        <div class="d-flex justify-content-between align-items-center">
-            <h4 class="text-white ms-3">{{ tenant.name|default:"SaaS" }}</h4>
-            <button class="btn btn-link text-white d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarCollapse">
-                <i class="fas fa-bars"></i>
-            </button>
+
+    <!-- ===== SIDEBAR ===== -->
+    <nav class="sidebar" id="sidebar">
+        <div class="brand" id="brandClick" title="Click to expand/collapse">
+            <img src="{% static 'axislogo.png' %}" alt="Axis" class="logo-img"
+                 onerror="this.style.display='none'; this.parentElement.innerHTML += '<span class=\'logo-img\' style=\'display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-weight:700;font-size:1.2rem;border-radius:50%;width:44px;height:44px;\'>{{ tenant.name|slice:':1'|upper }}</span>'">
+            <span class="brand-text">
+                {{ tenant.name|default:"Axis" }}
+                <small>Management</small>
+            </span>
         </div>
-        <div class="collapse d-md-block" id="sidebarCollapse">
+
+        <div class="nav-wrapper">
             <ul class="nav flex-column">
+                <!-- Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link" href="/portal/{{ tenant.schema_name }}/dashboard/">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                        <i class="fas fa-chart-pie"></i>
+                        <span class="nav-label">Dashboard</span>
                     </a>
                 </li>
+
+                <!-- Chakki -->
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="collapse" href="#chakkiMenu" role="button" aria-expanded="true">
-                        <i class="fas fa-wheat-awn"></i> Chakki
+                        <svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                            <circle cx="12" cy="12" r="2" />
+                        </svg>
+                        <span class="nav-label">Chakki</span>
                     </a>
                     <div class="collapse show" id="chakkiMenu">
-                        <ul class="nav flex-column ms-3">
-                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/">
-                                Pending <span class="badge bg-danger rounded-pill">{{ pending_count }}</span>
-                            </a></li>
-                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/">
-                                Ready <span class="badge bg-warning rounded-pill">{{ ready_count }}</span>
-                            </a></li>
-                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/orders/partial/">
-                                Partial Paid <span class="badge bg-info rounded-pill">{{ partial_count }}</span>
-                            </a></li>
-                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/">
-                                Completed <span class="badge bg-success rounded-pill">{{ completed_count }}</span>
-                            </a></li>
+                        <ul class="nav flex-column collapse-menu">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=pending">
+                                    <i class="fas fa-clock"></i> Pending <span class="badge bg-danger rounded-pill">{{ pending_count }}</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=ready">
+                                    <i class="fas fa-hourglass-half"></i> Ready <span class="badge bg-warning rounded-pill">{{ ready_count }}</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=partial">
+                                    <i class="fas fa-hand-holding-usd"></i> Partial <span class="badge bg-info rounded-pill">{{ partial_count }}</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=completed">
+                                    <i class="fas fa-check-circle"></i> Completed <span class="badge bg-success rounded-pill">{{ completed_count }}</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
+
+                <!-- Expenses -->
                 <li class="nav-item">
                     <a class="nav-link" href="/portal/{{ tenant.schema_name }}/expenses/">
-                        <i class="fas fa-money-bill-wave"></i> Expenses
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span class="nav-label">Expenses</span>
                     </a>
                 </li>
+
+                <!-- Customers -->
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#customersMenu" role="button" aria-expanded="true">
+                        <i class="fas fa-users"></i>
+                        <span class="nav-label">Customers</span>
+                    </a>
+                    <div class="collapse show" id="customersMenu">
+                        <ul class="nav flex-column collapse-menu">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/customer/create/">
+                                    <i class="fas fa-user-plus"></i> Create
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/customers/?tab=regular">
+                                    <i class="fas fa-user-check"></i> Regular
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/customers/?tab=walk">
+                                    <i class="fas fa-user-clock"></i> Walk-in
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Reports -->
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#reportsMenu" role="button" aria-expanded="true">
+                        <i class="fas fa-chart-pie"></i>
+                        <span class="nav-label">Reports</span>
+                    </a>
+                    <div class="collapse show" id="reportsMenu">
+                        <ul class="nav flex-column collapse-menu">
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/"><i class="fas fa-chart-simple"></i> Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/revenue/"><i class="fas fa-coins"></i> Revenue</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/categories/"><i class="fas fa-tags"></i> Categories</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/customers/"><i class="fas fa-users"></i> Customers</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/orders/"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Settings -->
                 <li class="nav-item">
                     <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/settings/">
-                        <i class="fas fa-cog"></i> Settings
+                        <i class="fas fa-sliders-h"></i>
+                        <span class="nav-label">Settings</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/portal/{{ tenant.schema_name }}/logout/">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
+
+                <div class="nav-divider"></div>
             </ul>
         </div>
-    </nav>
-    <main class="col-md-10 ms-sm-auto px-md-4">
-        <div class="header">
-            <div>
-                <button class="btn btn-outline-secondary d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarCollapse">
-                    <i class="fas fa-bars"></i>
-                </button>
-            </div>
-            <div class="search-box">
-                <form action="/portal/{{ tenant.schema_name }}/chakki/search/" method="get" class="d-flex">
-                    <input class="form-control me-2" type="search" name="q" placeholder="Search orders, customers..." aria-label="Search">
-                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
-                </form>
-            </div>
-            <div class="notifications dropdown">
-                <i class="fas fa-bell fa-lg" data-bs-toggle="dropdown" aria-expanded="false"></i>
-                <span class="badge bg-danger" id="notif-count">{{ ready_count }}</span>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><h6 class="dropdown-header">Ready Orders</h6></li>
-                    {% if ready_orders %}
-                        {% for order in ready_orders %}
-                            <li><a class="dropdown-item" href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/">
-                                Order #{{ order.id }} - {{ order.customer.name }}
-                            </a></li>
-                        {% endfor %}
-                    {% else %}
-                        <li><span class="dropdown-item text-muted">No ready orders</span></li>
-                    {% endif %}
+
+        <!-- ===== PROFILE IN SIDEBAR – placement toggles ===== -->
+        <div class="profile-wrapper dropup">
+            <div class="dropdown">
+                <div class="avatar" id="sidebarProfileToggle"
+                     data-bs-toggle="dropdown"
+                     data-bs-boundary="window"
+                     data-bs-placement="top-start"
+                     aria-expanded="false">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+                <ul class="dropdown-menu">
+                    <li><span class="dropdown-item"><i class="fas fa-user"></i> {{ request.user.username }}</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="/portal/{{ tenant.schema_name }}/logout/">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
                 </ul>
             </div>
+            <span class="user-name">{{ request.user.username }}</span>
         </div>
-        <div class="main-content">
+    </nav>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="main-content" id="mainContent">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <form action="/portal/{{ tenant.schema_name }}/chakki/search/" method="get">
+                    <input type="search" name="q" placeholder="Search orders, customers..." aria-label="Search">
+                </form>
+            </div>
+            <div class="actions">
+                <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="btn-new-order">
+                    <i class="fas fa-plus-circle"></i> <span>New Order</span>
+                </a>
+
+                <div class="notif dropdown">
+                    <i class="fas fa-bell" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                    <span class="badge" id="notif-count">{{ ready_count }}</span>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">Ready Orders</h6></li>
+                        {% if ready_orders %}
+                            {% for order in ready_orders %}
+                                <li><a class="dropdown-item" href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/">
+                                    #{{ order.id }} – {{ order.customer.name }}
+                                </a></li>
+                            {% endfor %}
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">No ready orders</span></li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="profile-dropdown dropdown">
+                    <div class="avatar" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><span class="dropdown-item"><i class="fas fa-user"></i> {{ request.user.username }}</span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="/portal/{{ tenant.schema_name }}/logout/">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-content">
             {% if messages %}
                 {% for m in messages %}
-                    <div class="alert alert-info alert-dismissible fade show">{{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+                    <div class="alert alert-info alert-dismissible fade show">{{ m|safe }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
                 {% endfor %}
             {% endif %}
             {% block content %}{% endblock %}
         </div>
-    </main>
-</div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-(function() {
-    function setDeviceCookie() {
-        var width = window.innerWidth;
-        var device = (width <= 768) ? 'mobile' : 'desktop';
-        var current = document.cookie.replace(/(?:(?:^|.*;\s*)device\s*=\s*([^;]*).*$)|^.*$/, "$1");
-        if (current !== device) {
-            document.cookie = "device=" + device + "; path=/; max-age=3600";
-            // Avoid reload loop by adding a flag
-            if (!window._deviceReloaded) {
-                window._deviceReloaded = true;
-                window.location.search = (window.location.search ? '&' : '?') + 'device=' + device;
-            }
-        }
-    }
-    setDeviceCookie();
-})();
-</script>
-
-    
-    
-    
-    
-    <!-- PWA Install Button -->
-    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:9999;">
-        <button onclick="installApp()" style="
-            background: #E67E22;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 10px 18px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            box-shadow: 0 4px 14px rgba(230,126,34,0.4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 1px solid rgba(255,255,255,0.2);
-        ">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Install App
-        </button>
     </div>
 
     <script>
-    (function() {
-        'use strict';
+        (function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const brandClick = document.getElementById('brandClick');
+            const STORAGE_KEY = 'sidebarCollapsed';
 
-        let deferredPrompt = null;
-        const installBtn = document.getElementById('pwa-install-btn');
+            // The sidebar profile toggle element
+            const profileToggle = document.getElementById('sidebarProfileToggle');
 
-        // Hide if already installed (standalone mode)
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            installBtn.style.display = 'none';
-            console.log('PWA: Already installed (standalone).');
-        }
-
-        // Listen for beforeinstallprompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-            console.log('PWA: beforeinstallprompt fired.');
-        });
-
-        // Install function
-        window.installApp = function() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('PWA: User accepted the install prompt');
-                    } else {
-                        console.log('PWA: User dismissed the install prompt');
+            function updateProfilePlacement(collapsed) {
+                if (!profileToggle) return;
+                // When collapsed, open to the right; when expanded, open upward
+                const placement = collapsed ? 'right-start' : 'top-start';
+                profileToggle.setAttribute('data-bs-placement', placement);
+                // Also update the dropdown instance if it exists (optional)
+                // Destroy and recreate dropdown to apply new placement
+                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    const dropdown = bootstrap.Dropdown.getInstance(profileToggle);
+                    if (dropdown) {
+                        // Re-initialize with new placement
+                        dropdown.dispose();
+                        new bootstrap.Dropdown(profileToggle, {
+                            boundary: 'window',
+                            placement: placement
+                        });
                     }
-                    deferredPrompt = null;
-                });
-            } else {
-                console.log('PWA: No deferredPrompt, showing manual install hint.');
-                alert('You can install this app by clicking the "Install" icon in the browser address bar.');
+                }
             }
-        };
 
-        // Hide after installation
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-            deferredPrompt = null;
-            console.log('PWA: App installed.');
-        });
+            function setSidebarState(collapsed) {
+                if (collapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.style.marginLeft = 'var(--sidebar-collapsed)';
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                }
+                // Update profile dropdown placement
+                updateProfilePlacement(collapsed);
+                try { localStorage.setItem(STORAGE_KEY, collapsed ? 'true' : 'false'); } catch(e) {}
+            }
 
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(reg => console.log('PWA: SW registered:', reg))
-                .catch(err => console.log('PWA: SW registration failed:', err));
-        } else {
-            console.log('PWA: Service workers not supported.');
-        }
-    })();
+            function toggleSidebar() {
+                const collapsed = sidebar.classList.contains('collapsed');
+                setSidebarState(!collapsed);
+            }
+
+            // Load saved state
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved === 'true') setSidebarState(true);
+                else if (saved === 'false') setSidebarState(false);
+            } catch(e) {}
+
+            brandClick.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+
+            // Also handle click on the toggle button if it exists (we removed it from header, but keep if any)
+            // There is no toggle button in header now; sidebar is toggled via brand only.
+
+            const parentLinks = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
+            parentLinks.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        setSidebarState(false);
+                        setTimeout(function() {
+                            const target = link.getAttribute('href');
+                            if (target) {
+                                const collapseEl = document.querySelector(target);
+                                if (collapseEl) {
+                                    const bsCollapse = bootstrap.Collapse.getInstance(collapseEl) || new bootstrap.Collapse(collapseEl, {toggle: false});
+                                    bsCollapse.show();
+                                }
+                            }
+                        }, 150);
+                    }
+                });
+            });
+
+            function updateReadyOrders() {
+                var tenant = '{{ tenant.schema_name }}';
+                var url = '/portal/' + tenant + '/chakki/check-ready/';
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        var badge = document.querySelector('.notif .badge');
+                        if (badge) {
+                            badge.textContent = data.count;
+                            badge.style.display = data.count > 0 ? 'inline' : 'none';
+                        }
+                        var dropdownMenu = document.querySelector('.notif .dropdown-menu');
+                        if (dropdownMenu) {
+                            var header = dropdownMenu.querySelector('.dropdown-header');
+                            while (dropdownMenu.children.length > 1) {
+                                dropdownMenu.removeChild(dropdownMenu.lastChild);
+                            }
+                            if (data.orders.length > 0) {
+                                data.orders.forEach(order => {
+                                    var link = document.createElement('a');
+                                    link.className = 'dropdown-item';
+                                    link.href = '/portal/' + tenant + '/chakki/order/' + order.id + '/';
+                                    link.textContent = 'Order #' + order.id + ' - ' + order.customer_name;
+                                    dropdownMenu.appendChild(link);
+                                });
+                                var viewAll = document.createElement('a');
+                                viewAll.className = 'dropdown-item text-center fw-bold';
+                                viewAll.href = '/portal/' + tenant + '/chakki/?status=ready';
+                                viewAll.textContent = 'View all →';
+                                dropdownMenu.appendChild(viewAll);
+                            } else {
+                                var empty = document.createElement('span');
+                                empty.className = 'dropdown-item text-muted';
+                                empty.textContent = 'No ready orders';
+                                dropdownMenu.appendChild(empty);
+                            }
+                        }
+                    })
+                    .catch(() => setTimeout(updateReadyOrders, 10000));
+            }
+            updateReadyOrders();
+            setInterval(updateReadyOrders, 15000);
+
+        })();
     </script>
 
-
-
-
-
-
-    <script>
-    // Store tenant in localStorage for PWA root redirect
-    (function() {
-        const tenant = '{{ tenant.schema_name }}';
-        if (tenant) {
-            localStorage.setItem('chakki_tenant', tenant);
-        }
-    })();
-    </script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

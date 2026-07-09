@@ -1,32 +1,391 @@
-
 {% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Search Results | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Search Results ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+  .page-header .query-badge {
+    background: var(--surface-alt);
+    padding: 0.3rem 1.2rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .page-header .query-badge strong {
+    color: var(--accent);
+  }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .btn-sm-premium {
+    padding: 0.25rem 1rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+  }
+  .btn-sm-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26,42,58,0.1);
+  }
+  .btn-sm-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    color: #fff;
+  }
+
+  .results-section {
+    margin-top: 1.5rem;
+  }
+  .results-section .section-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.4rem;
+  }
+  .results-section .section-title i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .results-section .section-title .count {
+    font-weight: 400;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-left: 0.4rem;
+  }
+
+  /* Table */
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--expense-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5rem;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 600px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium .order-id {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .table-premium .customer-name {
+    font-weight: 500;
+  }
+  .table-premium .amount {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Badges */
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .badge-ready { background: #fff3cd; color: #856404; }
+  .badge-completed { background: #d4edda; color: #155724; }
+  .badge-pending { background: #e2e3e5; color: #383d41; }
+  .badge-cancelled { background: #f8d7da; color: #b02a37; }
+
+  /* Customer cards */
+  .customer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+  .customer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem 1.2rem;
+    box-shadow: var(--expense-shadow);
+    transition: all 0.25s ease;
+  }
+  .customer-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--expense-hover-shadow);
+    transform: translateY(-2px);
+  }
+  .customer-card .name {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+  .customer-card .name i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+  .customer-card .phone {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+  }
+  .customer-card .phone i {
+    margin-right: 0.3rem;
+    color: var(--muted);
+  }
+  .customer-card .type {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    display: inline-block;
+    background: var(--surface-alt);
+    padding: 0.1rem 0.6rem;
+    border-radius: 30px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--muted);
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .empty-state p {
+    font-size: 1rem;
+    margin: 0;
+  }
+  .empty-state p a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .empty-state p a:hover {
+    text-decoration: underline;
+  }
+
+  .no-query-state {
+    text-align: center;
+    padding: 4rem 1rem;
+  }
+  .no-query-state i {
+    font-size: 4rem;
+    color: var(--border);
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .no-query-state h4 {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .no-query-state p {
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .query-badge { align-self: flex-start; }
+    .customer-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Search Results for "{{ query }}"</h2>
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-search"></i> Search Results</h2>
+    {% if query %}
+      <span class="query-badge">Results for: <strong>“{{ query }}”</strong></span>
+    {% endif %}
+  </div>
+  <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-outline-premium">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+  </a>
+</div>
+
+<!-- ===== RESULTS ===== -->
 {% if not query %}
-    <p>Please enter a search term.</p>
+  <div class="no-query-state">
+    <i class="fas fa-search"></i>
+    <h4>Enter a search term</h4>
+    <p>Use the search bar in the navigation to find orders and customers.</p>
+  </div>
 {% else %}
-    <h5>Orders</h5>
-    <table class="table table-bordered">
-        <tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th><th>Action</th></tr>
-        {% for o in orders %}
-        <tr>
-            <td>{{ o.id }}</td>
-            <td>{{ o.customer.name }}</td>
-            <td>₹{{ o.total_amount }}</td>
-            <td>{{ o.status }}</td>
-            <td><a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-primary">View</a></td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5">No orders found.</td></tr>
-        {% endfor %}
-    </table>
-    <h5>Customers</h5>
-    <ul>
+
+  <!-- ===== ORDERS SECTION ===== -->
+  <div class="results-section">
+    <div class="section-title">
+      <i class="fas fa-clipboard-list"></i> Orders
+      <span class="count">({{ orders|length }})</span>
+    </div>
+
+    {% if orders %}
+      <div class="table-container">
+        <table class="table-premium">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in orders %}
+            <tr>
+              <td class="order-id">#{{ o.id }}</td>
+              <td class="customer-name">{{ o.customer.name }}</td>
+              <td class="amount">₹{{ o.total_amount|floatformat:2 }}</td>
+              <td>
+                <span class="badge-premium
+                  {% if o.status == 'ready' %}badge-ready
+                  {% elif o.status == 'completed' %}badge-completed
+                  {% elif o.status == 'cancelled' %}badge-cancelled
+                  {% else %}badge-pending{% endif %}">
+                  {{ o.status|title }}
+                </span>
+              </td>
+              <td>
+                <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn-sm-premium btn-sm-primary">
+                  <i class="fas fa-eye"></i> View
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No orders found for “{{ query }}”.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ===== CUSTOMERS SECTION ===== -->
+  <div class="results-section">
+    <div class="section-title">
+      <i class="fas fa-users"></i> Customers
+      <span class="count">({{ customers|length }})</span>
+    </div>
+
+    {% if customers %}
+      <div class="customer-grid">
         {% for c in customers %}
-        <li>{{ c.name }} ({{ c.phone }})</li>
-        {% empty %}
-        <li>No customers found.</li>
+        <div class="customer-card">
+          <div class="name"><i class="fas fa-user"></i> {{ c.name }}</div>
+          <div class="phone"><i class="fas fa-phone"></i> {{ c.phone|default:"—" }}</div>
+          <div class="type">
+            {% if c.is_regular %}Regular{% else %}Walk‑in{% endif %}
+          </div>
+        </div>
         {% endfor %}
-    </ul>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-user-slash"></i>
+        <p>No customers found for “{{ query }}”.</p>
+      </div>
+    {% endif %}
+  </div>
+
 {% endif %}
+
 {% endblock %}

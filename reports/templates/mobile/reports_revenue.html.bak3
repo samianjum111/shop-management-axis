@@ -1,0 +1,29 @@
+{% extends "mobile/base.html" %}
+{% load static %}
+{% block title %}Revenue Report | {{ tenant.name }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:0.8rem; text-align:center; margin-bottom:0.8rem; }
+  .stat-box .number { font-size:1.6rem; font-weight:700; }
+  .stat-box .label { font-size:0.6rem; text-transform:uppercase; color:var(--muted); }
+  .chart-container { background:var(--surface); border-radius:var(--radius); padding:0.8rem; border:1px solid var(--border); margin-bottom:1rem; }
+  .order-item { display:flex; justify-content:space-between; padding:0.5rem 0.8rem; border-bottom:1px solid var(--border); }
+</style>
+{% endblock %}
+{% block body %}
+<h5 class="fw-bold">💰 Revenue Report</h5>
+<div class="stat-box"><div class="number">₹{{ total_revenue|floatformat:2 }}</div><div class="label">Total Revenue</div></div>
+<div class="chart-container"><canvas id="revenueChart" height="200"></canvas></div>
+<h6 class="fw-bold">Completed Orders</h6>
+{% for order in orders %}
+<div class="order-item"><span>#{{ order.id }} - {{ order.customer.name }}</span><span>₹{{ order.total_amount }}</span></div>
+{% empty %}<div class="text-muted text-center p-2">No completed orders.</div>{% endfor %}
+<script>
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: { labels: {{ revenue_labels|safe }}, datasets: [{ label: 'Daily Revenue', data: {{ revenue_data|safe }}, backgroundColor: '#e67e22' }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+</script>
+{% endblock %}

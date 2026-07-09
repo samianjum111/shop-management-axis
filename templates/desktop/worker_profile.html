@@ -1,131 +1,475 @@
 {% extends "desktop/base.html" %}
+{% load static %}
 {% block title %}{{ worker.name }} | {{ tenant.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+  /* ===== Premium Worker Profile ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+  .page-header .status-badge {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.3rem 1.2rem;
+    border-radius: 40px;
+  }
+  .page-header .status-badge.active { background: #d4edda; color: #155724; }
+  .page-header .status-badge.suspended { background: #fff3cd; color: #856404; }
+  .page-header .status-badge.resigned { background: #e2e3e5; color: #383d41; }
+
+  .btn-outline-premium {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-outline-premium:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.5rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    color: #fff;
+  }
+  .btn-sm-premium {
+    padding: 0.25rem 1rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+  }
+  .btn-sm-secondary {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+  }
+  .btn-sm-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+    transform: translateY(-2px);
+  }
+
+  /* Profile card */
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem 1.2rem;
+    box-shadow: var(--expense-shadow);
+    margin-bottom: 1.5rem;
+  }
+  .profile-card h5 {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+  .profile-card h5 i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+  .profile-card .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem 1.5rem;
+  }
+  .profile-card .detail-grid .item {
+    font-size: 0.95rem;
+  }
+  .profile-card .detail-grid .item strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin: 1.2rem 0 0.5rem;
+  }
+  .stat-box {
+    background: var(--surface-alt);
+    border-radius: 16px;
+    padding: 0.8rem 0.5rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+  }
+  .stat-box:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .stat-box .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .stat-box .value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .stat-box .sub {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  /* Table */
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--expense-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 400px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .badge-present { background: #d4edda; color: #155724; }
+  .badge-absent { background: #f8d7da; color: #b02a37; }
+
+  .empty-state {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 2rem;
+    color: var(--border);
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+
+  /* Modal */
+  .modal-content {
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+  }
+  .modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .modal-header .modal-title i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+  }
+  .modal-footer .btn {
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+  }
+  .modal-footer .btn-secondary {
+    background: var(--surface-alt);
+    border: none;
+    color: var(--text-secondary);
+  }
+  .modal-footer .btn-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+  .modal-footer .btn-primary {
+    background: var(--accent);
+    border: none;
+  }
+  .modal-footer .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+  .modal .form-group {
+    margin-bottom: 1rem;
+  }
+  .modal .form-group label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .modal .form-group .form-control {
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    width: 100%;
+  }
+  .modal .form-group .form-control:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    outline: none;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header .status-badge { align-self: flex-start; }
+    .profile-card .detail-grid { grid-template-columns: 1fr; gap: 0.2rem; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4>{{ worker.name }}</h4>
-                <span class="badge bg-{% if worker.status == 'active' %}success{% elif worker.status == 'suspended' %}warning{% else %}secondary{% endif %}">{{ worker.status|title }}</span>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6"><strong>Father:</strong> {{ worker.father_name|default:"-" }}</div>
-                    <div class="col-md-6"><strong>CNIC:</strong> {{ worker.cnic|default:"-" }}</div>
-                    <div class="col-md-6"><strong>Phone:</strong> {{ worker.phone|default:"-" }}</div>
-                    <div class="col-md-6"><strong>Alt. Phone:</strong> {{ worker.alternative_phone|default:"-" }}</div>
-                    <div class="col-12"><strong>Address:</strong> {{ worker.address|default:"-" }}</div>
-                    <div class="col-md-6"><strong>Joining Date:</strong> {{ worker.joining_date|date:"d M Y" }}</div>
-                    <div class="col-md-6"><strong>Salary:</strong> ₹{{ worker.salary_amount }}/{{ worker.salary_type }}</div>
-                    <div class="col-md-6"><strong>Category:</strong> {{ worker.category.name|default:"-" }}</div>
-                    <div class="col-md-6"><strong>Role:</strong> {{ worker.role|default:"-" }}</div>
-                </div>
-                <hr>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="border p-3 rounded">
-                            <h6>Next Payment Due</h6>
-                            {% if next_due %}
-                                <p>
-                                    {% if next_due <= today %}
-                                        <span class="text-danger">Due Today!</span>
-                                    {% else %}
-                                        In {{ next_due|timeuntil }}
-                                    {% endif %}
-                                </p>
-                                <p>Amount: ₹{{ next_amount|floatformat:2 }}</p>
-                            {% else %}
-                                <p class="text-muted">Not applicable</p>
-                            {% endif %}
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#payModal">Pay Now</button>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="border p-3 rounded">
-                            <h6>Total Paid</h6>
-                            <p class="h4">₹{{ total_paid|floatformat:2 }}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="border p-3 rounded">
-                            <h6>Days Present</h6>
-                            <p class="h4">{{ total_present }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Attendance -->
-        <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between">
-                <h5>Attendance (Last 30 days)</h5>
-                <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="btn btn-sm btn-outline-secondary">Mark Today</a>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead><tr><th>Date</th><th>Status</th></tr></thead>
-                    <tbody>
-                        {% for att in attendances %}
-                        <tr><td>{{ att.date|date:"d M Y" }}</td><td><span class="badge bg-{% if att.status == 'present' %}success{% else %}danger{% endif %}">{{ att.status|title }}</span></td></tr>
-                        {% empty %}
-                        <tr><td colspan="2" class="text-muted">No records</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Payments -->
-        <div class="card mt-3">
-            <div class="card-header"><h5>Payment History</h5></div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead><tr><th>Date</th><th>Amount</th><th>Period</th><th>Notes</th></tr></thead>
-                    <tbody>
-                        {% for p in payments %}
-                        <tr><td>{{ p.payment_date|date:"d M Y" }}</td><td>₹{{ p.amount|floatformat:2 }}</td><td>{{ p.period_start|date:"d M" }} - {{ p.period_end|date:"d M" }}</td><td>{{ p.notes|default:"-" }}</td></tr>
-                        {% empty %}
-                        <tr><td colspan="4" class="text-muted">No payments</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-user-circle"></i> {{ worker.name }}</h2>
+    <span class="status-badge {{ worker.status }}">
+      {{ worker.status|title }}
+    </span>
+  </div>
+  <a href="{% url 'worker_list' schema_name=tenant.schema_name %}" class="btn-outline-premium">
+    <i class="fas fa-arrow-left"></i> Back to Workers
+  </a>
 </div>
 
-<!-- Pay Modal -->
-<div class="modal fade" id="payModal" tabindex="-1">
-  <div class="modal-dialog">
+<!-- ===== PROFILE CARD ===== -->
+<div class="profile-card">
+  <h5><i class="fas fa-address-card"></i> Personal Details</h5>
+  <div class="detail-grid">
+    <div class="item"><strong>Father:</strong> {{ worker.father_name|default:"—" }}</div>
+    <div class="item"><strong>CNIC:</strong> {{ worker.cnic|default:"—" }}</div>
+    <div class="item"><strong>Phone:</strong> {{ worker.phone|default:"—" }}</div>
+    <div class="item"><strong>Alt. Phone:</strong> {{ worker.alternative_phone|default:"—" }}</div>
+    <div class="item" style="grid-column:1/-1;"><strong>Address:</strong> {{ worker.address|default:"—" }}</div>
+    <div class="item"><strong>Joining Date:</strong> {{ worker.joining_date|date:"d M Y" }}</div>
+    <div class="item"><strong>Salary:</strong> ₹{{ worker.salary_amount|floatformat:2 }}/{{ worker.salary_type }}</div>
+    <div class="item"><strong>Category:</strong> {{ worker.category.name|default:"—" }}</div>
+    <div class="item"><strong>Role:</strong> {{ worker.role|default:"—" }}</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="label">Next Payment Due</div>
+      <div class="value">
+        {% if next_due %}
+          {% if next_due <= today %}
+            <span style="color:#dc3545;">Today!</span>
+          {% else %}
+            {{ next_due|date:"d M" }}
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+      <div class="sub">₹{{ next_amount|floatformat:2 }}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">Total Paid</div>
+      <div class="value">₹{{ total_paid|floatformat:2 }}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">Days Present</div>
+      <div class="value">{{ total_present }}</div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;text-align:right;">
+    <button class="btn-premium" data-bs-toggle="modal" data-bs-target="#payModal">
+      <i class="fas fa-hand-holding-usd"></i> Pay Now
+    </button>
+  </div>
+</div>
+
+<!-- ===== ATTENDANCE ===== -->
+<div class="profile-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+    <h5 style="border:none;padding:0;margin:0;"><i class="fas fa-clipboard-check"></i> Attendance (Last 30 days)</h5>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/attendance/" class="btn-sm-premium btn-sm-secondary">
+      <i class="fas fa-pen"></i> Mark Today
+    </a>
+  </div>
+  <div class="table-container" style="margin-top:0.8rem;">
+    <table class="table-premium">
+      <thead><tr><th>Date</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for att in attendances %}
+        <tr>
+          <td>{{ att.date|date:"d M Y" }}</td>
+          <td>
+            <span class="badge-premium {% if att.status == 'present' %}badge-present{% else %}badge-absent{% endif %}">
+              {{ att.status|title }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2"><div class="empty-state"><i class="fas fa-calendar-times"></i><p>No attendance records</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== PAYMENT HISTORY ===== -->
+<div class="profile-card">
+  <h5><i class="fas fa-history"></i> Payment History</h5>
+  <div class="table-container" style="margin-top:0.8rem;">
+    <table class="table-premium">
+      <thead><tr><th>Date</th><th>Amount</th><th>Period</th><th>Notes</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td>{{ p.payment_date|date:"d M Y" }}</td>
+          <td><strong>₹{{ p.amount|floatformat:2 }}</strong></td>
+          <td>{{ p.period_start|date:"d M" }} – {{ p.period_end|date:"d M" }}</td>
+          <td>{{ p.notes|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4"><div class="empty-state"><i class="fas fa-receipt"></i><p>No payments recorded</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== PAY MODAL ===== -->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form method="post" action="/portal/{{ tenant.schema_name }}/expenses/workers/pay/{{ worker.id }}/">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title">Pay {{ worker.name }}</h5>
+          <h5 class="modal-title"><i class="fas fa-hand-holding-usd"></i> Pay {{ worker.name }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
+          <div class="form-group">
             <label>Amount (₹)</label>
             <input type="number" name="amount" class="form-control" step="0.01" required>
           </div>
-          <div class="mb-3">
+          <div class="form-group">
             <label>Payment Date</label>
             <input type="date" name="payment_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
           </div>
-          <div class="mb-3">
+          <div class="form-group">
             <label>Period Start</label>
             <input type="date" name="period_start" class="form-control" required>
           </div>
-          <div class="mb-3">
+          <div class="form-group">
             <label>Period End</label>
             <input type="date" name="period_end" class="form-control" required>
           </div>
-          <div class="mb-3">
+          <div class="form-group">
             <label>Notes</label>
-            <textarea name="notes" class="form-control"></textarea>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -136,4 +480,5 @@
     </div>
   </div>
 </div>
+
 {% endblock %}

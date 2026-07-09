@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ===== CSS Variables (Light theme) ===== */
+        /* ===== CSS Variables – Premium Theme ===== */
         :root {
             --bg: #F8FAFC;
             --surface: #FFFFFF;
@@ -17,16 +17,18 @@
             --text-secondary: #475569;
             --muted: #94A3B8;
             --border: #E2E8F0;
-            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
             --accent: #E67E22;
             --accent-hover: #D35400;
             --accent-light: #FEF3E2;
             --radius: 0.75rem;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --transition: all 0.15s ease;
+            --gradient-accent: linear-gradient(135deg, #E67E22, #D35400);
+            --card-shadow: 0 8px 24px rgba(0,0,0,0.06);
         }
 
-        /* Dark theme (optional) – can be toggled via JS */
+        /* Dark theme (optional – can be toggled via JS) */
         html.dark {
             --bg: #0F172A;
             --surface: #1E293B;
@@ -53,10 +55,10 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ---- Top Bar ---- */
+        /* ---- Top Bar (Premium) ---- */
         .top-bar {
             background: var(--surface);
-            padding: 10px 16px;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -64,7 +66,13 @@
             position: sticky;
             top: 0;
             z-index: 20;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.85);
             transition: background 0.25s, border-color 0.25s;
+        }
+        html.dark .top-bar {
+            background: rgba(15,23,42,0.85);
         }
         .top-bar .left {
             display: flex;
@@ -74,36 +82,57 @@
             user-select: none;
         }
         .top-bar .logo {
-            width: 36px;
-            height: 36px;
-            background: var(--accent);
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-accent);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 16px;
             flex-shrink: 0;
-            transition: background 0.25s;
+            box-shadow: 0 4px 12px rgba(230,126,34,0.25);
         }
         .top-bar .brand-name {
-            font-weight: 600;
-            font-size: 15px;
+            font-weight: 700;
+            font-size: 16px;
             line-height: 1.2;
             color: var(--text);
+            letter-spacing: -0.01em;
         }
         .top-bar .brand-name small {
             display: block;
             font-weight: 400;
             font-size: 10px;
             color: var(--muted);
-            letter-spacing: 0.01em;
+            letter-spacing: 0.03em;
         }
         .top-bar .actions {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+        }
+        .top-bar .actions .notif-icon {
+            position: relative;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            transition: color 0.2s;
+        }
+        .top-bar .actions .notif-icon .badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #EF4444;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            color: white;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
         }
 
         /* ---- Main Content ---- */
@@ -113,105 +142,7 @@
             margin: 0 auto;
         }
 
-        /* ---- Bottom Navigation ---- */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            padding: 4px 0 calc(4px + var(--safe-bottom));
-            z-index: 30;
-            transition: background 0.25s, border-color 0.25s;
-        }
-        .bottom-nav .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 10px;
-            color: var(--muted);
-            text-decoration: none;
-            padding: 4px 10px;
-            border-radius: 6px;
-            transition: var(--transition);
-            gap: 1px;
-            min-width: 48px;
-        }
-        .bottom-nav .nav-item.active {
-            color: var(--accent);
-        }
-        .bottom-nav .nav-item i {
-            font-size: 1.4rem;
-            margin-bottom: 1px;
-        }
-        .bottom-nav .nav-item span {
-            font-weight: 500;
-            font-size: 9px;
-            letter-spacing: 0.02em;
-        }
-
-        /* ---- Messages ---- */
-        .message {
-            margin: 8px 0;
-            padding: 10px 14px;
-            border-radius: 6px;
-            background: var(--surface);
-            border-left: 3px solid var(--accent);
-            font-size: 13px;
-            box-shadow: var(--shadow);
-            transition: background 0.25s, border-color 0.25s;
-        }
-        .message.success { border-left-color: #22C55E; }
-        .message.error { border-left-color: #EF4444; }
-        .message.warning { border-left-color: #F59E0B; }
-
-        /* ---- Utility ---- */
-        .text-muted { color: var(--muted); }
-        .text-secondary { color: var(--text-secondary); }
-        .scroll-x {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            gap: 12px;
-            padding-bottom: 8px;
-            -webkit-overflow-scrolling: touch;
-            scroll-snap-type: x mandatory;
-        }
-        .scroll-x > * { scroll-snap-align: start; flex-shrink: 0; }
-
-        /* ---- Cards ---- */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 1rem;
-            transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
-        }
-
-        /* ---- Buttons ---- */
-        .btn-primary-custom {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.5rem 1.25rem;
-            border-radius: 2rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .btn-primary-custom:hover {
-            background: var(--accent-hover);
-        }
-        .btn-primary-custom:active {
-            transform: scale(0.96);
-        }
-
-        /* ---- Search (inside main content) ---- */
+        /* ---- Search (inside main) ---- */
         .search-wrapper {
             margin-bottom: 0.75rem;
             width: 100%;
@@ -227,7 +158,7 @@
         }
         .search-wrapper .search-input-container:focus-within {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.12);
+            box-shadow: 0 0 0 3px rgba(230,126,34,0.12);
         }
         .search-wrapper .search-input-container input {
             font-size: 0.9rem;
@@ -248,36 +179,165 @@
             flex-shrink: 0;
         }
 
-        /* ---- Notification dropdown (top bar) ---- */
-        .notif-icon {
+        /* ---- Bottom Navigation (Premium) ---- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 0 calc(6px + var(--safe-bottom));
+            z-index: 30;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: background 0.25s, border-color 0.25s;
+        }
+        html.dark .bottom-nav {
+            background: rgba(15,23,42,0.92);
+        }
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            color: var(--muted);
+            text-decoration: none;
+            padding: 4px 10px;
+            border-radius: 8px;
+            transition: var(--transition);
+            gap: 1px;
+            min-width: 48px;
             position: relative;
-            cursor: pointer;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
         }
-        .notif-icon .badge {
-            position: absolute;
-            top: -6px;
-            right: -8px;
-            background: #EF4444;
-            border-radius: 50%;
-            font-size: 0.6rem;
-            padding: 2px 6px;
+        .bottom-nav .nav-item.active {
+            color: var(--accent);
+        }
+        .bottom-nav .nav-item i,
+        .bottom-nav .nav-item .nav-icon-svg {
+            font-size: 1.5rem;
+            margin-bottom: 1px;
+            transition: transform 0.2s;
+        }
+        .bottom-nav .nav-item.active i,
+        .bottom-nav .nav-item.active .nav-icon-svg {
+            transform: scale(1.05);
+        }
+        .bottom-nav .nav-item span {
+            font-weight: 500;
+            font-size: 9px;
+            letter-spacing: 0.02em;
+        }
+        /* For SVG icon (if we ever use custom SVG) */
+        .bottom-nav .nav-item .nav-icon-svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* ---- Messages ---- */
+        .message {
+            margin: 8px 0;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: var(--surface);
+            border-left: 3px solid var(--accent);
+            font-size: 13px;
+            box-shadow: var(--shadow);
+            transition: background 0.25s, border-color 0.25s;
+        }
+        .message.success { border-left-color: #22C55E; }
+        .message.error { border-left-color: #EF4444; }
+        .message.warning { border-left-color: #F59E0B; }
+
+        /* ---- Utility ---- */
+        .text-muted { color: var(--muted); }
+        .text-secondary { color: var(--text-secondary); }
+
+        /* ---- Cards ---- */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+        }
+
+        /* ---- Buttons ---- */
+        .btn-primary-custom {
+            background: var(--gradient-accent);
             color: white;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 2rem;
             font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.15s;
+            box-shadow: 0 4px 12px rgba(230,126,34,0.25);
         }
+        .btn-primary-custom:hover {
+            background: var(--accent-hover);
+        }
+        .btn-primary-custom:active {
+            transform: scale(0.96);
+        }
+
+        /* ---- Notification dropdown ---- */
         .notif-dropdown .dropdown-menu {
             min-width: 280px;
             max-height: 400px;
             overflow-y: auto;
         }
 
-        /* ---- Utility blink ---- */
+        /* ---- Blink for alerts ---- */
         .blink {
             animation: blink 1s step-end infinite;
         }
         @keyframes blink {
             50% { opacity: 0; }
+        }
+
+        /* ---- Floating Action Button (New Order) ---- */
+        .fab-new-order {
+            position: fixed;
+            bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 0.5rem);
+            right: 1.2rem;
+            z-index: 999;
+            background: var(--gradient-accent);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 4px 20px rgba(230,126,34,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        .fab-new-order:active {
+            transform: scale(0.90);
+            box-shadow: 0 2px 8px rgba(230,126,34,0.3);
+        }
+        .fab-new-order i {
+            color: #fff;
+        }
+        @media (max-width: 400px) {
+            .fab-new-order {
+                width: 48px;
+                height: 48px;
+                font-size: 1.4rem;
+                right: 0.8rem;
+                bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 0.5rem);
+            }
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -288,11 +348,10 @@
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
 </head>
 <body>
 
-    <!-- Top Bar -->
+    <!-- ===== TOP BAR ===== -->
     <div class="top-bar">
         <div class="left">
             <div class="logo">{{ tenant.name|slice:":2"|upper }}</div>
@@ -310,7 +369,7 @@
                     {% if ready_orders %}
                         {% for order in ready_orders %}
                             <li><a class="dropdown-item" href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/">
-                                Order #{{ order.id }} - {{ order.customer.name }}
+                                Order #{{ order.id }} – {{ order.customer.name }}
                             </a></li>
                         {% endfor %}
                     {% else %}
@@ -321,7 +380,7 @@
         </div>
     </div>
 
-    <!-- Messages -->
+    <!-- ===== MESSAGES ===== -->
     {% if messages %}
         <div style="padding:0 16px; max-width:480px; margin:0 auto;">
             {% for m in messages %}
@@ -330,9 +389,9 @@
         </div>
     {% endif %}
 
-    <!-- Main Content -->
+    <!-- ===== MAIN CONTENT ===== -->
     <div class="main-content">
-        <!-- Search (inside main content, like axis) -->
+        <!-- SEARCH (can be overridden) -->
         {% block search_bar %}
         <div class="search-wrapper">
             <form action="/portal/{{ tenant.schema_name }}/chakki/search/" method="get" class="search-input-container">
@@ -344,7 +403,7 @@
         {% block body %}{% endblock %}
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- ===== BOTTOM NAVIGATION ===== -->
     <nav class="bottom-nav">
         <a href="/portal/{{ tenant.schema_name }}/dashboard/" class="nav-item {% if request.path == '/portal/'|add:tenant.schema_name|add:'/dashboard/' %}active{% endif %}">
             <i class="fas fa-tachometer-alt"></i>
@@ -358,139 +417,70 @@
             <i class="fas fa-money-bill-wave"></i>
             <span>Expenses</span>
         </a>
-        <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="nav-item {% if request.path|slice:'0:29' == '/portal/'|add:tenant.schema_name|add:'/chakki/settings/' %}active{% endif %}">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
+        <a href="/portal/{{ tenant.schema_name }}/more/" class="nav-item {% if request.path == '/portal/'|add:tenant.schema_name|add:'/more/' %}active{% endif %}">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>More</span>
         </a>
     </nav>
 
+    <!-- ===== FLOATING ACTION BUTTON ===== -->
+    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="fab-new-order" id="mobile-fab-btn">
+        <i class="fas fa-plus"></i>
+    </a>
+
+    <!-- ===== SCRIPTS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Device detection script (cookie/GET) -->
     <script>
     (function() {
-        function setDeviceCookie() {
-            var width = window.innerWidth;
-            var device = (width <= 768) ? 'mobile' : 'desktop';
-            var current = document.cookie.replace(/(?:(?:^|.*;\s*)device\s*=\s*([^;]*).*$)|^.*$/, "$1");
-            if (current !== device) {
-                document.cookie = "device=" + device + "; path=/; max-age=3600";
-                if (!window._deviceReloaded) {
-                    window._deviceReloaded = true;
-                    window.location.search = (window.location.search ? '&' : '?') + 'device=' + device;
-                }
-            }
-        }
-        setDeviceCookie();
-    })();
-    </script>
-
-    <!-- html2canvas for image capture -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- jsPDF for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-
-    
-    
-    
-    
-    <!-- PWA Install Button -->
-    <div id="pwa-install-btn" style="position:fixed; bottom:80px; right:16px; z-index:9999;">
-        <button onclick="installApp()" style="
-            background: #E67E22;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 10px 18px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            box-shadow: 0 4px 14px rgba(230,126,34,0.4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 1px solid rgba(255,255,255,0.2);
-        ">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Install App
-        </button>
-    </div>
-
-    <script>
-    (function() {
-        'use strict';
-
-        let deferredPrompt = null;
-        const installBtn = document.getElementById('pwa-install-btn');
-
-        // Hide if already installed (standalone mode)
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            installBtn.style.display = 'none';
-            console.log('PWA: Already installed (standalone).');
-        }
-
-        // Listen for beforeinstallprompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-            console.log('PWA: beforeinstallprompt fired.');
-        });
-
-        // Install function
-        window.installApp = function() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('PWA: User accepted the install prompt');
-                    } else {
-                        console.log('PWA: User dismissed the install prompt');
+        function updateReadyOrders() {
+            var tenant = '{{ tenant.schema_name }}';
+            var url = '/portal/' + tenant + '/chakki/check-ready/';
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    var badge = document.querySelector('.notif-icon .badge');
+                    if (badge) {
+                        badge.textContent = data.count;
+                        badge.style.display = data.count > 0 ? 'inline' : 'none';
                     }
-                    deferredPrompt = null;
+                    var dropdownMenu = document.querySelector('.notif-icon .dropdown-menu');
+                    if (dropdownMenu) {
+                        var header = dropdownMenu.querySelector('.dropdown-header');
+                        while (dropdownMenu.children.length > 1) {
+                            dropdownMenu.removeChild(dropdownMenu.lastChild);
+                        }
+                        if (data.orders.length > 0) {
+                            data.orders.forEach(order => {
+                                var link = document.createElement('a');
+                                link.className = 'dropdown-item';
+                                link.href = '/portal/' + tenant + '/chakki/order/' + order.id + '/';
+                                link.textContent = 'Order #' + order.id + ' - ' + order.customer_name;
+                                dropdownMenu.appendChild(link);
+                            });
+                            var viewAll = document.createElement('a');
+                            viewAll.className = 'dropdown-item text-center fw-bold';
+                            viewAll.href = '/portal/' + tenant + '/chakki/?status=ready';
+                            viewAll.textContent = 'View all ready orders →';
+                            dropdownMenu.appendChild(viewAll);
+                        } else {
+                            var empty = document.createElement('span');
+                            empty.className = 'dropdown-item text-muted';
+                            empty.textContent = 'No ready orders';
+                            dropdownMenu.appendChild(empty);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching ready orders:', error);
+                    setTimeout(updateReadyOrders, 10000);
                 });
-            } else {
-                console.log('PWA: No deferredPrompt, showing manual install hint.');
-                alert('You can install this app by clicking the "Install" icon in the browser address bar.');
-            }
-        };
-
-        // Hide after installation
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-            deferredPrompt = null;
-            console.log('PWA: App installed.');
-        });
-
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(reg => console.log('PWA: SW registered:', reg))
-                .catch(err => console.log('PWA: SW registration failed:', err));
-        } else {
-            console.log('PWA: Service workers not supported.');
         }
+        updateReadyOrders();
+        setInterval(updateReadyOrders, 15000);
     })();
     </script>
-
-
-
-
-
-
-    <script>
-    // Store tenant in localStorage for PWA root redirect
-    (function() {
-        const tenant = '{{ tenant.schema_name }}';
-        if (tenant) {
-            localStorage.setItem('chakki_tenant', tenant);
-        }
-    })();
-    </script>
-
 </body>
 </html>

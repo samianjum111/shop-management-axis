@@ -10,7 +10,7 @@ import json
 @login_required
 def expense_dashboard(request, **kwargs):
     """Expense dashboard with cards and summary."""
-    expenses = Expense.objects.all().order_by('-date')
+    expenses = Expense.objects.filter(tenant=request.tenant).order_by('-date')
     total_expenses = sum(e.amount for e in expenses)
     total_given = sum(e.amount for e in expenses if e.is_credit and not e.is_repaid)
     total_taken = sum(e.amount for e in expenses if e.category == 'taken_loan' and not e.is_repaid)
@@ -19,8 +19,8 @@ def expense_dashboard(request, **kwargs):
     daily_expenses = expenses.filter(category__in=['general','food','medicine','utility','other']).count()
     loans_given = expenses.filter(category='given_loan').count()
     loans_taken = expenses.filter(category='taken_loan').count()
-    reminders = Reminder.objects.filter(is_completed=False).count()
-    workers = Worker.objects.filter(is_active=True).count()
+    reminders = Reminder.objects.filter(tenant=request.tenant, is_completed=False).count()
+    workers = Worker.objects.filter(tenant=request.tenant, is_active=True).count()
 
     context = {
         'total_expenses': total_expenses,
@@ -40,9 +40,9 @@ def daily_expense_list(request, **kwargs):
     """Enhanced daily expenses page with analytics, search, filters, and pagination."""
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-    expenses = Expense.objects.filter(
+    expenses = Expense.objects.filter(tenant=request.tenant, 
         category__in=['general','food','medicine','utility','other']
-    ).order_by('-expense_date')
+    ).order_by("-expense_date", "-id")
 
     # Search
     search_q = request.GET.get('q', '').strip()
@@ -72,7 +72,7 @@ def daily_expense_list(request, **kwargs):
     count = expenses.count()
 
     # Pagination (15 per page)
-    paginator = Paginator(expenses, 15)
+    paginator = Paginator(expenses, 30)
     page = request.GET.get('page')
     try:
         page_obj = paginator.page(page)
@@ -114,7 +114,7 @@ def daily_expense_add(request, **kwargs):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            expense = Expense.objects.create(
+            expense = Expense.objects.create(tenant=request.tenant, 
                 title=data.get('title'),
                 description=data.get('description', ''),
                 amount=data.get('amount'),
@@ -149,16 +149,16 @@ def daily_expense_edit(request, expense_id, **kwargs):
 @login_required
 def loan_list(request, loan_type, **kwargs):
     if loan_type == 'given':
-        expenses = Expense.objects.filter(category='given_loan').order_by('-date')
+        expenses = Expense.objects.filter(tenant=request.tenant, category='given_loan').order_by('-date')
         title = 'Loans Given'
     else:
-        expenses = Expense.objects.filter(category='taken_loan').order_by('-date')
+        expenses = Expense.objects.filter(tenant=request.tenant, category='taken_loan').order_by('-date')
         title = 'Loans Taken'
     context = {'expenses': expenses, 'title': title, 'loan_type': loan_type, 'tenant': request.tenant}
     template = 'mobile/expense_list.html' if request.mobile else 'desktop/expense_list.html'
     return render(request, template, context)
 def reminder_list(request, **kwargs):
-    reminders = Reminder.objects.all().order_by('remind_date')
+    reminders = Reminder.objects.filter(tenant=request.tenant).order_by('remind_date')
     context = {'reminders': reminders, 'tenant': request.tenant}
     template = 'mobile/reminder_list.html' if request.mobile else 'desktop/reminder_list.html'
     return render(request, template, context)
@@ -168,7 +168,7 @@ def add_reminder(request, **kwargs):
         notes = request.POST.get('notes', '')
         remind_date = request.POST.get('remind_date')
         if title and remind_date:
-            Reminder.objects.create(
+            Reminder.objects.create(tenant=request.tenant, 
                 title=title,
                 notes=notes,
                 remind_date=remind_date,
@@ -188,15 +188,15 @@ def complete_reminder(request, reminder_id, **kwargs):
 
 @login_required
 def worker_list(request, **kwargs):
-    workers = Worker.objects.all().order_by('-created_at')
-    categories = WorkerCategory.objects.all()
+    workers = Worker.objects.filter(tenant=request.tenant).order_by('-created_at')
+    categories = WorkerCategory.objects.filter(tenant=request.tenant)
     active_count = workers.filter(status='active').count()
     categories_count = categories.count()
     context = {'workers': workers, 'categories': categories, 'tenant': request.tenant, 'active_count': active_count, 'categories_count': categories_count}
     template = 'mobile/worker_list.html' if request.mobile else 'desktop/worker_list.html'
     return render(request, template, context)
 def add_worker(request, **kwargs):
-    categories = WorkerCategory.objects.all()
+    categories = WorkerCategory.objects.filter(tenant=request.tenant)
     template = 'mobile/add_worker.html' if request.mobile else 'desktop/add_worker.html'
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -205,7 +205,7 @@ def add_worker(request, **kwargs):
             return redirect('add_worker', schema_name=request.tenant.schema_name)
         # Check for duplicate CNIC
         cnic = request.POST.get('cnic', '')
-        if cnic and Worker.objects.filter(cnic=cnic).exists():
+        if cnic and Worker.objects.filter(tenant=request.tenant, cnic=cnic).exists():
             existing_worker = Worker.objects.get(cnic=cnic)
             messages.error(request, mark_safe(f"A worker with CNIC '{cnic}' already exists. <a href='/portal/{request.tenant.schema_name}/expenses/workers/{existing_worker.id}/'>View Profile</a>"))
             # Re-render form with submitted data
@@ -225,7 +225,7 @@ def add_worker(request, **kwargs):
             }
             return render(request, template, context)
 
-        Worker.objects.create(
+        Worker.objects.create(tenant=request.tenant, 
             name=name,
             father_name=request.POST.get('father_name', ''),
             cnic=request.POST.get('cnic', ''),
@@ -248,7 +248,7 @@ def add_worker_category(request, **kwargs):
         name = request.POST.get('name')
         description = request.POST.get('description', '')
         if name:
-            WorkerCategory.objects.create(name=name, description=description)
+            WorkerCategory.objects.create(tenant=request.tenant, name=name, description=description)
             messages.success(request, f"Category '{name}' added.")
         else:
             messages.error(request, "Category name is required.")
@@ -259,7 +259,7 @@ def add_worker_category(request, **kwargs):
 
 def edit_worker(request, worker_id, **kwargs):
     worker = get_object_or_404(Worker, id=worker_id)
-    categories = WorkerCategory.objects.all()
+    categories = WorkerCategory.objects.filter(tenant=request.tenant)
     if request.method == 'POST':
         worker.name = request.POST.get('name', worker.name)
         worker.father_name = request.POST.get('father_name', worker.father_name)
@@ -381,8 +381,8 @@ def worker_attendance(request, **kwargs):
     else:
         selected_date = today
 
-    all_workers = Worker.objects.filter(is_active=True, status='active').order_by('name')
-    today_attendances = WorkerAttendance.objects.filter(date=selected_date)
+    all_workers = Worker.objects.filter(tenant=request.tenant, is_active=True, status='active').order_by('name')
+    today_attendances = WorkerAttendance.objects.filter(tenant=request.tenant, date=selected_date)
     today_worker_ids = today_attendances.values_list('worker_id', flat=True)
     workers = all_workers.exclude(id__in=today_worker_ids)
 
@@ -390,7 +390,7 @@ def worker_attendance(request, **kwargs):
         for worker in workers:
             status = request.POST.get(f'attendance_{worker.id}')
             if status in ['present', 'absent']:
-                att, created = WorkerAttendance.objects.get_or_create(
+                att, created = WorkerAttendance.objects.get_or_create(tenant=request.tenant, 
                     worker=worker,
                     date=selected_date,
                     defaults={'status': status}
@@ -402,7 +402,7 @@ def worker_attendance(request, **kwargs):
         return redirect('worker_attendance', schema_name=request.tenant.schema_name)
 
     # ----- History filtering -----
-    history = WorkerAttendance.objects.filter(worker__in=all_workers).order_by('-date', 'worker__name')
+    history = WorkerAttendance.objects.filter(tenant=request.tenant, worker__in=all_workers).order_by('-date', 'worker__name')
     filter_label = "Today"  # default
 
     if request.GET.get('week'):
@@ -455,7 +455,7 @@ def worker_pay(request, worker_id, **kwargs):
         notes = request.POST.get('notes', '')
         next_url = request.POST.get('next') or request.GET.get('next')
         if amount > 0 and payment_date and period_start and period_end:
-            WorkerPayment.objects.create(
+            WorkerPayment.objects.create(tenant=request.tenant, 
                 worker=worker,
                 amount=amount,
                 payment_date=payment_date,
@@ -510,12 +510,12 @@ def pending_payments(request, **kwargs):
     today = date.today()
     recent_start = today - timedelta(days=90)
 
-    workers = Worker.objects.filter(is_active=True, status='active').order_by('name')
+    workers = Worker.objects.filter(tenant=request.tenant, is_active=True, status='active').order_by('name')
     pending_list = []
 
     # Prefetch attendances for each worker (only last 90 days)
     workers = workers.prefetch_related(
-        Prefetch('attendances', queryset=WorkerAttendance.objects.filter(date__gte=recent_start))
+        Prefetch('attendances', queryset=WorkerAttendance.objects.filter(tenant=request.tenant, date__gte=recent_start))
     )
 
     for worker in workers:

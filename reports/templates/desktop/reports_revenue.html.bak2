@@ -1,0 +1,623 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Revenue Analytics | {{ tenant.name }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  /* ===== Premium Revenue Analytics ===== */
+  :root {
+    --analytics-card-radius: 16px;
+    --analytics-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    --analytics-hover-shadow: 0 8px 28px rgba(0,0,0,0.08);
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+
+  /* ---- Filter Bar ---- */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+  .filter-bar .form-group {
+    flex: 1 1 150px;
+    min-width: 120px;
+  }
+  .filter-bar .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+  }
+  .filter-bar .form-control,
+  .filter-bar .form-select {
+    border-radius: 40px;
+    border: 1.5px solid var(--border);
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: 0.2s;
+    width: 100%;
+  }
+  .filter-bar .form-control:focus,
+  .filter-bar .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
+    outline: none;
+  }
+  .filter-bar .btn-apply {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.4rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    flex: 0 0 auto;
+  }
+  .filter-bar .btn-apply:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+  }
+  .filter-bar .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+    flex: 0 0 auto;
+  }
+  .filter-bar .btn-clear:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ---- KPI Cards ---- */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--analytics-card-radius);
+    padding: 1rem 0.6rem;
+    text-align: center;
+    box-shadow: var(--analytics-shadow);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--analytics-hover-shadow);
+    border-color: var(--accent);
+  }
+  .kpi-card:hover::before {
+    opacity: 1;
+  }
+  .kpi-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .kpi-card .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    margin-top: 0.1rem;
+  }
+  .kpi-card .icon {
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+    display: block;
+  }
+
+  /* ---- Charts Grid ---- */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1rem 1rem 0.5rem;
+    box-shadow: var(--analytics-shadow);
+    transition: 0.25s;
+  }
+  .chart-box:hover {
+    box-shadow: var(--analytics-hover-shadow);
+  }
+  .chart-box .chart-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+  }
+  .chart-box canvas {
+    max-height: 200px;
+    width: 100% !important;
+  }
+  .chart-box.full-width {
+    grid-column: 1 / -1;
+  }
+  .chart-box.full-width canvas {
+    max-height: 220px;
+  }
+
+  /* ---- Orders Table ---- */
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.5rem 0;
+    box-shadow: var(--analytics-shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    min-width: 700px;
+  }
+  .table-premium thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .table-premium tbody tr:hover td {
+    background: var(--bg);
+  }
+  .table-premium .order-id {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .table-premium .amount {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .badge-paid { background: #d4edda; color: #155724; }
+  .badge-partial { background: #fff3cd; color: #856404; }
+  .badge-unpaid { background: #f8d7da; color: #b02a37; }
+  .badge-ready { background: #cce5ff; color: #004085; }
+  .badge-completed { background: #d4edda; color: #155724; }
+  .badge-pending { background: #e2e3e5; color: #383d41; }
+  .badge-cancelled { background: #f8d7da; color: #b02a37; }
+
+  /* ---- Pagination ---- */
+  .pagination-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .pagination-wrap .step-links a,
+  .pagination-wrap .step-links .current,
+  .pagination-wrap .step-links .disabled {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: 0.2s;
+  }
+  .pagination-wrap .step-links a:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .pagination-wrap .step-links .current {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .pagination-wrap .step-links .disabled {
+    color: var(--muted);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 992px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .filter-bar .form-group { flex: 1 1 100%; }
+  }
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: stretch; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
+  }
+  @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+  <h2><i class="fas fa-chart-line"></i> Revenue Analytics</h2>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<form method="get" class="filter-bar">
+  <div class="form-group">
+    <label>From</label>
+    <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>To</label>
+    <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>Customer Type</label>
+    <select name="customer_type" class="form-select">
+      <option value="all" {% if customer_type == 'all' %}selected{% endif %}>All</option>
+      <option value="regular" {% if customer_type == 'regular' %}selected{% endif %}>Regular</option>
+      <option value="walkin" {% if customer_type == 'walkin' %}selected{% endif %}>Walk‑in</option>
+    </select>
+  </div>
+  <button type="submit" class="btn-apply"><i class="fas fa-filter"></i> Apply</button>
+  <a href="?" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
+</form>
+
+<!-- ===== KPI CARDS ===== -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-coins"></i></span>
+    <div class="number">₹{{ total_revenue|floatformat:2 }}</div>
+    <div class="label">Total Revenue</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-shopping-cart"></i></span>
+    <div class="number">{{ total_orders }}</div>
+    <div class="label">Total Orders</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-check-circle"></i></span>
+    <div class="number">{{ total_completed }}</div>
+    <div class="label">Completed</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-users"></i></span>
+    <div class="number">{{ total_customers }}</div>
+    <div class="label">Customers</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-chart-line"></i></span>
+    <div class="number">₹{{ avg_order_value|floatformat:2 }}</div>
+    <div class="label">Avg Order Value</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-credit-card"></i></span>
+    <div class="number">₹{{ total_paid|floatformat:2 }}</div>
+    <div class="label">Total Paid</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-hourglass-half"></i></span>
+    <div class="number">₹{{ total_pending|floatformat:2 }}</div>
+    <div class="label">Pending Amount</div>
+  </div>
+  <div class="kpi-card">
+    <span class="icon"><i class="fas fa-chart-pie"></i></span>
+    <div class="number">₹{{ total_profit|floatformat:2 }}</div>
+    <div class="label">Total Profit</div>
+  </div>
+</div>
+
+<!-- ===== CHARTS ===== -->
+<div class="charts-grid">
+  <!-- Revenue Trend -->
+  <div class="chart-box full-width">
+    <div class="chart-title"><i class="fas fa-chart-line"></i> Revenue Trend</div>
+    <canvas id="revenueTrendChart"></canvas>
+  </div>
+
+  <!-- Revenue by Category -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-tags"></i> Revenue by Category</div>
+    <canvas id="categoryChart"></canvas>
+  </div>
+
+  <!-- Top 10 Customers -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-users"></i> Top 10 Customers</div>
+    <canvas id="customerChart"></canvas>
+  </div>
+
+  <!-- Payment Status -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-credit-card"></i> Payment Status</div>
+    <canvas id="paymentChart"></canvas>
+  </div>
+
+  <!-- Order Status -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-clipboard-list"></i> Order Status</div>
+    <canvas id="orderStatusChart"></canvas>
+  </div>
+</div>
+
+<!-- ===== ORDERS TABLE ===== -->
+<h5 class="fw-bold mb-3"><i class="fas fa-clipboard-list" style="color:var(--accent);margin-right:0.4rem;"></i> All Orders</h5>
+<div class="table-container">
+  <table class="table-premium">
+    <thead>
+      <tr>
+        <th>Order #</th>
+        <th>Customer</th>
+        <th>Total</th>
+        <th>Paid</th>
+        <th>Remaining</th>
+        <th>Status</th>
+        <th>Payment</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in page_obj %}
+      <tr>
+        <td class="order-id">#{{ order.id }}</td>
+        <td>{{ order.customer.name }}</td>
+        <td class="amount">₹{{ order.total_amount|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.amount_paid|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.remaining_amount|floatformat:2 }}</td>
+        <td>
+          <span class="badge-premium
+            {% if order.status == 'ready' %}badge-ready
+            {% elif order.status == 'completed' %}badge-completed
+            {% elif order.status == 'cancelled' %}badge-cancelled
+            {% else %}badge-pending{% endif %}">
+            {{ order.status|title }}
+          </span>
+        </td>
+        <td>
+          <span class="badge-premium
+            {% if order.payment_status == 'paid' %}badge-paid
+            {% elif order.payment_status == 'partial' %}badge-partial
+            {% else %}badge-unpaid{% endif %}">
+            {{ order.payment_status|title }}
+          </span>
+        </td>
+        <td>{{ order.created_at|date:"d M Y H:i" }}</td>
+        <td>
+          <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn btn-sm btn-outline-primary">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" style="text-align:center; padding:2rem; color:var(--muted);">No orders found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-wrap">
+  <div class="step-links">
+    {% if page_obj.has_previous %}
+      <a href="?page=1{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}">Prev</a>
+    {% else %}
+      <span class="disabled">&laquo; First</span>
+      <span class="disabled">Prev</span>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}">Last &raquo;</a>
+    {% else %}
+      <span class="disabled">Next</span>
+      <span class="disabled">Last &raquo;</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Revenue Trend
+    const ctxTrend = document.getElementById('revenueTrendChart').getContext('2d');
+    new Chart(ctxTrend, {
+      type: 'line',
+      data: {
+        labels: {{ revenue_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ revenue_data|safe }},
+          borderColor: '#e67e22',
+          backgroundColor: 'rgba(230,126,34,0.1)',
+          tension: 0.2,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Category Chart
+    const ctxCat = document.getElementById('categoryChart').getContext('2d');
+    new Chart(ctxCat, {
+      type: 'bar',
+      data: {
+        labels: {{ cat_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ cat_data }},
+          backgroundColor: 'rgba(26,42,58,0.7)',
+          borderColor: 'var(--accent)',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Customer Chart
+    const ctxCust = document.getElementById('customerChart').getContext('2d');
+    new Chart(ctxCust, {
+      type: 'bar',
+      data: {
+        labels: {{ cust_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ cust_data }},
+          backgroundColor: 'rgba(230,126,34,0.7)',
+          borderColor: '#e67e22',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Payment Status
+    const ctxPay = document.getElementById('paymentChart').getContext('2d');
+    new Chart(ctxPay, {
+      type: 'doughnut',
+      data: {
+        labels: {{ payment_labels|safe }},
+        datasets: [{
+          data: {{ payment_data|safe }},
+          backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+
+    // Order Status
+    const ctxStatus = document.getElementById('orderStatusChart').getContext('2d');
+    new Chart(ctxStatus, {
+      type: 'doughnut',
+      data: {
+        labels: {{ order_labels|safe }},
+        datasets: [{
+          data: {{ order_data|safe }},
+          backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  });
+</script>
+
+{% endblock %}
