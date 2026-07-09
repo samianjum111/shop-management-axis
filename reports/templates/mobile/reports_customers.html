@@ -4,81 +4,85 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  /* ─── PREMIUM MOBILE-FIRST DESIGN with SLOW CAROUSEL ─── */
+  /* ===== PREMIUM MOBILE DESIGN – MEGA DEPTH ===== */
   :root {
-    --hero-gradient: linear-gradient(145deg, #0f1a2e, #1a2d4a);
-    --accent-gradient: linear-gradient(135deg, #f59e0b, #d97706);
-    --card-radius: 18px;
-    --card-shadow: 0 6px 24px rgba(0,0,0,0.06);
+    --hero-grad: linear-gradient(145deg, #0f1a2e, #1a2d4a);
+    --accent-grad: linear-gradient(135deg, #f59e0b, #d97706);
+    --card-radius: 20px;
+    --card-shadow: 0 8px 32px rgba(0,0,0,0.06);
     --tap-scale: 0.96;
   }
 
-  /* Hero */
-  .hero {
-    background: var(--hero-gradient);
+  /* ----- Hero ----- */
+  .hero-section {
+    background: var(--hero-grad);
     border-radius: var(--card-radius);
-    padding: 1.2rem 1rem;
+    padding: 1.6rem 1.2rem 1.2rem;
     color: #fff;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.4rem;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
   }
-  .hero::after {
+  .hero-section::after {
     content: '';
     position: absolute;
     top: -30%;
     right: -20%;
-    width: 250px;
-    height: 250px;
-    background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
     border-radius: 50%;
     pointer-events: none;
   }
-  .hero .title {
-    font-size: 1.2rem;
+  .hero-section .hero-title {
+    font-size: 1.4rem;
     font-weight: 700;
     letter-spacing: -0.02em;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
   }
-  .hero .title svg {
-    width: 1.4rem;
-    height: 1.4rem;
-    fill: none;
+  .hero-section .hero-title svg {
+    width: 1.8rem;
+    height: 1.8rem;
     stroke: currentColor;
+    fill: none;
     stroke-width: 2;
-    vertical-align: middle;
-    margin-right: 0.3rem;
   }
-  .hero .sub {
-    font-size: 0.75rem;
+  .hero-section .hero-sub {
+    font-size: 0.8rem;
     opacity: 0.7;
     position: relative;
     z-index: 1;
+    margin-top: 0.1rem;
   }
-  .hero .badge-count {
-    background: rgba(255,255,255,0.12);
-    padding: 0.2rem 0.8rem;
-    border-radius: 30px;
-    font-size: 0.65rem;
-    font-weight: 600;
+  .hero-section .hero-badge {
     display: inline-block;
-    margin-top: 0.3rem;
+    background: rgba(255,255,255,0.12);
+    padding: 0.2rem 1rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
     position: relative;
     z-index: 1;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.06);
   }
-  .hero .badge-count svg {
+  .hero-section .hero-badge svg {
     width: 1rem;
     height: 1rem;
-    fill: none;
     stroke: currentColor;
-    stroke-width: 2;
+    fill: none;
     vertical-align: middle;
-    margin-right: 0.2rem;
+    margin-right: 0.3rem;
   }
 
-  /* Tabs */
-  .tabs {
+  /* ----- Tabs ----- */
+  .tabs-premium {
     display: flex;
     gap: 0.4rem;
     background: var(--surface);
@@ -86,8 +90,9 @@
     padding: 0.3rem;
     border: 1px solid var(--border);
     margin-bottom: 1.2rem;
+    box-shadow: var(--card-shadow);
   }
-  .tab {
+  .tab-premium {
     flex: 1;
     text-align: center;
     padding: 0.6rem 0.2rem;
@@ -100,7 +105,7 @@
     text-decoration: none;
     transition: all 0.2s;
   }
-  .tab .badge {
+  .tab-premium .badge {
     background: var(--surface-alt);
     border-radius: 30px;
     padding: 0.05rem 0.5rem;
@@ -108,20 +113,20 @@
     font-weight: 600;
     color: var(--text-secondary);
   }
-  .tab.active {
-    background: var(--accent-gradient);
+  .tab-premium.active {
+    background: var(--accent-grad);
     color: #fff;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 4px 16px rgba(245,158,11,0.25);
   }
-  .tab.active .badge {
+  .tab-premium.active .badge {
     background: rgba(255,255,255,0.2);
     color: #fff;
   }
-  .tab:active {
+  .tab-premium:active {
     transform: scale(var(--tap-scale));
   }
 
-  /* KPI Grid */
+  /* ----- KPI Grid ----- */
   .kpi-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -141,10 +146,10 @@
     transform: scale(var(--tap-scale));
   }
   .kpi-card .icon {
-    width: 1.4rem;
-    height: 1.4rem;
-    fill: none;
+    width: 1.6rem;
+    height: 1.6rem;
     stroke: var(--accent);
+    fill: none;
     stroke-width: 1.8;
     display: block;
     margin: 0 auto 0.1rem;
@@ -163,17 +168,16 @@
     letter-spacing: 0.04em;
   }
 
-  /* Carousel – slow, smooth fade */
-  .carousel-container {
+  /* ----- Carousel (slow, smooth) ----- */
+  .carousel-premium {
     background: var(--surface);
     border-radius: var(--card-radius);
     border: 1px solid var(--border);
     padding: 0.6rem 0.6rem 0.8rem;
     margin-bottom: 1.2rem;
     box-shadow: var(--card-shadow);
-    position: relative;
   }
-  .carousel-container .carousel-title {
+  .carousel-premium .carousel-title {
     font-weight: 600;
     font-size: 0.8rem;
     color: var(--text-secondary);
@@ -182,39 +186,39 @@
     align-items: center;
     gap: 0.3rem;
   }
-  .carousel-container .carousel-title svg {
-    width: 1.1rem;
-    height: 1.1rem;
-    fill: none;
+  .carousel-premium .carousel-title svg {
+    width: 1.2rem;
+    height: 1.2rem;
     stroke: var(--accent);
+    fill: none;
     stroke-width: 2;
   }
-  .carousel-inner {
+  .carousel-premium .carousel-inner {
     border-radius: 12px;
     overflow: hidden;
   }
-  .carousel-item canvas {
+  .carousel-premium .carousel-item canvas {
     width: 100% !important;
     height: auto !important;
-    max-height: 180px;
+    max-height: 190px;
   }
-  .carousel-control-prev,
-  .carousel-control-next {
-    width: 5%;
-    opacity: 0.8;
+  .carousel-premium .carousel-control-prev,
+  .carousel-premium .carousel-control-next {
+    width: 6%;
+    opacity: 0.7;
   }
-  .carousel-control-prev-icon,
-  .carousel-control-next-icon {
+  .carousel-premium .carousel-control-prev-icon,
+  .carousel-premium .carousel-control-next-icon {
     background-color: rgba(0,0,0,0.2);
     border-radius: 50%;
-    padding: 0.3rem;
+    padding: 0.2rem;
   }
-  .carousel-indicators {
+  .carousel-premium .carousel-indicators {
     position: relative;
     bottom: -0.2rem;
     margin-top: 0.3rem;
   }
-  .carousel-indicators button {
+  .carousel-premium .carousel-indicators button {
     width: 10px;
     height: 10px;
     border-radius: 50%;
@@ -223,22 +227,23 @@
     margin: 0 5px;
     transition: all 0.3s;
   }
-  .carousel-indicators button.active {
+  .carousel-premium .carousel-indicators button.active {
     background-color: var(--accent);
     transform: scale(1.3);
   }
 
-  /* Filter Bar */
+  /* ----- Filter Bar ----- */
   .filter-bar {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--card-radius);
     padding: 0.6rem 0.8rem;
     margin-bottom: 1rem;
+    box-shadow: var(--card-shadow);
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
     align-items: center;
+    gap: 0.4rem;
   }
   .filter-bar .search {
     flex: 1;
@@ -250,6 +255,7 @@
     border-radius: 30px;
     padding: 0.1rem 0.6rem;
     border: 1px solid var(--border);
+    transition: border 0.2s;
   }
   .filter-bar .search:focus-within {
     border-color: var(--accent);
@@ -293,7 +299,7 @@
     border-color: var(--accent);
   }
   .filter-bar .btn {
-    background: var(--accent-gradient);
+    background: var(--accent-grad);
     color: #fff;
     border: none;
     border-radius: 30px;
@@ -301,7 +307,7 @@
     font-weight: 600;
     font-size: 0.7rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.15s;
   }
   .filter-bar .btn:active {
     transform: scale(var(--tap-scale));
@@ -316,7 +322,7 @@
     text-decoration: none;
   }
 
-  /* Customer Cards */
+  /* ----- Customer Cards ----- */
   .customer-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -325,9 +331,25 @@
     margin-bottom: 0.7rem;
     box-shadow: var(--card-shadow);
     transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .customer-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent-grad);
+    opacity: 0;
+    transition: opacity 0.3s;
   }
   .customer-card:active {
     transform: scale(var(--tap-scale));
+  }
+  .customer-card:active::after {
+    opacity: 1;
   }
   .customer-card .top {
     display: flex;
@@ -343,10 +365,10 @@
     gap: 0.3rem;
   }
   .customer-card .name svg {
-    width: 1.1rem;
-    height: 1.1rem;
-    fill: none;
+    width: 1.2rem;
+    height: 1.2rem;
     stroke: var(--accent);
+    fill: none;
     stroke-width: 2;
   }
   .customer-card .phone {
@@ -425,17 +447,17 @@
     stroke-width: 2;
   }
 
-  /* Pagination */
-  .pagination {
+  /* ----- Pagination ----- */
+  .pagination-premium {
     display: flex;
     justify-content: center;
     gap: 0.2rem;
     margin-top: 1.2rem;
     flex-wrap: wrap;
   }
-  .pagination a,
-  .pagination .current,
-  .pagination .disabled {
+  .pagination-premium a,
+  .pagination-premium .current,
+  .pagination-premium .disabled {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -449,25 +471,25 @@
     font-size: 0.8rem;
     transition: all 0.2s;
   }
-  .pagination a:hover {
+  .pagination-premium a:hover {
     background: var(--surface-alt);
     border-color: var(--accent);
     color: var(--accent);
   }
-  .pagination .current {
-    background: var(--accent-gradient);
+  .pagination-premium .current {
+    background: var(--accent-grad);
     color: #fff;
     border-color: var(--accent);
-    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 2px 12px rgba(245,158,11,0.25);
   }
-  .pagination .disabled {
+  .pagination-premium .disabled {
     color: var(--muted);
     opacity: 0.4;
     pointer-events: none;
   }
 
-  /* Empty State */
-  .empty {
+  /* ----- Empty State ----- */
+  .empty-state {
     text-align: center;
     padding: 2.5rem 1rem;
     color: var(--muted);
@@ -475,7 +497,7 @@
     border-radius: var(--card-radius);
     border: 1px solid var(--border);
   }
-  .empty svg {
+  .empty-state svg {
     width: 2.8rem;
     height: 2.8rem;
     stroke: var(--border);
@@ -484,17 +506,17 @@
     display: block;
     margin: 0 auto 0.3rem;
   }
-  .empty p {
+  .empty-state p {
     font-size: 0.9rem;
     margin: 0;
   }
 
-  /* Responsive */
+  /* ===== Responsive ===== */
   @media (max-width: 400px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     .kpi-card .number { font-size: 1.2rem; }
     .customer-card .stats { grid-template-columns: 1fr 1fr; }
-    .carousel-item canvas { max-height: 150px; }
+    .carousel-premium .carousel-item canvas { max-height: 150px; }
   }
   @media (max-width: 360px) {
     .kpi-grid { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
@@ -507,30 +529,30 @@
 
 {% block body %}
 
-<!-- Hero -->
-<div class="hero">
-  <div class="title">
+<!-- ===== HERO ===== -->
+<div class="hero-section">
+  <div class="hero-title">
     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
     Customer Analytics
   </div>
-  <div class="sub">{{ tenant.name }} · {{ customer_type|title }} customers</div>
-  <div class="badge-count">
+  <div class="hero-sub">{{ tenant.name }} · {{ customer_type|title }} customers</div>
+  <div class="hero-badge">
     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     {{ total_customers }} total
   </div>
 </div>
 
-<!-- Tabs -->
-<div class="tabs">
-  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab {% if customer_type == 'regular' %}active{% endif %}">
+<!-- ===== TABS ===== -->
+<div class="tabs-premium">
+  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-premium {% if customer_type == 'regular' %}active{% endif %}">
     Regular <span class="badge">{{ total_customers }}</span>
   </a>
-  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab {% if customer_type == 'walkin' %}active{% endif %}">
+  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-premium {% if customer_type == 'walkin' %}active{% endif %}">
     Walk‑in <span class="badge">{{ total_customers }}</span>
   </a>
 </div>
 
-<!-- KPI Cards -->
+<!-- ===== KPI CARDS ===== -->
 <div class="kpi-grid">
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -559,13 +581,13 @@
   </div>
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    <div class="number">{{ top_10_revenue|length }}</div>
+    <div class="number">{{ chart_labels_revenue|length }}</div>
     <div class="label">Top Spenders</div>
   </div>
 </div>
 
-<!-- Carousel – 4 slides, auto-play every 5 seconds -->
-<div class="carousel-container">
+<!-- ===== CHARTS CAROUSEL ===== -->
+<div class="carousel-premium">
   <div class="carousel-title">
     <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><path d="M9 7l6 5-6 5V7z"/></svg>
     Charts
@@ -602,7 +624,7 @@
   </div>
 </div>
 
-<!-- Filter Bar -->
+<!-- ===== FILTER BAR ===== -->
 <div class="filter-bar">
   <form method="get" class="search">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -631,7 +653,7 @@
   </form>
 </div>
 
-<!-- Customer Cards -->
+<!-- ===== CUSTOMER CARDS ===== -->
 {% for c in page_obj %}
 <div class="customer-card">
   <div class="top">
@@ -667,15 +689,15 @@
   </div>
 </div>
 {% empty %}
-<div class="empty">
+<div class="empty-state">
   <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
   <p>No customers found.</p>
 </div>
 {% endfor %}
 
-<!-- Pagination -->
+<!-- ===== PAGINATION ===== -->
 {% if page_obj.has_other_pages %}
-<div class="pagination">
+<div class="pagination-premium">
   {% if page_obj.has_previous %}
     <a href="?page=1&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>
     <a href="?page={{ page_obj.previous_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>
@@ -717,11 +739,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); }
-            }
-          }
+          tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); } } }
         },
         scales: {
           y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
@@ -749,11 +767,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) { return ctx.parsed.y + ' orders'; }
-            }
-          }
+          tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y + ' orders'; } } }
         },
         scales: {
           y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, stepSize: 1 },
@@ -781,11 +795,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); }
-            }
-          }
+          tooltip: { callbacks: { label: function(ctx) { return '₹' + ctx.parsed.y.toFixed(2); } } }
         },
         scales: {
           y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
