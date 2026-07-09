@@ -1,40 +1,22 @@
 #!/usr/bin/env python3
 """
-Upgrade mobile/add_order_customer_list.html with professional UI/UX.
+Upgrade mobile/add_order_select.html with professional UI/UX.
 Replaces extra_head and body blocks.
 """
 import re
 from pathlib import Path
 
-TEMPLATE_PATH = Path("templates/mobile/add_order_customer_list.html")
+TEMPLATE_PATH = Path("templates/mobile/add_order_select.html")
 BACKUP_PATH = TEMPLATE_PATH.with_suffix(".html.bak")
 
 NEW_EXTRA_HEAD = """
 <style>
-    /* ---- Premium Customer Selection ---- */
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        color: var(--text-secondary);
-        text-decoration: none;
-        font-size: 0.85rem;
-        margin-bottom: 1rem;
-        padding: 0.2rem 0;
-        transition: color 0.2s;
-    }
-    .back-link:hover {
-        color: var(--accent);
-    }
-    .back-link i {
-        font-size: 0.9rem;
-    }
-
+    /* ===== Premium Selection Page ===== */
     .page-title {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         font-weight: 700;
         color: var(--text);
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.2rem;
         display: flex;
         align-items: center;
         gap: 0.4rem;
@@ -43,264 +25,187 @@ NEW_EXTRA_HEAD = """
         color: var(--accent);
     }
     .page-sub {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         color: var(--muted);
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.5rem;
     }
 
-    /* Search */
-    .search-box {
-        margin-bottom: 1.2rem;
-    }
-    .search-box .search-input-container {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 2.5rem;
-        padding: 0.1rem 1rem;
+    .selection-grid {
         display: flex;
-        align-items: center;
-        transition: border-color 0.2s, box-shadow 0.2s;
-        box-shadow: var(--shadow);
-    }
-    .search-box .search-input-container:focus-within {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.12);
-    }
-    .search-box .search-input-container i {
-        color: var(--muted);
-        margin-right: 0.5rem;
-        font-size: 1rem;
-    }
-    .search-box .search-input-container input {
-        border: none;
-        background: transparent;
-        padding: 0.7rem 0.2rem;
-        font-size: 0.95rem;
-        width: 100%;
-        outline: none;
-        color: var(--text);
-    }
-    .search-box .search-input-container input::placeholder {
-        color: var(--muted);
-        font-weight: 400;
+        flex-direction: column;
+        gap: 1rem;
     }
 
-    /* Customer Cards */
-    .customer-card {
+    .selection-card {
         background: var(--surface);
-        border: 1px solid var(--border);
+        border: 2px solid var(--border);
         border-radius: var(--radius);
-        padding: 0.9rem 1rem;
-        margin-bottom: 0.7rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        padding: 1.8rem 1.2rem;
+        text-align: center;
         box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: all 0.25s ease;
         text-decoration: none;
         color: var(--text);
-        transition: all 0.2s ease;
         position: relative;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
     }
-    .customer-card::after {
+    .selection-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
-        width: 4px;
-        height: 100%;
-        background: var(--accent);
+        right: 0;
+        height: 4px;
+        background: var(--gradient-accent);
         opacity: 0;
-        transition: opacity 0.2s;
+        transition: opacity 0.3s;
     }
-    .customer-card:active {
-        transform: scale(0.98);
-    }
-    .customer-card:hover {
-        border-color: var(--accent);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-    }
-    .customer-card:hover::after {
-        opacity: 1;
-    }
-    .customer-info {
-        flex: 1;
-        min-width: 0;
-    }
-    .customer-info .name {
-        font-weight: 700;
-        font-size: 1.05rem;
-        color: var(--text);
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.3rem 0.6rem;
-    }
-    .customer-info .phone {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        margin-top: 0.1rem;
-    }
-    .customer-info .phone i {
-        color: var(--muted);
-        width: 1rem;
-        font-size: 0.7rem;
-    }
-    .customer-info .address {
-        font-size: 0.75rem;
-        color: var(--muted);
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        margin-top: 0.1rem;
-    }
-    .customer-info .address i {
-        color: var(--muted);
-        width: 1rem;
-        font-size: 0.7rem;
-    }
-
-    .badge-custom {
-        display: inline-block;
-        padding: 0.15rem 0.7rem;
-        border-radius: 30px;
-        font-weight: 700;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        background: var(--accent-light);
-        color: var(--accent);
-        border: 1px solid var(--accent);
-    }
-    .badge-pending {
-        background: #fef3e2;
-        color: #d35400;
-        border-color: #f5cba7;
-    }
-    .badge-none {
-        background: #e8f8f0;
-        color: #1e7e34;
-        border-color: #a3d9a5;
-    }
-
-    .card-arrow {
-        color: var(--muted);
-        font-size: 1.1rem;
-        transition: transform 0.2s, color 0.2s;
-        flex-shrink: 0;
-        margin-left: 0.5rem;
-    }
-    .customer-card:hover .card-arrow {
-        transform: translateX(4px);
-        color: var(--accent);
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 2.5rem 1rem;
-        color: var(--muted);
-        background: var(--surface);
-        border-radius: var(--radius);
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow);
-    }
-    .empty-state i {
-        font-size: 2.8rem;
-        color: var(--border);
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-    .empty-state p {
-        font-size: 0.95rem;
-        margin: 0;
-    }
-    .empty-state .btn-create {
-        display: inline-block;
-        margin-top: 1rem;
-        padding: 0.4rem 1.4rem;
-        background: var(--accent);
-        color: #fff;
-        border-radius: 2rem;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-decoration: none;
-        transition: background 0.2s, transform 0.2s;
-        box-shadow: 0 4px 12px rgba(230, 126, 34, 0.25);
-    }
-    .empty-state .btn-create:active {
+    .selection-card:active {
         transform: scale(0.96);
     }
-    .empty-state .btn-create:hover {
-        background: var(--accent-hover);
+    .selection-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+    }
+    .selection-card:hover::before {
+        opacity: 1;
+    }
+
+    .selection-card .icon-wrap {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.4rem;
+        margin-bottom: 0.3rem;
+        transition: 0.3s;
+    }
+    .selection-card .icon-wrap.walkin {
+        background: #fef3e2;
+        color: #e67e22;
+    }
+    .selection-card .icon-wrap.regular {
+        background: #e3f0fd;
+        color: #2980b9;
+    }
+    .selection-card:hover .icon-wrap.walkin {
+        background: #e67e22;
+        color: #fff;
+    }
+    .selection-card:hover .icon-wrap.regular {
+        background: #2980b9;
+        color: #fff;
+    }
+
+    .selection-card .label {
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: var(--text);
+        margin: 0;
+    }
+    .selection-card .desc {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin: 0;
+        line-height: 1.3;
+    }
+    .selection-card .badge-feature {
+        display: inline-block;
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 0.15rem 0.8rem;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-top: 0.2rem;
+        border: 1px solid var(--accent);
+    }
+    .selection-card .arrow {
+        position: absolute;
+        bottom: 0.8rem;
+        right: 1rem;
+        font-size: 1.2rem;
+        color: var(--muted);
+        transition: transform 0.3s, color 0.3s;
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    .selection-card:hover .arrow {
+        opacity: 1;
+        transform: translateX(0);
+        color: var(--accent);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+    .back-link:hover {
+        color: var(--accent);
     }
 
     @media (max-width: 400px) {
-        .customer-card {
-            padding: 0.7rem 0.8rem;
+        .selection-card {
+            padding: 1.4rem 0.8rem;
         }
-        .customer-info .name {
-            font-size: 0.95rem;
+        .selection-card .icon-wrap {
+            width: 60px;
+            height: 60px;
+            font-size: 2rem;
         }
-        .badge-custom {
-            font-size: 0.6rem;
-            padding: 0.1rem 0.5rem;
-        }
-        .search-box .search-input-container input {
-            font-size: 0.85rem;
+        .selection-card .label {
+            font-size: 1.1rem;
         }
     }
 </style>
 """
 
 NEW_BODY = """
-<a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="back-link">
+<a href="/portal/{{ tenant.schema_name }}/chakki/" class="back-link">
     <i class="fas fa-arrow-left"></i> Back
 </a>
 
 <div class="page-title">
-    <i class="fas fa-user-check"></i> Select Regular Customer
+    <i class="fas fa-user-plus"></i> New Order
 </div>
-<div class="page-sub">Choose a customer to create a new order</div>
+<div class="page-sub">Choose the customer type to proceed</div>
 
-<div class="search-box">
-    <form method="get" class="search-input-container">
-        <i class="fas fa-search"></i>
-        <input type="search" name="q" placeholder="Search by name or phone..." value="{{ request.GET.q|default:'' }}">
-    </form>
-</div>
+<div class="selection-grid">
+    <!-- Walk-in -->
+    <a href="?walkin=1" class="selection-card">
+        <div class="icon-wrap walkin">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="label">Walk-in Customer</div>
+        <div class="desc">New customer with no saved profile</div>
+        <span class="badge-feature"><i class="fas fa-bolt"></i> Quick Entry</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+    </a>
 
-{% for customer in customers %}
-<a href="/portal/{{ tenant.schema_name }}/chakki/order/add/?customer_id={{ customer.id }}" class="customer-card">
-    <div class="customer-info">
-        <div class="name">
-            {{ customer.name }}
-            {% if customer.total_pending > 0 %}
-                <span class="badge-custom badge-pending">₹{{ customer.total_pending|floatformat:2 }}</span>
-            {% else %}
-                <span class="badge-custom badge-none">✓ No due</span>
-            {% endif %}
+    <!-- Regular -->
+    <a href="?select=1" class="selection-card">
+        <div class="icon-wrap regular">
+            <i class="fas fa-user-check"></i>
         </div>
-        <div class="phone">
-            <i class="fas fa-phone"></i> {{ customer.phone|default:"No phone" }}
-        </div>
-        <div class="address">
-            <i class="fas fa-map-pin"></i> {{ customer.address|default:"No address" }}
-        </div>
-    </div>
-    <i class="fas fa-chevron-right card-arrow"></i>
-</a>
-{% empty %}
-<div class="empty-state">
-    <i class="fas fa-users-slash"></i>
-    <p>No customers found.</p>
-    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="btn-create">
-        <i class="fas fa-user-plus"></i> Create Customer
+        <div class="label">Regular Customer</div>
+        <div class="desc">Select from saved customers</div>
+        <span class="badge-feature"><i class="fas fa-address-book"></i> Saved Profile</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
     </a>
 </div>
-{% endfor %}
 """
 
 def replace_block(content, block_name, new_content):
@@ -315,7 +220,6 @@ def replace_block(content, block_name, new_content):
         else:
             return content + "\n" + new_content
 
-    # Find matching endblock
     import re
     pattern = re.compile(r"({% block \w+ %})|({% endblock %})")
     matches = list(pattern.finditer(content, start_idx))
