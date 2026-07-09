@@ -1,4 +1,137 @@
-{% extends "mobile/base.html" %}
+#!/usr/bin/env python3
+import os
+import re
+
+# -------------------------------
+# 1. NEW CUSTOMERS VIEW CODE (patch)
+# -------------------------------
+NEW_CUSTOMERS_FUNCTION = """
+@login_required
+def customers(request, **kwargs):
+    tenant = request.tenant
+    customer_type = request.GET.get('type', 'regular')
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'spent')
+    order = request.GET.get('order', 'desc')
+
+    if customer_type == 'regular':
+        customers_qs = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=True)
+    else:
+        customers_qs = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=False)
+
+    customer_data = []
+    for c in customers_qs:
+        orders = ChakkiOrder.objects.filter(tenant=tenant, customer=c)
+        completed = orders.filter(status='completed')
+        total_spent = completed.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        total_orders = orders.count()
+        completed_orders = completed.count()
+        avg_order = total_spent / completed_orders if completed_orders > 0 else Decimal('0')
+        total_pending = Decimal('0')
+        for o in orders.exclude(status='completed'):
+            total_pending += o.remaining_amount
+        first_order = orders.order_by('created_at').first()
+        last_order = orders.order_by('-created_at').first()
+        customer_data.append({
+            'id': c.id,
+            'name': c.name,
+            'phone': c.phone or '—',
+            'address': c.address or '—',
+            'is_regular': c.is_regular,
+            'total_spent': total_spent,
+            'total_pending': total_pending,
+            'total_orders': total_orders,
+            'completed_orders': completed_orders,
+            'avg_order': avg_order,
+            'first_order': first_order.created_at if first_order else None,
+            'last_order': last_order.created_at if last_order else None,
+        })
+
+    if search:
+        customer_data = [c for c in customer_data if search.lower() in c['name'].lower() or search in c['phone']]
+
+    reverse = (order == 'desc')
+    if sort == 'name':
+        customer_data.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    elif sort == 'spent':
+        customer_data.sort(key=lambda x: x['total_spent'], reverse=reverse)
+    elif sort == 'orders':
+        customer_data.sort(key=lambda x: x['total_orders'], reverse=reverse)
+    elif sort == 'avg':
+        customer_data.sort(key=lambda x: x['avg_order'], reverse=reverse)
+    elif sort == 'pending':
+        customer_data.sort(key=lambda x: x['total_pending'], reverse=reverse)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(customer_data, 30)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    total_customers = len(customer_data)
+    total_revenue = sum(c['total_spent'] for c in customer_data)
+    total_pending_all = sum(c['total_pending'] for c in customer_data)
+    avg_customer_value = total_revenue / total_customers if total_customers else 0
+    total_orders_all = sum(c['total_orders'] for c in customer_data)
+
+    # ---- Chart 1: Top 10 Revenue (bar) ----
+    top_10_revenue = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)[:10]
+    chart_labels_revenue = [c['name'] for c in top_10_revenue]
+    chart_data_revenue = [float(c['total_spent']) for c in top_10_revenue]
+
+    # ---- Chart 2: Top 10 Orders (bar) ----
+    top_10_orders = sorted(customer_data, key=lambda x: x['total_orders'], reverse=True)[:10]
+    chart_labels_orders = [c['name'] for c in top_10_orders]
+    chart_data_orders = [c['total_orders'] for c in top_10_orders]
+
+    # ---- Chart 3: Top 10 Avg Order (bar) ----
+    top_10_avg = sorted(customer_data, key=lambda x: x['avg_order'], reverse=True)[:10]
+    chart_labels_avg = [c['name'] for c in top_10_avg]
+    chart_data_avg = [float(c['avg_order']) for c in top_10_avg]
+
+    # ---- Chart 4: Revenue Concentration (doughnut) ----
+    sorted_by_revenue = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)
+    top5_revenue = sum(c['total_spent'] for c in sorted_by_revenue[:5])
+    rest_revenue = total_revenue - top5_revenue
+    concentration_labels = ['Top 5 Customers', 'Other Customers']
+    concentration_data = [float(top5_revenue), float(rest_revenue)]
+
+    # ---- Chart 5: Horizontal Bar (Top 10 Revenue) ----
+    # Reusing top_10_revenue data
+    hbar_labels_revenue = chart_labels_revenue
+    hbar_data_revenue = chart_data_revenue
+
+    context = {
+        'page_obj': page_obj,
+        'customer_data': page_obj.object_list,
+        'total_customers': total_customers,
+        'total_revenue': total_revenue,
+        'total_pending_all': total_pending_all,
+        'avg_customer_value': avg_customer_value,
+        'total_orders_all': total_orders_all,
+        'customer_type': customer_type,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'chart_labels_revenue': chart_labels_revenue,
+        'chart_data_revenue': chart_data_revenue,
+        'chart_labels_orders': chart_labels_orders,
+        'chart_data_orders': chart_data_orders,
+        'chart_labels_avg': chart_labels_avg,
+        'chart_data_avg': chart_data_avg,
+        'concentration_labels': concentration_labels,
+        'concentration_data': concentration_data,
+        'hbar_labels_revenue': hbar_labels_revenue,
+        'hbar_data_revenue': hbar_data_revenue,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
+    return render(request, template, context)
+"""
+
+# -------------------------------
+# 2. NEW TEMPLATE CONTENT
+# -------------------------------
+NEW_TEMPLATE = """{% extends "mobile/base.html" %}
 {% load static %}
 {% block title %}Customer Analytics | {{ tenant.name }}{% endblock %}
 {% block extra_head %}
@@ -873,3 +1006,44 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+"""
+
+# -------------------------------
+# 3. PATCHER LOGIC
+# -------------------------------
+def patch_views():
+    views_path = "reports/views.py"
+    if not os.path.exists(views_path):
+        print(f"❌ {views_path} not found. Are you in the project root?")
+        return
+
+    with open(views_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Find the customers function and replace it
+    pattern = re.compile(r'(def customers\(request, \*\*kwargs\):.*?)(?=\n\S*def |\Z)', re.DOTALL)
+    if not re.search(pattern, content):
+        print("❌ Could not find 'def customers(request, **kwargs):' in views.py")
+        return
+
+    new_content = re.sub(pattern, NEW_CUSTOMERS_FUNCTION, content)
+    with open(views_path, "w", encoding="utf-8") as f:
+        f.write(new_content)
+    print("✅ reports/views.py customers function patched successfully.")
+
+def patch_template():
+    template_path = "reports/templates/mobile/reports_customers.html"
+    os.makedirs(os.path.dirname(template_path), exist_ok=True)
+    with open(template_path, "w", encoding="utf-8") as f:
+        f.write(NEW_TEMPLATE)
+    print("✅ reports/templates/mobile/reports_customers.html replaced with new design.")
+
+def main():
+    print("🚀 Starting patcher for customers...")
+    patch_views()
+    patch_template()
+    print("\n🎉 All changes applied! Now you can run your server and check the Reports > Customers page on mobile.")
+    print("📱 Make sure to clear browser cache if needed.")
+
+if __name__ == "__main__":
+    main()

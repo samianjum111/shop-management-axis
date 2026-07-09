@@ -379,6 +379,7 @@ def revenue(request, **kwargs):
     template = 'mobile/reports_revenue.html' if request.mobile else 'desktop/reports_revenue.html'
     return render(request, template, context)
 @login_required
+
 def categories(request, **kwargs):
     tenant = request.tenant
 
@@ -454,9 +455,32 @@ def categories(request, **kwargs):
     total_profit = sum(c['total_profit'] or Decimal('0') for c in all_categories)
     avg_revenue = total_revenue / total_categories if total_categories else 0
 
-    # For chart: category name vs revenue
-    chart_labels = [c['name'] for c in all_categories]
-    chart_data = [float(c['total_revenue']) for c in all_categories]
+    # ----- CHART DATA (5 charts) -----
+    # 1. Revenue Bar
+    chart_labels_revenue = [c['name'] for c in all_categories]
+    chart_data_revenue = [float(c['total_revenue']) for c in all_categories]
+
+    # 2. Orders Bar
+    chart_labels_orders = [c['name'] for c in all_categories]
+    chart_data_orders = [c['total_orders'] for c in all_categories]
+
+    # 3. Profit Bar (only categories with profit)
+    profit_cats = [c for c in all_categories if c['total_profit'] is not None]
+    chart_labels_profit = [c['name'] for c in profit_cats]
+    chart_data_profit = [float(c['total_profit']) for c in profit_cats]
+
+    # 4. Doughnut (Top 5 revenue + Others)
+    sorted_by_revenue = sorted(all_categories, key=lambda x: x['total_revenue'], reverse=True)
+    top5 = sorted_by_revenue[:5]
+    top5_revenue = sum(c['total_revenue'] for c in top5)
+    rest_revenue = total_revenue - top5_revenue
+    doughnut_labels = [c['name'] for c in top5] + ['Others']
+    doughnut_data = [float(c['total_revenue']) for c in top5] + [float(rest_revenue)]
+
+    # 5. Horizontal Bar (Top 10 by Revenue)
+    top10 = sorted_by_revenue[:10]
+    hbar_labels = [c['name'] for c in top10]
+    hbar_data = [float(c['total_revenue']) for c in top10]
 
     context = {
         'categories': all_categories,
@@ -468,12 +492,22 @@ def categories(request, **kwargs):
         'search': search,
         'sort': sort,
         'order': order,
-        'chart_labels': chart_labels,
-        'chart_data': chart_data,
+        # Chart data
+        'chart_labels_revenue': chart_labels_revenue,
+        'chart_data_revenue': chart_data_revenue,
+        'chart_labels_orders': chart_labels_orders,
+        'chart_data_orders': chart_data_orders,
+        'chart_labels_profit': chart_labels_profit,
+        'chart_data_profit': chart_data_profit,
+        'doughnut_labels': doughnut_labels,
+        'doughnut_data': doughnut_data,
+        'hbar_labels': hbar_labels,
+        'hbar_data': hbar_data,
         'tenant': tenant,
     }
     template = 'mobile/reports_categories.html' if request.mobile else 'desktop/reports_categories.html'
     return render(request, template, context)
+
 
 @login_required
 def customers(request, **kwargs):
@@ -564,6 +598,11 @@ def customers(request, **kwargs):
     concentration_labels = ['Top 5 Customers', 'Other Customers']
     concentration_data = [float(top5_revenue), float(rest_revenue)]
 
+    # ---- Chart 5: Horizontal Bar (Top 10 Revenue) ----
+    # Reusing top_10_revenue data
+    hbar_labels_revenue = chart_labels_revenue
+    hbar_data_revenue = chart_data_revenue
+
     context = {
         'page_obj': page_obj,
         'customer_data': page_obj.object_list,
@@ -584,11 +623,13 @@ def customers(request, **kwargs):
         'chart_data_avg': chart_data_avg,
         'concentration_labels': concentration_labels,
         'concentration_data': concentration_data,
+        'hbar_labels_revenue': hbar_labels_revenue,
+        'hbar_data_revenue': hbar_data_revenue,
         'tenant': tenant,
     }
     template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
     return render(request, template, context)
-@login_required
+
 def orders_report(request, **kwargs):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     from django.db.models import Q, Sum, Count, Avg
