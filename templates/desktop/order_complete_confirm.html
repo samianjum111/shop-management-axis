@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 <style>
-  /* ===== Premium Partial Payment Page ===== */
+  /* ===== Premium Order Completion ===== */
   .confirm-wrapper {
     display: flex;
     align-items: center;
@@ -15,92 +15,198 @@
   .confirm-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 24px;
+    border-radius: 28px;
     padding: 2.5rem 2rem;
-    max-width: 540px;
+    max-width: 680px;
     width: 100%;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
-    text-align: center;
-    transition: box-shadow 0.3s ease;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.05);
+    transition: box-shadow 0.35s ease;
   }
   .confirm-card:hover {
-    box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
   }
 
   .confirm-icon {
-    font-size: 3.5rem;
+    font-size: 3rem;
     color: var(--accent);
-    background: rgba(245, 158, 11, 0.1);
-    width: 80px;
-    height: 80px;
-    line-height: 80px;
+    background: rgba(245, 158, 11, 0.08);
+    width: 72px;
+    height: 72px;
+    line-height: 72px;
     border-radius: 50%;
-    margin: 0 auto 1.2rem;
+    margin: 0 auto 1rem;
     display: inline-block;
+    text-align: center;
   }
   .confirm-card h4 {
     font-size: 1.6rem;
     font-weight: 700;
     color: var(--text);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
     letter-spacing: -0.02em;
+    text-align: center;
   }
-  .confirm-card .order-id {
-    font-size: 1.1rem;
+  .confirm-card .order-meta {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.2rem;
+  }
+  .confirm-card .order-meta .order-id {
     font-weight: 600;
     color: var(--accent);
-    background: var(--surface-alt);
-    padding: 0.2rem 1rem;
-    border-radius: 40px;
-    display: inline-block;
-    margin-bottom: 0.8rem;
   }
-  .confirm-card .balance-info {
-    background: var(--surface-alt);
-    border-radius: 16px;
-    padding: 0.8rem 1rem;
-    margin: 1rem 0 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  .confirm-card .balance-info .label {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+  .confirm-card .order-meta .customer {
     font-weight: 500;
   }
-  .confirm-card .balance-info .amount {
-    font-size: 1.6rem;
+
+  .section-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 1.5rem 0 0.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3rem;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .items-table thead th {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.5rem 0.8rem;
+    border: none;
+    text-align: left;
+  }
+  .items-table thead th:last-child { text-align: right; }
+  .items-table tbody td {
+    padding: 0.4rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .items-table tbody tr:last-child td { border-bottom: none; }
+  .items-table tbody tr:hover td { background: var(--bg); }
+  .items-table .amount { text-align: right; font-weight: 500; }
+  .items-table .total-row td {
     font-weight: 700;
+    border-top: 2px solid var(--text);
+    padding-top: 0.6rem;
+  }
+  .items-table .total-row .amount {
+    color: var(--accent);
+    font-size: 1.1rem;
+  }
+  .items-table .highlight { background: var(--surface-alt); }
+
+  .balance-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    background: var(--surface-alt);
+    border-radius: 16px;
+    padding: 0.8rem 1.2rem;
+    margin: 1.2rem 0 1.8rem;
+    gap: 0.5rem;
+  }
+  .balance-summary .item {
+    text-align: center;
+  }
+  .balance-summary .item .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .balance-summary .item .value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .balance-summary .item .value.remaining {
     color: var(--accent);
   }
-  .confirm-card .message {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
+
+  .choice-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
   }
-  .confirm-card .message strong {
+  .choice-btn {
+    background: var(--surface-alt);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+  .choice-btn:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .choice-btn.active {
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.08);
+  }
+  .choice-btn .icon {
+    font-size: 1.8rem;
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--text-secondary);
+  }
+  .choice-btn.active .icon {
+    color: var(--accent);
+  }
+  .choice-btn .label {
+    font-weight: 600;
     color: var(--text);
   }
 
-  /* Form styles */
-  .partial-form .form-group {
-    margin-bottom: 1.2rem;
+  .partial-section {
+    display: none;
+    margin-top: 0.5rem;
+    animation: fadeSlide 0.3s ease;
   }
-  .partial-form .form-group label {
+  .partial-section.visible {
+    display: block;
+  }
+
+  @keyframes fadeSlide {
+    0% { opacity: 0; transform: translateY(-8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .form-group {
+    margin-bottom: 1.2rem;
+    text-align: left;
+  }
+  .form-group label {
     display: block;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
     margin-bottom: 0.3rem;
   }
-  .partial-form .form-group .input-wrapper {
+  .form-group .input-wrapper {
     position: relative;
   }
-  .partial-form .form-group .input-wrapper .currency {
+  .form-group .input-wrapper .currency {
     position: absolute;
     left: 14px;
     top: 50%;
@@ -109,20 +215,26 @@
     font-weight: 600;
     font-size: 1rem;
   }
-  .partial-form .form-group input {
+  .form-group input {
     width: 100%;
-    padding: 0.65rem 1rem 0.65rem 2.2rem;
+    padding: 0.7rem 1rem 0.7rem 2.4rem;
     border: 1.5px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--bg);
     color: var(--text);
     font-size: 1rem;
     transition: all 0.2s ease;
     outline: none;
   }
-  .partial-form .form-group input:focus {
+  .form-group input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.08);
+  }
+  .form-group .hint {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
   }
 
   .actions {
@@ -130,18 +242,18 @@
     flex-wrap: wrap;
     gap: 0.8rem;
     justify-content: center;
-    margin-top: 1.5rem;
+    margin-top: 1.8rem;
   }
   .btn-premium-primary {
     background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 40px;
-    padding: 0.6rem 2rem;
+    padding: 0.7rem 2.2rem;
     font-weight: 600;
     font-size: 1rem;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -151,19 +263,20 @@
   .btn-premium-primary:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+    box-shadow: 0 8px 28px rgba(245, 158, 11, 0.3);
     color: #fff;
   }
+
   .btn-premium-success {
     background: #28a745;
     color: #fff;
     border: none;
     border-radius: 40px;
-    padding: 0.6rem 2rem;
+    padding: 0.7rem 2.2rem;
     font-weight: 600;
     font-size: 1rem;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(40,167,69,0.2);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 14px rgba(40, 167, 69, 0.2);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -172,18 +285,19 @@
   .btn-premium-success:hover {
     background: #1e7e34;
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(40,167,69,0.3);
+    box-shadow: 0 8px 28px rgba(40, 167, 69, 0.3);
     color: #fff;
   }
+
   .btn-premium-secondary {
     background: transparent;
     color: var(--text-secondary);
     border: 1.5px solid var(--border);
     border-radius: 40px;
-    padding: 0.6rem 2rem;
+    padding: 0.7rem 2rem;
     font-weight: 600;
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -198,62 +312,146 @@
     text-decoration: none;
   }
 
-  @media (max-width: 480px) {
-    .confirm-card { padding: 2rem 1.2rem; }
-    .confirm-card h4 { font-size: 1.3rem; }
-    .confirm-icon { width: 64px; height: 64px; line-height: 64px; font-size: 2.5rem; }
-    .confirm-card .balance-info { flex-direction: column; }
+  @media (max-width: 600px) {
+    .confirm-card { padding: 1.5rem; }
+    .balance-summary { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+    .balance-summary .item { display: flex; justify-content: space-between; }
+    .choice-group { flex-direction: column; }
+    .choice-btn { min-width: auto; }
     .actions { flex-direction: column; }
     .actions .btn { width: 100%; justify-content: center; }
-    .partial-form .form-group input { font-size: 0.95rem; }
+    .items-table { font-size: 0.8rem; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-
 <div class="confirm-wrapper">
   <div class="confirm-card">
     <!-- Icon -->
     <div class="confirm-icon">
       <i class="fas fa-hand-holding-usd"></i>
     </div>
-
-    <!-- Heading -->
     <h4>Complete Order</h4>
-    <div class="order-id">#{{ order.id }}</div>
-
-    <!-- Balance Info -->
-    <div class="balance-info">
-      <span class="label">Remaining Balance</span>
-      <span class="amount">₹{{ remaining|floatformat:2 }}</span>
+    <div class="order-meta">
+      <span class="order-id">#{{ order.id }}</span>
+      &middot;
+      <span class="customer">{{ order.customer.name }}</span>
     </div>
 
-    <!-- Message -->
-    <div class="message">
-      This order has a remaining balance. Choose how you'd like to complete it.
+    <!-- Order Items -->
+    <div class="section-title">Grinding Items</div>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>KG</th>
+          <th>Cleaning</th>
+          <th class="amount">Grinding</th>
+          <th class="amount">Cleaning Charges</th>
+          <th class="amount">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order.items.all %}
+        <tr>
+          <td>{{ item.category.name }}</td>
+          <td>{{ item.total_kg }}</td>
+          <td>{{ item.is_cleaning_done|yesno:"Yes,No" }}</td>
+          <td class="amount">₹{{ item.grinding_charges|floatformat:2 }}</td>
+          <td class="amount">₹{{ item.cleaning_charges|floatformat:2 }}</td>
+          <td class="amount">₹{{ item.item_total|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--muted);">No grinding items</td></tr>
+        {% endfor %}
+        <tr class="total-row">
+          <td colspan="5" style="text-align:right;">Grinding Total</td>
+          <td class="amount">₹{{ order.total_amount|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    {% if order.selling_items.all %}
+    <div class="section-title">Selling Items</div>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Measurement</th>
+          <th>Quantity</th>
+          <th class="amount">Price</th>
+          <th class="amount">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order.selling_items.all %}
+        <tr>
+          <td>{{ item.selling_price.category.name }}</td>
+          <td>{{ item.selling_price.get_measurement_display }}</td>
+          <td>{{ item.quantity }}</td>
+          <td class="amount">₹{{ item.selling_price.price|floatformat:2 }}</td>
+          <td class="amount">₹{{ item.total|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+          <td colspan="4" style="text-align:right;">Selling Total</td>
+          <td class="amount">₹{{ order.selling_total|default:0|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+    </table>
+    {% endif %}
+
+    <!-- Balance Summary -->
+    <div class="balance-summary">
+      <div class="item">
+        <div class="label">Grand Total</div>
+        <div class="value">₹{{ order.total_amount|floatformat:2 }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Amount Paid</div>
+        <div class="value">₹{{ order.amount_paid|floatformat:2 }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Remaining</div>
+        <div class="value remaining">₹{{ remaining|floatformat:2 }}</div>
+      </div>
     </div>
 
-    <!-- Form: Partial Payment -->
-    <form method="post" class="partial-form">
+    <!-- Choice -->
+    <form method="post" id="paymentForm">
       {% csrf_token %}
-      <div class="form-group">
-        <label for="receive_amount">Enter amount to receive</label>
-        <div class="input-wrapper">
-          <span class="currency">₹</span>
-          <input type="number" step="0.01" min="0.01" max="{{ remaining }}" name="receive_amount" id="receive_amount" class="form-control" placeholder="e.g. 250.00" required>
+
+      <div class="choice-group">
+        <div class="choice-btn active" data-choice="full" onclick="selectChoice('full')">
+          <span class="icon"><i class="fas fa-check-circle"></i></span>
+          <span class="label">Full Payment</span>
         </div>
-        <small class="text-muted" style="display:block;margin-top:0.3rem;font-size:0.8rem;">
-          Max: ₹{{ remaining|floatformat:2 }}
-        </small>
+        <div class="choice-btn" data-choice="partial" onclick="selectChoice('partial')">
+          <span class="icon"><i class="fas fa-pen"></i></span>
+          <span class="label">Partial Payment</span>
+        </div>
       </div>
 
+      <!-- Partial section -->
+      <div class="partial-section" id="partialSection">
+        <div class="form-group">
+          <label for="receive_amount">Enter amount to receive</label>
+          <div class="input-wrapper">
+            <span class="currency">₹</span>
+            <input type="number" step="0.01" min="0.01" max="{{ remaining }}" name="receive_amount" id="receive_amount" class="form-control" placeholder="e.g. 250.00">
+          </div>
+          <span class="hint">Maximum: ₹{{ remaining|floatformat:2 }}</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
       <div class="actions">
-        <button type="submit" name="payment_choice" value="partial" class="btn-premium-success">
-          <i class="fas fa-arrow-right"></i> Receive &amp; Complete
+        <button type="submit" name="payment_choice" value="full" class="btn-premium-primary" id="fullBtn">
+          <i class="fas fa-check-circle"></i> Complete Order
         </button>
-        <button type="submit" name="payment_choice" value="full" class="btn-premium-primary">
-          <i class="fas fa-check-circle"></i> Pay Full &amp; Complete
+        <button type="submit" name="payment_choice" value="partial" class="btn-premium-success" id="partialBtn" style="display:none;">
+          <i class="fas fa-arrow-right"></i> Receive & Complete
         </button>
         <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-premium-secondary">
           <i class="fas fa-times"></i> Cancel
@@ -262,5 +460,36 @@
     </form>
   </div>
 </div>
+
+<script>
+  function selectChoice(choice) {
+    const fullBtn = document.getElementById('fullBtn');
+    const partialBtn = document.getElementById('partialBtn');
+    const partialSection = document.getElementById('partialSection');
+    const choiceBtns = document.querySelectorAll('.choice-btn');
+
+    choiceBtns.forEach(btn => btn.classList.remove('active'));
+
+    if (choice === 'full') {
+      document.querySelector('.choice-btn[data-choice="full"]').classList.add('active');
+      fullBtn.style.display = 'inline-flex';
+      partialBtn.style.display = 'none';
+      partialSection.classList.remove('visible');
+      document.getElementById('receive_amount').required = false;
+    } else {
+      document.querySelector('.choice-btn[data-choice="partial"]').classList.add('active');
+      fullBtn.style.display = 'none';
+      partialBtn.style.display = 'inline-flex';
+      partialSection.classList.add('visible');
+      document.getElementById('receive_amount').required = true;
+      const max = {{ remaining|floatformat:2 }};
+      document.getElementById('receive_amount').max = max;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    selectChoice('full');
+  });
+</script>
 
 {% endblock %}
