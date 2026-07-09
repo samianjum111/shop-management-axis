@@ -195,6 +195,14 @@ def revenue(request, **kwargs):
     except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
 
+
+    # Convert dicts to lists for chart.js
+    revenue_labels = list(revenue_by_day.keys())
+    revenue_data = list(revenue_by_day.values())
+    payment_labels = list(payment_status_dist.keys())
+    payment_data = list(payment_status_dist.values())
+    order_labels = list(order_status_dist.keys())
+    order_data = list(order_status_dist.values())
     context = {
         'total_revenue': total_revenue,
         'total_orders': total_orders,
@@ -211,6 +219,12 @@ def revenue(request, **kwargs):
         'cust_data': cust_data,
         'payment_status_dist': payment_status_dist,
         'order_status_dist': order_status_dist,
+        'revenue_labels': revenue_labels,
+        'revenue_data': revenue_data,
+        'payment_labels': payment_labels,
+        'payment_data': payment_data,
+        'order_labels': order_labels,
+        'order_data': order_data,
         'page_obj': page_obj,
         'start_date': start_date,
         'end_date': end_date,
