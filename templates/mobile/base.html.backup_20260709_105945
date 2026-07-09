@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* ===== CSS Variables – Premium Theme ===== */
+        /* ===== CSS Variables (Light theme) ===== */
         :root {
             --bg: #F8FAFC;
             --surface: #FFFFFF;
@@ -17,18 +17,16 @@
             --text-secondary: #475569;
             --muted: #94A3B8;
             --border: #E2E8F0;
-            --shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
             --accent: #E67E22;
             --accent-hover: #D35400;
             --accent-light: #FEF3E2;
             --radius: 0.75rem;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --transition: all 0.15s ease;
-            --gradient-accent: linear-gradient(135deg, #E67E22, #D35400);
-            --card-shadow: 0 8px 24px rgba(0,0,0,0.06);
         }
 
-        /* Dark theme (optional – can be toggled via JS) */
+        /* Dark theme (optional) – can be toggled via JS */
         html.dark {
             --bg: #0F172A;
             --surface: #1E293B;
@@ -55,10 +53,10 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ---- Top Bar (Premium) ---- */
+        /* ---- Top Bar ---- */
         .top-bar {
             background: var(--surface);
-            padding: 12px 16px;
+            padding: 10px 16px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -66,13 +64,7 @@
             position: sticky;
             top: 0;
             z-index: 20;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            background: rgba(255,255,255,0.85);
             transition: background 0.25s, border-color 0.25s;
-        }
-        html.dark .top-bar {
-            background: rgba(15,23,42,0.85);
         }
         .top-bar .left {
             display: flex;
@@ -82,57 +74,36 @@
             user-select: none;
         }
         .top-bar .logo {
-            width: 40px;
-            height: 40px;
-            background: var(--gradient-accent);
-            border-radius: 12px;
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 14px;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(230,126,34,0.25);
+            transition: background 0.25s;
         }
         .top-bar .brand-name {
-            font-weight: 700;
-            font-size: 16px;
+            font-weight: 600;
+            font-size: 15px;
             line-height: 1.2;
             color: var(--text);
-            letter-spacing: -0.01em;
         }
         .top-bar .brand-name small {
             display: block;
             font-weight: 400;
             font-size: 10px;
             color: var(--muted);
-            letter-spacing: 0.03em;
+            letter-spacing: 0.01em;
         }
         .top-bar .actions {
             display: flex;
             align-items: center;
-            gap: 6px;
-        }
-        .top-bar .actions .notif-icon {
-            position: relative;
-            cursor: pointer;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            transition: color 0.2s;
-        }
-        .top-bar .actions .notif-icon .badge {
-            position: absolute;
-            top: -6px;
-            right: -8px;
-            background: #EF4444;
-            border-radius: 50%;
-            font-size: 0.6rem;
-            padding: 2px 6px;
-            color: white;
-            font-weight: 700;
-            min-width: 18px;
-            text-align: center;
+            gap: 4px;
         }
 
         /* ---- Main Content ---- */
@@ -142,44 +113,7 @@
             margin: 0 auto;
         }
 
-        /* ---- Search (inside main) ---- */
-        .search-wrapper {
-            margin-bottom: 0.75rem;
-            width: 100%;
-        }
-        .search-wrapper .search-input-container {
-            background: var(--surface);
-            border-radius: 2rem;
-            padding: 0.15rem 0.6rem;
-            border: 1px solid var(--border);
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.25s;
-            display: flex;
-            align-items: center;
-        }
-        .search-wrapper .search-input-container:focus-within {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(230,126,34,0.12);
-        }
-        .search-wrapper .search-input-container input {
-            font-size: 0.9rem;
-            padding: 0.5rem 0.2rem;
-            background: transparent;
-            border: none;
-            outline: none;
-            width: 100%;
-            color: var(--text);
-        }
-        .search-wrapper .search-input-container input::placeholder {
-            color: var(--muted);
-            font-weight: 400;
-        }
-        .search-wrapper .search-input-container .search-icon {
-            color: var(--muted);
-            margin-right: 0.3rem;
-            flex-shrink: 0;
-        }
-
-        /* ---- Bottom Navigation (Premium) ---- */
+        /* ---- Bottom Navigation ---- */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -189,15 +123,9 @@
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
-            padding: 6px 0 calc(6px + var(--safe-bottom));
+            padding: 4px 0 calc(4px + var(--safe-bottom));
             z-index: 30;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             transition: background 0.25s, border-color 0.25s;
-        }
-        html.dark .bottom-nav {
-            background: rgba(15,23,42,0.92);
         }
         .bottom-nav .nav-item {
             display: flex;
@@ -207,36 +135,22 @@
             color: var(--muted);
             text-decoration: none;
             padding: 4px 10px;
-            border-radius: 8px;
+            border-radius: 6px;
             transition: var(--transition);
             gap: 1px;
             min-width: 48px;
-            position: relative;
         }
         .bottom-nav .nav-item.active {
             color: var(--accent);
         }
-        .bottom-nav .nav-item i,
-        .bottom-nav .nav-item .nav-icon-svg {
-            font-size: 1.5rem;
+        .bottom-nav .nav-item i {
+            font-size: 1.4rem;
             margin-bottom: 1px;
-            transition: transform 0.2s;
-        }
-        .bottom-nav .nav-item.active i,
-        .bottom-nav .nav-item.active .nav-icon-svg {
-            transform: scale(1.05);
         }
         .bottom-nav .nav-item span {
             font-weight: 500;
             font-size: 9px;
             letter-spacing: 0.02em;
-        }
-        /* For SVG icon (if we ever use custom SVG) */
-        .bottom-nav .nav-item .nav-icon-svg {
-            width: 24px;
-            height: 24px;
-            stroke: currentColor;
-            fill: none;
         }
 
         /* ---- Messages ---- */
@@ -257,6 +171,16 @@
         /* ---- Utility ---- */
         .text-muted { color: var(--muted); }
         .text-secondary { color: var(--text-secondary); }
+        .scroll-x {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+        }
+        .scroll-x > * { scroll-snap-align: start; flex-shrink: 0; }
 
         /* ---- Cards ---- */
         .card {
@@ -270,7 +194,7 @@
 
         /* ---- Buttons ---- */
         .btn-primary-custom {
-            background: var(--gradient-accent);
+            background: var(--accent);
             color: white;
             border: none;
             padding: 0.5rem 1.25rem;
@@ -278,8 +202,7 @@
             font-weight: 600;
             font-size: 0.875rem;
             cursor: pointer;
-            transition: background 0.15s, transform 0.15s;
-            box-shadow: 0 4px 12px rgba(230,126,34,0.25);
+            transition: background 0.15s;
         }
         .btn-primary-custom:hover {
             background: var(--accent-hover);
@@ -288,28 +211,82 @@
             transform: scale(0.96);
         }
 
-        /* ---- Notification dropdown ---- */
+        /* ---- Search (inside main content) ---- */
+        .search-wrapper {
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+        .search-wrapper .search-input-container {
+            background: var(--surface);
+            border-radius: 2rem;
+            padding: 0.15rem 0.6rem;
+            border: 1px solid var(--border);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.25s;
+            display: flex;
+            align-items: center;
+        }
+        .search-wrapper .search-input-container:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.12);
+        }
+        .search-wrapper .search-input-container input {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.2rem;
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 100%;
+            color: var(--text);
+        }
+        .search-wrapper .search-input-container input::placeholder {
+            color: var(--muted);
+            font-weight: 400;
+        }
+        .search-wrapper .search-input-container .search-icon {
+            color: var(--muted);
+            margin-right: 0.3rem;
+            flex-shrink: 0;
+        }
+
+        /* ---- Notification dropdown (top bar) ---- */
+        .notif-icon {
+            position: relative;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+        .notif-icon .badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #EF4444;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            color: white;
+            font-weight: 600;
+        }
         .notif-dropdown .dropdown-menu {
             min-width: 280px;
             max-height: 400px;
             overflow-y: auto;
         }
 
-        /* ---- Blink for alerts ---- */
+        /* ---- Utility blink ---- */
         .blink {
             animation: blink 1s step-end infinite;
         }
         @keyframes blink {
             50% { opacity: 0; }
         }
-
-        /* ---- Floating Action Button (New Order) ---- */
+    
+        /* Floating Action Button (New Order) */
         .fab-new-order {
             position: fixed;
             bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 0.5rem);
             right: 1.2rem;
             z-index: 999;
-            background: var(--gradient-accent);
+            background: var(--accent);
             color: #fff;
             border: none;
             border-radius: 50%;
@@ -319,7 +296,7 @@
             align-items: center;
             justify-content: center;
             font-size: 1.8rem;
-            box-shadow: 0 4px 20px rgba(230,126,34,0.4);
+            box-shadow: 0 4px 16px rgba(230,126,34,0.4);
             transition: transform 0.2s, box-shadow 0.2s;
             text-decoration: none;
         }
@@ -330,6 +307,7 @@
         .fab-new-order i {
             color: #fff;
         }
+        /* Small screen adjustment */
         @media (max-width: 400px) {
             .fab-new-order {
                 width: 48px;
@@ -348,10 +326,11 @@
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 </head>
 <body>
 
-    <!-- ===== TOP BAR ===== -->
+    <!-- Top Bar -->
     <div class="top-bar">
         <div class="left">
             <div class="logo">{{ tenant.name|slice:":2"|upper }}</div>
@@ -369,7 +348,7 @@
                     {% if ready_orders %}
                         {% for order in ready_orders %}
                             <li><a class="dropdown-item" href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/">
-                                Order #{{ order.id }} – {{ order.customer.name }}
+                                Order #{{ order.id }} - {{ order.customer.name }}
                             </a></li>
                         {% endfor %}
                     {% else %}
@@ -380,7 +359,7 @@
         </div>
     </div>
 
-    <!-- ===== MESSAGES ===== -->
+    <!-- Messages -->
     {% if messages %}
         <div style="padding:0 16px; max-width:480px; margin:0 auto;">
             {% for m in messages %}
@@ -389,9 +368,9 @@
         </div>
     {% endif %}
 
-    <!-- ===== MAIN CONTENT ===== -->
+    <!-- Main Content -->
     <div class="main-content">
-        <!-- SEARCH (can be overridden) -->
+        <!-- Search (inside main content, like axis) -->
         {% block search_bar %}
         <div class="search-wrapper">
             <form action="/portal/{{ tenant.schema_name }}/chakki/search/" method="get" class="search-input-container">
@@ -403,33 +382,27 @@
         {% block body %}{% endblock %}
     </div>
 
-    <!-- ===== BOTTOM NAVIGATION ===== -->
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <a href="/portal/{{ tenant.schema_name }}/dashboard/" class="nav-item {% if request.path == '/portal/'|add:tenant.schema_name|add:'/dashboard/' %}active{% endif %}">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
         <a href="/portal/{{ tenant.schema_name }}/chakki/" class="nav-item {% if request.path|slice:'0:24' == '/portal/'|add:tenant.schema_name|add:'/chakki/' %}active{% endif %}">
-            <i class="fas fa-wheat-awn"></i>
+            <i class="fas fa-wheat-awn"></i>   <!-- ya koi doosra -->
             <span>Chakki</span>
         </a>
         <a href="/portal/{{ tenant.schema_name }}/expenses/" class="nav-item {% if request.path|slice:'0:25' == '/portal/'|add:tenant.schema_name|add:'/expenses/' %}active{% endif %}">
             <i class="fas fa-money-bill-wave"></i>
             <span>Expenses</span>
         </a>
-        <a href="/portal/{{ tenant.schema_name }}/more/" class="nav-item {% if request.path == '/portal/'|add:tenant.schema_name|add:'/more/' %}active{% endif %}">
+                <a href="/portal/{{ tenant.schema_name }}/more/" class="nav-item {% if request.path == '/portal/'|add:tenant.schema_name|add:'/more/' %}active{% endif %}">
             <i class="fas fa-ellipsis-h"></i>
             <span>More</span>
         </a>
     </nav>
 
-    <!-- ===== FLOATING ACTION BUTTON ===== -->
-    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="fab-new-order" id="mobile-fab-btn">
-        <i class="fas fa-plus"></i>
-    </a>
-
-    <!-- ===== SCRIPTS ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
     (function() {
         function updateReadyOrders() {
@@ -437,21 +410,28 @@
             var url = '/portal/' + tenant + '/chakki/check-ready/';
             fetch(url)
                 .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
                     return response.json();
                 })
                 .then(data => {
-                    var badge = document.querySelector('.notif-icon .badge');
+                    // Update badge count
+                    var badge = document.querySelector('.notifications .badge, .notif-icon .badge');
                     if (badge) {
                         badge.textContent = data.count;
                         badge.style.display = data.count > 0 ? 'inline' : 'none';
                     }
-                    var dropdownMenu = document.querySelector('.notif-icon .dropdown-menu');
+                    // Update dropdown list
+                    var dropdownMenu = document.querySelector('.notifications .dropdown-menu, .notif-dropdown .dropdown-menu');
                     if (dropdownMenu) {
+                        // Keep the header (first child)
                         var header = dropdownMenu.querySelector('.dropdown-header');
+                        // Remove all items after header
                         while (dropdownMenu.children.length > 1) {
                             dropdownMenu.removeChild(dropdownMenu.lastChild);
                         }
+                        // Add new items
                         if (data.orders.length > 0) {
                             data.orders.forEach(order => {
                                 var link = document.createElement('a');
@@ -460,6 +440,7 @@
                                 link.textContent = 'Order #' + order.id + ' - ' + order.customer_name;
                                 dropdownMenu.appendChild(link);
                             });
+                            // Add "View all" link
                             var viewAll = document.createElement('a');
                             viewAll.className = 'dropdown-item text-center fw-bold';
                             viewAll.href = '/portal/' + tenant + '/chakki/?status=ready';
@@ -475,12 +456,22 @@
                 })
                 .catch(error => {
                     console.error('Error fetching ready orders:', error);
+                    // Retry after 10 seconds on error
                     setTimeout(updateReadyOrders, 10000);
                 });
         }
+        // Initial call and then every 15 seconds
         updateReadyOrders();
         setInterval(updateReadyOrders, 15000);
     })();
     </script>
+    
+
+
+    <!-- Floating New Order Button -->
+    <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="fab-new-order" id="mobile-fab-btn">
+        <i class="fas fa-plus"></i>
+    </a>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

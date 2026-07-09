@@ -3,16 +3,23 @@
 
 {% block extra_head %}
 
-
 <style>
-  /* ===== Premium Upgrades – uses your theme variables ===== */
+  /* ===== Premium Global ===== */
+  :root {
+    --premium-gradient: linear-gradient(145deg, #ffffff, #f8faff);
+    --card-shadow: 0 8px 24px rgba(0,20,50,0.06), 0 2px 6px rgba(0,0,0,0.02);
+    --card-hover-shadow: 0 16px 40px rgba(0,20,50,0.10);
+    --accent-gradient: linear-gradient(135deg, #6C63FF, #4A3FCF);
+    --border-radius-lg: 20px;
+  }
+
   .premium-header {
     padding: 0.5rem 0 0.2rem;
-    background: var(--surface);
-    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--premium-gradient);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     margin: -0.5rem -0.5rem 0.5rem -0.5rem;
     padding: 1.2rem 1rem 0.5rem;
-    border-bottom: 2px solid var(--accent-light);
+    border-bottom: 2px solid rgba(108,99,255,0.15);
   }
 
   .section-title {
@@ -28,13 +35,16 @@
   }
   .section-title .icon {
     font-size: 1.2rem;
-    color: var(--accent);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   .section-title::after {
     content: '';
     flex: 1;
     height: 2px;
-    background: linear-gradient(90deg, var(--accent-light), transparent);
+    background: linear-gradient(90deg, rgba(108,99,255,0.3), transparent);
     margin-left: 0.5rem;
   }
 
@@ -47,13 +57,14 @@
 
   .more-card.premium-card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(108,99,255,0.08);
+    border-radius: var(--border-radius-lg);
     padding: 1.4rem 0.5rem;
     text-align: center;
     text-decoration: none;
     color: var(--text);
-    box-shadow: var(--shadow);
+    box-shadow: var(--card-shadow);
     transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
     display: flex;
     flex-direction: column;
@@ -69,7 +80,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--accent);
+    background: var(--accent-gradient);
     opacity: 0;
     transition: opacity 0.3s;
   }
@@ -77,8 +88,8 @@
     transform: scale(0.95);
   }
   .more-card.premium-card:hover {
-    border-color: var(--accent);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    border-color: rgba(108,99,255,0.3);
+    box-shadow: var(--card-hover-shadow);
     transform: translateY(-2px);
   }
   .more-card.premium-card:hover::before {
@@ -86,7 +97,10 @@
   }
   .more-card.premium-card .icon {
     font-size: 2.2rem;
-    color: var(--accent);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     line-height: 1.2;
     transition: transform 0.2s;
   }
@@ -106,16 +120,19 @@
     font-weight: 500;
   }
 
+  /* Badge-like counts (optional) */
   .badge-count {
-    background: var(--accent-light);
-    color: var(--accent);
+    background: var(--accent-gradient);
+    color: white;
     padding: 0.1rem 0.6rem;
     border-radius: 30px;
     font-size: 0.6rem;
     font-weight: 700;
     margin-left: 0.3rem;
+    display: inline-block;
   }
 
+  /* Responsive tweaks */
   @media (max-width: 480px) {
     .more-grid {
       gap: 0.7rem;
@@ -132,19 +149,19 @@
   }
 </style>
 
-
 {% endblock %}
 
 
-
-
 {% block body %}
-<!-- Header (simplified) -->
+<!-- ===== Premium Header ===== -->
 <div class="premium-header">
-    <h5 class="fw-bold mb-1">More</h5>
+    <h5 class="fw-bold mb-1">✨ More</h5>
+    <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.5rem; opacity:0.8;">
+        Quick access to all sections
+    </p>
 </div>
 
-<!-- Customers -->
+<!-- ===== Customers ===== -->
 <div class="section-title">
     <span class="icon"><i class="fas fa-users"></i></span> Customers
 </div>
@@ -161,7 +178,7 @@
     </a>
 </div>
 
-<!-- Orders -->
+<!-- ===== Orders ===== -->
 <div class="section-title">
     <span class="icon"><i class="fas fa-wheat-awn"></i></span> Orders
 </div>
@@ -188,7 +205,7 @@
     </a>
 </div>
 
-<!-- Finance & Expenses -->
+<!-- ===== Finance & Expenses ===== -->
 <div class="section-title">
     <span class="icon"><i class="fas fa-coins"></i></span> Finance &amp; Expenses
 </div>
@@ -235,13 +252,13 @@
     </a>
 </div>
 
-<!-- Reports -->
+<!-- ===== Reports ===== -->
 <div class="section-title">
     <span class="icon"><i class="fas fa-chart-pie"></i></span> Reports
 </div>
 <div class="more-grid">
     <a href="/portal/{{ tenant.schema_name }}/reports/" class="more-card premium-card">
-        <div class="icon"><i class="fas fa-chart-pie"></i></div>
+        <div class="icon"><i class="fas fa-chart-simple"></i></div>
         <span class="label">Dashboard</span>
         <span class="desc">Overview</span>
     </a>
@@ -267,7 +284,7 @@
     </a>
 </div>
 
-<!-- Settings -->
+<!-- ===== Settings ===== -->
 <div class="section-title">
     <span class="icon"><i class="fas fa-cog"></i></span> Settings
 </div>
@@ -279,6 +296,4 @@
     </a>
 </div>
 {% endblock %}
-
-
 

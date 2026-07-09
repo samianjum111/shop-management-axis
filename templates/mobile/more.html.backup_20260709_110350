@@ -137,11 +137,13 @@
 
 
 
-
 {% block body %}
-<!-- Header (simplified) -->
+<!-- Header -->
 <div class="premium-header">
-    <h5 class="fw-bold mb-1">More</h5>
+    <h5 class="fw-bold mb-1">✨ More</h5>
+    <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.5rem; opacity:0.8;">
+        Quick access to all sections
+    </p>
 </div>
 
 <!-- Customers -->
@@ -235,7 +237,7 @@
     </a>
 </div>
 
-<!-- Reports -->
+<!-- Reports (moved out of Settings for clarity) -->
 <div class="section-title">
     <span class="icon"><i class="fas fa-chart-pie"></i></span> Reports
 </div>
@@ -279,6 +281,5 @@
     </a>
 </div>
 {% endblock %}
-
 
 
