@@ -10,37 +10,6 @@
   .chart-container { background:var(--surface); border-radius:var(--radius); padding:0.8rem; border:1px solid var(--border); margin-bottom:1rem; }
   .order-item { display:flex; justify-content:space-between; padding:0.5rem 0.8rem; border-bottom:1px solid var(--border); }
 </style>
-
-<style>
-  .formatted-number {
-    cursor: default;
-  }
-</style>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    function formatNumber(num) {
-      if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-      if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-      if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-      return num.toString();
-    }
-    document.querySelectorAll('.kpi-card .number').forEach(el => {
-      const rawText = el.textContent.trim();
-      // Remove ₹ and commas, get numeric value
-      const rawNum = parseFloat(rawText.replace(/[₹,]/g, ''));
-      if (!isNaN(rawNum)) {
-        const formatted = formatNumber(rawNum);
-        // Keep the ₹ symbol if present
-        const hasCurrency = rawText.includes('₹');
-        el.innerHTML = (hasCurrency ? '₹' : '') + formatted;
-        el.title = (hasCurrency ? '₹' : '') + rawNum.toFixed(2);
-        // Ensure number is visible on hover
-        el.style.cursor = 'default';
-      }
-    });
-  });
-</script>
-
 {% endblock %}
 {% block body %}
 <h5 class="fw-bold">💰 Revenue Report</h5>
@@ -53,7 +22,7 @@
 <script>
   new Chart(document.getElementById('revenueChart'), {
     type: 'bar',
-    data: { labels: {{ revenue_labels|safe }}, datasets: [{ label: 'Daily Revenue', data: {{ revenue_data|safe }}, backgroundColor: '#e67e22' }] },
+    data: { labels: {{ revenue_by_day.keys|safe }}, datasets: [{ label: 'Daily Revenue', data: {{ revenue_by_day.values|safe }}, backgroundColor: '#e67e22' }] },
     options: { responsive: true, maintainAspectRatio: false }
   });
 </script>

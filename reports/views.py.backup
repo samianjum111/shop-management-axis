@@ -64,110 +64,27 @@ def dashboard(request, **kwargs):
     return render(request, template, context)
 
 @login_required
-
-@login_required
 def revenue(request, **kwargs):
-    from django.db.models import Sum, Count, Avg, Q
-    from decimal import Decimal
-    from datetime import datetime, timedelta
-    from django.core.paginator import Paginator
-
     tenant = request.tenant
     orders = ChakkiOrder.objects.filter(tenant=tenant, status='completed').order_by('-created_at')
-
-    # Date range filters
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    if start_date:
-        try:
-            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-            orders = orders.filter(created_at__date__gte=start_date_obj)
-        except ValueError:
-            pass
-    if end_date:
-        try:
-            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
-            orders = orders.filter(created_at__date__lte=end_date_obj)
-        except ValueError:
-            pass
-
     total_revenue = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
-    total_orders = orders.count()
-    avg_order_value = orders.aggregate(Avg('total_amount'))['total_amount__avg'] or Decimal('0')
-
-    # Revenue by day (last 30 days or filtered range)
+    # Group by date for chart
     today = timezone.now().date()
-    if start_date and end_date:
-        start = start_date_obj
-        end = end_date_obj
-        days = (end - start).days + 1
-    else:
-        start = today - timedelta(days=29)
-        end = today
-        days = 30
-
     revenue_by_day = {}
-    for i in range(days):
-        day = start + timedelta(days=i)
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
         day_total = orders.filter(created_at__date=day).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
         revenue_by_day[day.strftime('%d %b')] = float(day_total)
 
-    # Category revenue (both grinding and selling)
-    cat_revenue = {}
-    grinding_items = ChakkiOrderItem.objects.filter(order__in=orders, tenant=tenant)
-    for item in grinding_items:
-        name = item.category.name
-        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.item_total
-    selling_items = SellingOrderItem.objects.filter(order__in=orders, tenant=tenant)
-    for item in selling_items:
-        name = item.selling_price.category.name
-        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.total
-    sorted_cats = sorted(cat_revenue.items(), key=lambda x: x[1], reverse=True)[:10]
-    cat_labels = [c[0] for c in sorted_cats]
-    cat_data = [float(c[1]) for c in sorted_cats]
-
-    # Customer revenue (top 10)
-    cust_revenue = {}
-    for order in orders:
-        cid = order.customer.id
-        cust_revenue[cid] = cust_revenue.get(cid, Decimal('0')) + order.total_amount
-    sorted_cust = sorted(cust_revenue.items(), key=lambda x: x[1], reverse=True)[:10]
-    cust_labels = []
-    cust_data = []
-    for cid, rev in sorted_cust:
-        customer = ChakkiCustomer.objects.get(id=cid)
-        cust_labels.append(customer.name)
-        cust_data.append(float(rev))
-
-    # Payment status distribution among completed orders
-    payment_status_dist = {
-        'Paid': orders.filter(payment_status='paid').count(),
-        'Partial': orders.filter(payment_status='partial').count(),
-        'Unpaid': orders.filter(payment_status='unpaid').count(),
-    }
-
-    # Pagination for orders table (50 per page)
-    paginator = Paginator(orders, 50)
-    page = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page)
-
     context = {
+        'orders': orders[:50],
         'total_revenue': total_revenue,
-        'total_orders': total_orders,
-        'avg_order_value': avg_order_value,
         'revenue_by_day': revenue_by_day,
-        'cat_labels': cat_labels,
-        'cat_data': cat_data,
-        'cust_labels': cust_labels,
-        'cust_data': cust_data,
-        'payment_status_dist': payment_status_dist,
-        'page_obj': page_obj,
-        'start_date': start_date,
-        'end_date': end_date,
         'tenant': tenant,
     }
     template = 'mobile/reports_revenue.html' if request.mobile else 'desktop/reports_revenue.html'
     return render(request, template, context)
+
 @login_required
 def categories(request, **kwargs):
     tenant = request.tenant

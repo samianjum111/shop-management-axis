@@ -324,69 +324,6 @@
     .kpi-grid { grid-template-columns: 1fr; }
   }
 </style>
-
-<style>
-  .tabs-bar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 0.3rem;
-  }
-  .tab-link {
-    padding: 0.5rem 1.5rem;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid transparent;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .tab-link:hover {
-    border-color: var(--border);
-    color: var(--text);
-  }
-  .tab-link.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 2px 12px rgba(26,42,58,0.2);
-  }
-</style>
-
-
-<style>
-  .formatted-number {
-    cursor: default;
-  }
-</style>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    function formatNumber(num) {
-      if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-      if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-      if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-      return num.toString();
-    }
-    document.querySelectorAll('.kpi-card .number').forEach(el => {
-      const rawText = el.textContent.trim();
-      // Remove ₹ and commas, get numeric value
-      const rawNum = parseFloat(rawText.replace(/[₹,]/g, ''));
-      if (!isNaN(rawNum)) {
-        const formatted = formatNumber(rawNum);
-        // Keep the ₹ symbol if present
-        const hasCurrency = rawText.includes('₹');
-        el.innerHTML = (hasCurrency ? '₹' : '') + formatted;
-        el.title = (hasCurrency ? '₹' : '') + rawNum.toFixed(2);
-        // Ensure number is visible on hover
-        el.style.cursor = 'default';
-      }
-    });
-  });
-</script>
-
 {% endblock %}
 
 {% block content %}
@@ -397,14 +334,6 @@
 </div>
 
 <!-- ===== FILTER BAR ===== -->
-
-<!-- Customer Type Tabs -->
-<div class="tabs-bar">
-  <a href="?customer_type=all{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" class="tab-link {% if customer_type == 'all' %}active{% endif %}">All</a>
-  <a href="?customer_type=regular{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">Regular</a>
-  <a href="?customer_type=walkin{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">Walk‑in</a>
-</div>
-
 <form method="get" class="filter-bar">
   <div class="form-group">
     <label>From</label>
@@ -414,7 +343,14 @@
     <label>To</label>
     <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
   </div>
-  
+  <div class="form-group">
+    <label>Customer Type</label>
+    <select name="customer_type" class="form-select">
+      <option value="all" {% if customer_type == 'all' %}selected{% endif %}>All</option>
+      <option value="regular" {% if customer_type == 'regular' %}selected{% endif %}>Regular</option>
+      <option value="walkin" {% if customer_type == 'walkin' %}selected{% endif %}>Walk‑in</option>
+    </select>
+  </div>
   <button type="submit" class="btn-apply"><i class="fas fa-filter"></i> Apply</button>
   <a href="?" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
 </form>
@@ -584,10 +520,10 @@
     new Chart(ctxTrend, {
       type: 'line',
       data: {
-        labels: {{ revenue_labels|safe }},
+        labels: {{ revenue_by_day.keys|safe }},
         datasets: [{
           label: 'Revenue (₹)',
-          data: {{ revenue_data|safe }},
+          data: {{ revenue_by_day.values|safe }},
           borderColor: '#e67e22',
           backgroundColor: 'rgba(230,126,34,0.1)',
           tension: 0.2,
@@ -651,9 +587,9 @@
     new Chart(ctxPay, {
       type: 'doughnut',
       data: {
-        labels: {{ payment_labels|safe }},
+        labels: {{ payment_status_dist.keys|safe }},
         datasets: [{
-          data: {{ payment_data|safe }},
+          data: {{ payment_status_dist.values|safe }},
           backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c']
         }]
       },
@@ -669,9 +605,9 @@
     new Chart(ctxStatus, {
       type: 'doughnut',
       data: {
-        labels: {{ order_labels|safe }},
+        labels: {{ order_status_dist.keys|safe }},
         datasets: [{
-          data: {{ order_data|safe }},
+          data: {{ order_status_dist.values|safe }},
           backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
         }]
       },
