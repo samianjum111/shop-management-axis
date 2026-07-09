@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-patcher_reports_orders.py
-Overwrites reports/templates/mobile/reports_orders.html
-with a full premium, mega‑depth mobile design.
-Run: python3 patcher_reports_orders.py
+patcher_reports_revenue.py
+Overwrites reports/templates/mobile/reports_revenue.html
+with a full premium, mega‑depth mobile design for revenue analytics.
+Run: python3 patcher_reports_revenue.py
 """
 
 import os
 
-TARGET = "reports/templates/mobile/reports_orders.html"
+TARGET = "reports/templates/mobile/reports_revenue.html"
 
 NEW_HTML = '''{% extends "mobile/base.html" %}
 {% load static %}
-{% block title %}Orders Report | {{ tenant.name }}{% endblock %}
+{% block title %}Revenue Analytics | {{ tenant.name }}{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  /* ===== PREMIUM MOBILE ORDERS REPORT – FULL DEPTH ===== */
+  /* ===== PREMIUM MOBILE REVENUE REPORT – FULL DEPTH ===== */
   :root {
     --hero-grad: linear-gradient(145deg, #0f1a2e, #1a2d4a);
     --accent-grad: linear-gradient(135deg, #f59e0b, #d97706);
@@ -499,7 +499,35 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
     .kpi-card { flex: 0 0 100px; }
     .kpi-card .number { font-size: 1rem; }
   }
+
+  /* ===== FORMATTED NUMBERS (K, M, B) ===== */
+  .formatted-number {
+    cursor: default;
+  }
 </style>
+
+<script>
+  // Auto-format KPI numbers (K, M, B) on load
+  document.addEventListener('DOMContentLoaded', function() {
+    function formatNumber(num) {
+      if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+      if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+      if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+      return num.toString();
+    }
+    document.querySelectorAll('.kpi-card .number').forEach(el => {
+      const rawText = el.textContent.trim();
+      const rawNum = parseFloat(rawText.replace(/[₹,]/g, ''));
+      if (!isNaN(rawNum)) {
+        const formatted = formatNumber(rawNum);
+        const hasCurrency = rawText.includes('₹');
+        el.innerHTML = (hasCurrency ? '₹' : '') + formatted;
+        el.title = (hasCurrency ? '₹' : '') + rawNum.toFixed(2);
+        el.style.cursor = 'default';
+      }
+    });
+  });
+</script>
 {% endblock %}
 
 {% block body %}
@@ -507,13 +535,13 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 <!-- ===== HERO ===== -->
 <div class="hero-section">
   <div class="hero-title">
-    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><path d="M9 7l6 5-6 5V7z"/></svg>
-    Orders Report
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Revenue Analytics
   </div>
   <div class="hero-sub">{{ tenant.name }} · {{ customer_type|title }} customers</div>
   <div class="hero-badge">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    {{ total_orders }} orders
+    ₹{{ total_revenue|floatformat:2 }} total
   </div>
 </div>
 
@@ -521,7 +549,7 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 <div class="kpi-strip">
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    <div class="number">{{ total_revenue|floatformat:0 }}</div>
+    <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
     <div class="label">Revenue</div>
   </div>
   <div class="kpi-card">
@@ -531,13 +559,18 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
   </div>
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-    <div class="number">{{ total_paid|floatformat:0 }}</div>
+    <div class="number">₹{{ total_paid|floatformat:0 }}</div>
     <div class="label">Paid</div>
   </div>
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-    <div class="number">{{ total_pending|floatformat:0 }}</div>
+    <div class="number">₹{{ total_pending|floatformat:0 }}</div>
     <div class="label">Pending</div>
+  </div>
+  <div class="kpi-card">
+    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <div class="number">₹{{ total_profit|floatformat:0 }}</div>
+    <div class="label">Profit</div>
   </div>
   <div class="kpi-card">
     <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -570,42 +603,16 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
       <input type="date" name="end_date" value="{{ end_date|default:'' }}">
     </div>
     <div class="form-group">
-      <label>Status</label>
-      <select name="status">
-        <option value="all" {% if status == 'all' or not status %}selected{% endif %}>All</option>
-        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
-        <option value="ready" {% if status == 'ready' %}selected{% endif %}>Ready</option>
-        <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
-        <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Search</label>
-      <input type="text" name="search" placeholder="Customer, phone, ID..." value="{{ search|default:'' }}">
-    </div>
-    <div class="form-group">
-      <label>Sort by</label>
-      <select name="sort">
-        <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Date</option>
-        <option value="id" {% if sort == 'id' %}selected{% endif %}>ID</option>
-        <option value="customer" {% if sort == 'customer' %}selected{% endif %}>Customer</option>
-        <option value="total" {% if sort == 'total' %}selected{% endif %}>Total</option>
-        <option value="paid" {% if sort == 'paid' %}selected{% endif %}>Paid</option>
-        <option value="remaining" {% if sort == 'remaining' %}selected{% endif %}>Remaining</option>
-        <option value="status" {% if sort == 'status' %}selected{% endif %}>Status</option>
-        <option value="payment_status" {% if sort == 'payment_status' %}selected{% endif %}>Payment</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Order</label>
-      <select name="order">
-        <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
-        <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+      <label>Customer</label>
+      <select name="customer_type">
+        <option value="all" {% if customer_type == 'all' %}selected{% endif %}>All</option>
+        <option value="regular" {% if customer_type == 'regular' %}selected{% endif %}>Regular</option>
+        <option value="walkin" {% if customer_type == 'walkin' %}selected{% endif %}>Walk‑in</option>
       </select>
     </div>
     <div class="btn-row">
       <button type="submit" class="btn btn-apply">Apply</button>
-      <a href="?customer_type={{ customer_type }}" class="btn btn-clear">Clear</a>
+      <a href="?" class="btn btn-clear">Clear</a>
     </div>
   </form>
 </div>
@@ -619,19 +626,17 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
   <div id="chartCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000" data-bs-touch="true">
     <div class="carousel-indicators">
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Revenue Trend"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="1" aria-label="Orders Trend"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="2" aria-label="Order Status"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="1" aria-label="Revenue by Category"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="2" aria-label="Top Customers"></button>
       <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="3" aria-label="Payment Status"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="4" aria-label="Top Customers"></button>
-      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="5" aria-label="Top Categories"></button>
+      <button type="button" data-bs-target="#chartCarousel" data-bs-slide-to="4" aria-label="Order Status"></button>
     </div>
     <div class="carousel-inner">
-      <div class="carousel-item active"><canvas id="revenueChart" height="180"></canvas></div>
-      <div class="carousel-item"><canvas id="ordersChart" height="180"></canvas></div>
-      <div class="carousel-item"><canvas id="statusChart" height="180"></canvas></div>
-      <div class="carousel-item"><canvas id="paymentChart" height="180"></canvas></div>
-      <div class="carousel-item"><canvas id="customerChart" height="180"></canvas></div>
+      <div class="carousel-item active"><canvas id="revenueTrendChart" height="180"></canvas></div>
       <div class="carousel-item"><canvas id="categoryChart" height="180"></canvas></div>
+      <div class="carousel-item"><canvas id="customerChart" height="180"></canvas></div>
+      <div class="carousel-item"><canvas id="paymentChart" height="180"></canvas></div>
+      <div class="carousel-item"><canvas id="orderStatusChart" height="180"></canvas></div>
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#chartCarousel" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -693,8 +698,8 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 {% if page_obj.has_other_pages %}
 <div class="pagination-premium">
   {% if page_obj.has_previous %}
-    <a href="?page=1{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>
-    <a href="?page={{ page_obj.previous_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>
+    <a href="?page=1{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">&laquo;</a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">‹</a>
   {% else %}
     <span class="disabled">&laquo;</span>
     <span class="disabled">‹</span>
@@ -703,8 +708,8 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
   <span class="current">{{ page_obj.number }}</span>
 
   {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">›</a>
-    <a href="?page={{ page_obj.paginator.num_pages }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&raquo;</a>
+    <a href="?page={{ page_obj.next_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">›</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">&raquo;</a>
   {% else %}
     <span class="disabled">›</span>
     <span class="disabled">&raquo;</span>
@@ -712,7 +717,7 @@ NEW_HTML = '''{% extends "mobile/base.html" %}
 </div>
 {% endif %}
 
-<!-- ===== TRANSCRIPT MODAL (hidden by default) ===== -->
+<!-- ===== TRANSCRIPT MODAL ===== -->
 <div class="modal fade" id="transcriptModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -746,8 +751,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ----- Charts -----
   function initCharts() {
-    // 1. Revenue Trend
-    new Chart(document.getElementById('revenueChart'), {
+    // 1. Revenue Trend (line)
+    new Chart(document.getElementById('revenueTrendChart'), {
       type: 'line',
       data: {
         labels: {{ revenue_labels|safe }},
@@ -768,83 +773,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    // 2. Orders Trend
-    new Chart(document.getElementById('ordersChart'), {
-      type: 'bar',
-      data: {
-        labels: {{ revenue_labels|safe }},
-        datasets: [{
-          label: 'Orders',
-          data: {{ orders_data }},
-          backgroundColor: 'rgba(59,130,246,0.7)',
-          borderColor: '#3b82f6',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, stepSize: 1 } }
-      }
-    });
-
-    // 3. Order Status
-    new Chart(document.getElementById('statusChart'), {
-      type: 'doughnut',
-      data: {
-        labels: {{ status_dist_keys|safe }},
-        datasets: [{
-          data: {{ status_dist_values|safe }},
-          backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
-      }
-    });
-
-    // 4. Payment Status
-    new Chart(document.getElementById('paymentChart'), {
-      type: 'doughnut',
-      data: {
-        labels: {{ payment_dist_keys|safe }},
-        datasets: [{
-          data: {{ payment_dist_values|safe }},
-          backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
-      }
-    });
-
-    // 5. Top Customers
-    new Chart(document.getElementById('customerChart'), {
-      type: 'bar',
-      data: {
-        labels: {{ top_customer_labels|safe }},
-        datasets: [{
-          label: 'Revenue (₹)',
-          data: {{ top_customer_data }},
-          backgroundColor: 'rgba(245,158,11,0.7)',
-          borderColor: '#f59e0b',
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-
-    // 6. Top Categories
+    // 2. Revenue by Category (bar)
     new Chart(document.getElementById('categoryChart'), {
       type: 'bar',
       data: {
@@ -864,12 +793,66 @@ document.addEventListener('DOMContentLoaded', function() {
         scales: { y: { beginAtZero: true } }
       }
     });
+
+    // 3. Top Customers (bar)
+    new Chart(document.getElementById('customerChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ cust_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ cust_data }},
+          backgroundColor: 'rgba(245,158,11,0.7)',
+          borderColor: '#f59e0b',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // 4. Payment Status (doughnut)
+    new Chart(document.getElementById('paymentChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ payment_labels|safe }},
+        datasets: [{
+          data: {{ payment_data }},
+          backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
+      }
+    });
+
+    // 5. Order Status (doughnut)
+    new Chart(document.getElementById('orderStatusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ order_labels|safe }},
+        datasets: [{
+          data: {{ order_data }},
+          backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 10 } } } }
+      }
+    });
   }
 
-  // Initialize charts after DOM ready
   initCharts();
 
-  // ----- Transcript modal (copy from chakki) -----
+  // ----- Transcript Modal -----
   const modal = document.getElementById('transcriptModal');
   const modalBody = document.getElementById('transcriptModalBody');
   const printBtn = document.getElementById('printTranscriptBtn');
@@ -920,13 +903,13 @@ document.addEventListener('DOMContentLoaded', function() {
 def main():
     # Ensure target directory exists
     os.makedirs(os.path.dirname(TARGET), exist_ok=True)
-    
+
     # Write the new file
     with open(TARGET, 'w', encoding='utf-8') as f:
         f.write(NEW_HTML)
-    
+
     print(f"✅ Successfully updated {TARGET}")
-    print("   New premium mobile orders report installed.")
+    print("   New premium mobile revenue report installed.")
 
 if __name__ == "__main__":
     main()
