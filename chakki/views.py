@@ -81,7 +81,7 @@ def chakki_home(request, **kwargs):
         daily_counts.append(count)
 
     context = {
-        'page_obj': page_obj,
+'page_obj': page_obj,
         'status_filter': status_filter,
         'search_q': search_q,
         'tenant': tenant,
@@ -1073,6 +1073,7 @@ def selling_category_detail(request, category_id, **kwargs):
 
     total_orders = orders.count()
     total_qty = items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0.00')
+    total_stock = sum(p.stock for p in category.prices.all()) or Decimal('0.00')
     total_revenue = items.aggregate(Sum('total'))['total__sum'] or Decimal('0.00')
     total_cost = Decimal('0.00')
     total_profit = Decimal('0.00')
@@ -1107,6 +1108,7 @@ def selling_category_detail(request, category_id, **kwargs):
         'type': 'selling',
         'tenant': request.tenant,
         "prices": category.prices.all(),
+'total_stock': total_stock,
 }
     template = 'mobile/category_detail.html' if request.mobile else 'desktop/category_detail.html'
     return render(request, template, context)
