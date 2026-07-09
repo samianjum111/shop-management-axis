@@ -1,23 +1,200 @@
 #!/usr/bin/env python3
 """
-Full Customer Report Mega Patcher
-- Adds Regular / Walk-in tabs with separate analytics
-- Pagination (30 per page), search, sort, view profile
-- Updates both desktop and mobile templates
+Patcher for Orders Report – adds mega analytics, tabs (All/Regular/Walk-in), filters, charts, and sortable table.
+Run from project root: python3 patcher.py
 """
-
 import os
 import shutil
-import re
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+# ----------------------------------------------------------------------
+# NEW CONTENT for reports/views.py – replace the whole file with enhanced version.
+# We keep all existing views unchanged, only orders_report is upgraded.
+# ----------------------------------------------------------------------
+NEW_VIEWS = '''from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q, Avg
+from django.utils import timezone
+from datetime import timedelta
+from decimal import Decimal
+from chakki.models import ChakkiOrder, ChakkiCategory, SellingCategory, ChakkiCustomer, SellingOrderItem, ChakkiOrderItem
+from expenses.models import Expense
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from datetime import datetime
 
-VIEWS_FILE = PROJECT_ROOT / "reports" / "views.py"
-DESKTOP_TEMPLATE = PROJECT_ROOT / "reports" / "templates" / "desktop" / "reports_customers.html"
-MOBILE_TEMPLATE = PROJECT_ROOT / "reports" / "templates" / "mobile" / "reports_customers.html"
+@login_required
+def dashboard(request, **kwargs):
+    tenant = request.tenant
+    orders = ChakkiOrder.objects.filter(tenant=tenant)
+    completed_orders = orders.filter(status='completed')
+    pending_orders = orders.filter(status='pending')
+    ready_orders = orders.filter(status='ready')
 
-NEW_VIEWS_CUSTOMERS_FUNCTION = '''
+    total_revenue = completed_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+    total_pending = Decimal('0')
+    for order in orders.exclude(status='completed'):
+        total_pending += order.remaining_amount
+
+    total_orders = orders.count()
+    completed_count = completed_orders.count()
+
+    # Revenue over last 30 days
+    today = timezone.now().date()
+    revenue_labels = []
+    revenue_data = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        revenue_labels.append(day.strftime('%d %b'))
+        day_total = orders.filter(
+            status='completed',
+            created_at__date=day
+        ).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        revenue_data.append(float(day_total))
+
+    # Order status counts
+    status_data = {
+        'Pending': orders.filter(status='pending').count(),
+        'Ready': orders.filter(status='ready').count(),
+        'Completed': orders.filter(status='completed').count(),
+        'Cancelled': orders.filter(status='cancelled').count(),
+    }
+
+    # Recent orders
+    recent_orders = orders.order_by('-created_at')[:10]
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_pending': total_pending,
+        'total_orders': total_orders,
+        'completed_count': completed_count,
+        'revenue_labels': revenue_labels,
+        'revenue_data': revenue_data,
+        'status_data': status_data,
+        'recent_orders': recent_orders,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_dashboard.html' if request.mobile else 'desktop/reports_dashboard.html'
+    return render(request, template, context)
+
+@login_required
+def revenue(request, **kwargs):
+    tenant = request.tenant
+    orders = ChakkiOrder.objects.filter(tenant=tenant, status='completed').order_by('-created_at')
+    total_revenue = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+    # Group by date for chart
+    today = timezone.now().date()
+    revenue_by_day = {}
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        day_total = orders.filter(created_at__date=day).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        revenue_by_day[day.strftime('%d %b')] = float(day_total)
+
+    context = {
+        'orders': orders[:50],
+        'total_revenue': total_revenue,
+        'revenue_by_day': revenue_by_day,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_revenue.html' if request.mobile else 'desktop/reports_revenue.html'
+    return render(request, template, context)
+
+@login_required
+def categories(request, **kwargs):
+    tenant = request.tenant
+
+    # Get search and sort parameters
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'name')  # name, revenue, orders, profit
+    order = request.GET.get('order', 'asc')  # asc or desc
+
+    grinding_cats = ChakkiCategory.objects.filter(tenant=tenant)
+    selling_cats = SellingCategory.objects.filter(tenant=tenant)
+
+    all_categories = []
+
+    # Process grinding categories
+    for cat in grinding_cats:
+        items = cat.chakkiorderitem_set.filter(tenant=tenant)
+        total_kg = items.aggregate(Sum('total_kg'))['total_kg__sum'] or Decimal('0')
+        total_revenue = items.aggregate(Sum('item_total'))['item_total__sum'] or Decimal('0')
+        total_orders = items.values('order').distinct().count()
+        all_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'type': 'grinding',
+            'url_name': 'grinding_category_detail',
+            'total_quantity': total_kg,
+            'quantity_unit': 'KG',
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'total_profit': None,
+        })
+
+    # Process selling categories
+    for cat in selling_cats:
+        selling_items = SellingOrderItem.objects.filter(selling_price__category=cat, tenant=tenant)
+        total_qty = selling_items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0')
+        total_revenue = selling_items.aggregate(Sum('total'))['total__sum'] or Decimal('0')
+        total_orders = selling_items.values('order').distinct().count()
+        total_cost = Decimal('0')
+        for item in selling_items:
+            total_cost += item.quantity * item.selling_price.purchase_price
+        total_profit = total_revenue - total_cost
+        all_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'type': 'selling',
+            'url_name': 'selling_category_detail',
+            'total_quantity': total_qty,
+            'quantity_unit': 'Qty',
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'total_profit': total_profit,
+        })
+
+    # Apply search filter
+    if search:
+        all_categories = [c for c in all_categories if search.lower() in c['name'].lower()]
+
+    # Apply sorting
+    reverse = (order == 'desc')
+    if sort == 'name':
+        all_categories.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    elif sort == 'revenue':
+        all_categories.sort(key=lambda x: x['total_revenue'], reverse=reverse)
+    elif sort == 'orders':
+        all_categories.sort(key=lambda x: x['total_orders'], reverse=reverse)
+    elif sort == 'profit':
+        all_categories.sort(key=lambda x: x['total_profit'] or Decimal('0'), reverse=reverse)
+
+    # Aggregated KPIs
+    total_categories = len(all_categories)
+    total_revenue = sum(c['total_revenue'] for c in all_categories)
+    total_orders = sum(c['total_orders'] for c in all_categories)
+    total_profit = sum(c['total_profit'] or Decimal('0') for c in all_categories)
+    avg_revenue = total_revenue / total_categories if total_categories else 0
+
+    # For chart: category name vs revenue
+    chart_labels = [c['name'] for c in all_categories]
+    chart_data = [float(c['total_revenue']) for c in all_categories]
+
+    context = {
+        'categories': all_categories,
+        'total_categories': total_categories,
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'total_profit': total_profit,
+        'avg_revenue': avg_revenue,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
+        'tenant': tenant,
+    }
+    template = 'mobile/reports_categories.html' if request.mobile else 'desktop/reports_categories.html'
+    return render(request, template, context)
+
 @login_required
 def customers(request, **kwargs):
     tenant = request.tenant
@@ -107,20 +284,201 @@ def customers(request, **kwargs):
     }
     template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
     return render(request, template, context)
-'''
 
-NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
+# ===== ENHANCED ORDERS REPORT =====
+@login_required
+def orders_report(request, **kwargs):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from django.db.models import Q, Sum, Count, Avg
+    from decimal import Decimal
+    from datetime import datetime, timedelta
+
+    tenant = request.tenant
+    customer_type = request.GET.get('customer_type', 'all')  # all, regular, walkin
+
+    orders = ChakkiOrder.objects.filter(tenant=tenant)
+    if customer_type == 'regular':
+        orders = orders.filter(customer__is_regular=True)
+    elif customer_type == 'walkin':
+        orders = orders.filter(customer__is_regular=False)
+    # else all
+
+    # ----- Filters -----
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    status = request.GET.get('status')
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'created_at')
+    order = request.GET.get('order', 'desc')
+    page = request.GET.get('page', 1)
+
+    if start_date:
+        try:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            orders = orders.filter(created_at__date__gte=start_date_obj)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            orders = orders.filter(created_at__date__lte=end_date_obj)
+        except ValueError:
+            pass
+    if status and status != 'all':
+        orders = orders.filter(status=status)
+    if search:
+        orders = orders.filter(
+            Q(customer__name__icontains=search) |
+            Q(customer__phone__icontains=search) |
+            Q(id__icontains=search)
+        )
+
+    # ----- Aggregates -----
+    total_orders = orders.count()
+    completed_orders = orders.filter(status='completed')
+    total_revenue = completed_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+    total_paid = orders.aggregate(Sum('amount_paid'))['amount_paid__sum'] or Decimal('0')
+    total_pending = Decimal('0')
+    for o in orders.exclude(status='completed'):
+        total_pending += o.remaining_amount
+    avg_order_value = completed_orders.aggregate(Avg('total_amount'))['total_amount__avg'] or Decimal('0')
+
+    # Status distribution
+    status_dist = {
+        'Pending': orders.filter(status='pending').count(),
+        'Ready': orders.filter(status='ready').count(),
+        'Completed': orders.filter(status='completed').count(),
+        'Cancelled': orders.filter(status='cancelled').count(),
+    }
+
+    # Payment status distribution
+    payment_dist = {
+        'Unpaid': orders.filter(payment_status='unpaid').count(),
+        'Partial': orders.filter(payment_status='partial').count(),
+        'Paid': orders.filter(payment_status='paid').count(),
+    }
+
+    # Revenue trend last 30 days
+    today = timezone.now().date()
+    revenue_labels = []
+    revenue_data = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        revenue_labels.append(day.strftime('%d %b'))
+        day_total = completed_orders.filter(created_at__date=day).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
+        revenue_data.append(float(day_total))
+
+    # Orders trend last 30 days
+    orders_data = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        count = orders.filter(created_at__date=day).count()
+        orders_data.append(count)
+
+    # Top 10 customers by revenue (completed orders)
+    top_customers = {}
+    for order in completed_orders:
+        cid = order.customer.id
+        top_customers[cid] = top_customers.get(cid, Decimal('0')) + order.total_amount
+    top_customers_list = sorted(top_customers.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_customer_labels = []
+    top_customer_data = []
+    for cid, rev in top_customers_list:
+        customer = ChakkiCustomer.objects.get(id=cid)
+        top_customer_labels.append(customer.name)
+        top_customer_data.append(float(rev))
+
+    # Top 5 categories by revenue (both grinding and selling)
+    cat_revenue = {}
+    grinding_items = ChakkiOrderItem.objects.filter(order__in=completed_orders, tenant=tenant)
+    for item in grinding_items:
+        name = item.category.name
+        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.item_total
+    selling_items = SellingOrderItem.objects.filter(order__in=completed_orders, tenant=tenant)
+    for item in selling_items:
+        name = item.selling_price.category.name
+        cat_revenue[name] = cat_revenue.get(name, Decimal('0')) + item.total
+    top_cats = sorted(cat_revenue.items(), key=lambda x: x[1], reverse=True)[:5]
+    cat_labels = [cat for cat, _ in top_cats]
+    cat_data = [float(rev) for _, rev in top_cats]
+
+    # ----- Sorting for table -----
+    if sort == 'id':
+        sort_field = 'id'
+    elif sort == 'customer':
+        sort_field = 'customer__name'
+    elif sort == 'total':
+        sort_field = 'total_amount'
+    elif sort == 'paid':
+        sort_field = 'amount_paid'
+    elif sort == 'remaining':
+        sort_field = 'remaining_amount'   # not a DB field, handled below
+    elif sort == 'status':
+        sort_field = 'status'
+    elif sort == 'payment_status':
+        sort_field = 'payment_status'
+    else:
+        sort_field = 'created_at'
+
+    if sort_field == 'remaining_amount':
+        orders_list = list(orders)
+        orders_list.sort(key=lambda o: o.remaining_amount, reverse=(order == 'desc'))
+    else:
+        if order == 'desc':
+            sort_field = '-' + sort_field
+        orders_list = orders.order_by(sort_field)
+
+    # ----- Pagination -----
+    paginator = Paginator(orders_list, 30)
+    try:
+        page_obj = paginator.page(page)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    context = {
+        'page_obj': page_obj,
+        'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'total_paid': total_paid,
+        'total_pending': total_pending,
+        'avg_order_value': avg_order_value,
+        'status_dist': status_dist,
+        'payment_dist': payment_dist,
+        'revenue_labels': revenue_labels,
+        'revenue_data': revenue_data,
+        'orders_data': orders_data,
+        'top_customer_labels': top_customer_labels,
+        'top_customer_data': top_customer_data,
+        'cat_labels': cat_labels,
+        'cat_data': cat_data,
+        'tenant': tenant,
+        'start_date': start_date,
+        'end_date': end_date,
+        'status': status,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'customer_type': customer_type,
+    }
+    template = 'mobile/reports_orders.html' if request.mobile else 'desktop/reports_orders.html'
+    return render(request, template, context)'''
+
+# ----------------------------------------------------------------------
+# NEW CONTENT for reports/templates/desktop/reports_orders.html
+# Mega dashboard with tabs (All/Regular/Walk-in), filters, KPIs, 6 charts, table.
+# ----------------------------------------------------------------------
+NEW_TEMPLATE = '''{% extends "desktop/base.html" %}
 {% load static %}
-{% block title %}Customer Analytics | {{ tenant.name }}{% endblock %}
-
+{% block title %}Orders Report | {{ tenant.name }}{% endblock %}
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
+  /* ===== Premium Orders Report ===== */
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.8rem;
     flex-wrap: wrap;
     gap: 0.8rem;
   }
@@ -133,9 +491,10 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
   }
   .page-header h2 i {
     color: var(--accent);
-    margin-right: 0.4rem;
+    margin-right: 0.5rem;
   }
 
+  /* Customer type tabs */
   .tabs-bar {
     display: flex;
     gap: 0.5rem;
@@ -178,31 +537,104 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
     color: #fff;
   }
 
+  /* Filter bar */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+  .filter-bar .form-group {
+    flex: 1 1 160px;
+    min-width: 120px;
+  }
+  .filter-bar .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+  }
+  .filter-bar .form-control,
+  .filter-bar .form-select {
+    border-radius: 40px;
+    border: 1.5px solid var(--border);
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: 0.2s;
+    width: 100%;
+  }
+  .filter-bar .form-control:focus,
+  .filter-bar .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
+    outline: none;
+  }
+  .filter-bar .btn-apply {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.4rem 1.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
+    flex: 0 0 auto;
+  }
+  .filter-bar .btn-apply:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+  }
+  .filter-bar .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+    flex: 0 0 auto;
+  }
+  .filter-bar .btn-clear:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* KPI Cards */
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
     margin-bottom: 2rem;
   }
   .kpi-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.2rem 0.8rem;
+    padding: 1rem 0.6rem;
     text-align: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
     transition: 0.25s;
   }
   .kpi-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.07);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.06);
     border-color: var(--accent);
-  }
-  .kpi-card .icon {
-    font-size: 1.8rem;
-    color: var(--accent);
-    display: block;
-    margin-bottom: 0.2rem;
   }
   .kpi-card .number {
     font-size: 2rem;
@@ -216,172 +648,141 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
     color: var(--muted);
     letter-spacing: 0.04em;
     font-weight: 600;
+    margin-top: 0.1rem;
+  }
+  .kpi-card .icon {
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+    display: block;
   }
 
-  .filter-bar {
+  /* Charts grid */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .chart-box {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 0.6rem 1.2rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.8rem;
+    border-radius: 20px;
+    padding: 1rem 1rem 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: 0.25s;
   }
-  .filter-bar .search-box {
-    flex: 1;
-    min-width: 180px;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: var(--bg);
-    border-radius: 40px;
-    padding: 0.2rem 0.8rem;
-    border: 1px solid var(--border);
-    transition: 0.2s;
+  .chart-box:hover {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.05);
   }
-  .filter-bar .search-box:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
-  }
-  .filter-bar .search-box input {
-    border: none;
-    background: transparent;
-    padding: 0.4rem 0;
-    font-size: 0.9rem;
-    width: 100%;
-    outline: none;
-    color: var(--text);
-  }
-  .filter-bar .search-box i {
-    color: var(--muted);
-  }
-  .filter-bar .sort-options {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-  }
-  .filter-bar .sort-options select {
-    padding: 0.3rem 1rem;
-    border-radius: 40px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 0.85rem;
-    outline: none;
-    appearance: none;
-    padding-right: 2rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    cursor: pointer;
-  }
-  .filter-bar .sort-options select:focus {
-    border-color: var(--accent);
-  }
-  .filter-bar .btn-apply {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 40px;
-    padding: 0.3rem 1.2rem;
+  .chart-box .chart-title {
     font-weight: 600;
     font-size: 0.85rem;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .filter-bar .btn-apply:hover {
-    background: var(--accent-hover);
-  }
-  .filter-bar .btn-clear {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    padding: 0.3rem 1rem;
-    font-size: 0.85rem;
     color: var(--text-secondary);
-    text-decoration: none;
-    transition: 0.2s;
+    margin-bottom: 0.3rem;
   }
-  .filter-bar .btn-clear:hover {
-    background: var(--surface-alt);
-    border-color: var(--accent);
-    color: var(--accent);
+  .chart-box canvas {
+    max-height: 200px;
+    width: 100% !important;
   }
-
-  .chart-container {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  .chart-box.full-width {
+    grid-column: 1 / -1;
+  }
+  .chart-box.full-width canvas {
+    max-height: 220px;
   }
 
-  .table-wrap {
+  /* Table */
+  .table-container {
     background: var(--surface);
-    border-radius: 16px;
     border: 1px solid var(--border);
-    overflow: hidden;
+    border-radius: 20px;
+    padding: 0.5rem 0;
     box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .table-wrap .table {
-    margin-bottom: 0;
+  .table-premium {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 0.9rem;
+    min-width: 700px;
   }
-  .table-wrap .table thead th {
+  .table-premium thead th {
     background: var(--surface-alt);
-    border-bottom: 2px solid var(--border);
     color: var(--text-secondary);
     font-weight: 600;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.8rem 0.8rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
     white-space: nowrap;
   }
-  .table-wrap .table td {
-    vertical-align: middle;
-    padding: 0.7rem 0.8rem;
-    border-bottom: 1px solid var(--border);
+  .table-premium thead th a {
+    color: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
   }
-  .table-wrap .table tbody tr:last-child td {
+  .table-premium thead th a:hover {
+    color: var(--accent);
+  }
+  .table-premium tbody td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .table-premium tbody tr:last-child td {
     border-bottom: none;
   }
-  .table-wrap .table tbody tr:hover {
+  .table-premium tbody tr:hover td {
     background: var(--bg);
   }
-
-  .badge-pending {
-    background: #fef3e2;
-    color: #d35400;
-    padding: 0.2rem 0.7rem;
-    border-radius: 30px;
-    font-weight: 700;
-    font-size: 0.75rem;
-    display: inline-block;
-  }
-  .badge-none {
-    background: #e8f8f0;
-    color: #1e7e34;
-    padding: 0.2rem 0.7rem;
-    border-radius: 30px;
+  .table-premium .order-id {
     font-weight: 600;
-    font-size: 0.75rem;
-    display: inline-block;
-  }
-  .customer-link {
     color: var(--accent);
-    font-weight: 600;
-    text-decoration: none;
   }
-  .customer-link:hover {
-    text-decoration: underline;
+  .table-premium .amount {
+    font-weight: 600;
+    white-space: nowrap;
   }
 
+  .badge-premium {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+  }
+  .badge-ready { background: #fff3cd; color: #856404; }
+  .badge-completed { background: #d4edda; color: #155724; }
+  .badge-pending { background: #e2e3e5; color: #383d41; }
+  .badge-cancelled { background: #f8d7da; color: #b02a37; }
+  .badge-paid { background: #d4edda; color: #155724; }
+  .badge-partial { background: #d1ecf1; color: #0c5460; }
+  .badge-unpaid { background: #f8d7da; color: #b02a37; }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 2.5rem;
+    color: var(--border);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* Pagination */
   .pagination-wrap {
     display: flex;
     justify-content: center;
@@ -418,28 +819,19 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
     pointer-events: none;
   }
 
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--muted);
-  }
-  .empty-state i {
-    font-size: 3rem;
-    color: var(--border);
-    margin-bottom: 0.5rem;
-    display: block;
-  }
-
   @media (max-width: 992px) {
-    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .filter-bar .form-group { flex: 1 1 100%; }
   }
   @media (max-width: 768px) {
-    .filter-bar { flex-direction: column; align-items: stretch; }
-    .filter-bar .search-box { min-width: 100%; }
-    .filter-bar .sort-options { justify-content: space-between; }
+    .page-header { flex-direction: column; align-items: stretch; }
     .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .table-container { padding: 0; }
+    .table-premium { font-size: 0.8rem; }
+    .table-premium thead th, .table-premium tbody td { padding: 0.5rem 0.6rem; }
   }
   @media (max-width: 576px) {
+    .page-header h2 { font-size: 1.6rem; }
     .kpi-grid { grid-template-columns: 1fr; }
   }
 </style>
@@ -447,144 +839,185 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
 
 {% block content %}
 
+<!-- ===== PAGE HEADER ===== -->
 <div class="page-header">
-  <h2><i class="fas fa-users"></i> Customer Analytics</h2>
+  <h2><i class="fas fa-clipboard-list"></i> Orders Report</h2>
 </div>
 
-<!-- Tabs -->
+<!-- ===== CUSTOMER TYPE TABS ===== -->
 <div class="tabs-bar">
-  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">
-    Regular <span class="badge">{{ total_customers }}</span>
+  <a href="?customer_type=all{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="tab-link {% if customer_type == 'all' %}active{% endif %}">
+    All <span class="badge">{{ total_orders }}</span>
   </a>
-  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">
-    Walk‑in <span class="badge">{{ total_customers }}</span>
+  <a href="?customer_type=regular{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">
+    Regular <span class="badge">{{ total_orders }}</span>
+  </a>
+  <a href="?customer_type=walkin{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">
+    Walk‑in <span class="badge">{{ total_orders }}</span>
   </a>
 </div>
 
-<!-- KPI Cards -->
+<!-- ===== FILTER BAR ===== -->
+<form method="get" class="filter-bar">
+  <input type="hidden" name="customer_type" value="{{ customer_type }}">
+  <div class="form-group">
+    <label>From</label>
+    <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>To</label>
+    <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>Status</label>
+    <select name="status" class="form-select">
+      <option value="all" {% if status == 'all' or not status %}selected{% endif %}>All</option>
+      <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="ready" {% if status == 'ready' %}selected{% endif %}>Ready</option>
+      <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+      <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+    </select>
+  </div>
+  <div class="form-group" style="flex: 2;">
+    <label>Search</label>
+    <input type="text" name="search" class="form-control" placeholder="Customer, phone, order ID..." value="{{ search|default:'' }}">
+  </div>
+  <button type="submit" class="btn-apply"><i class="fas fa-filter"></i> Apply</button>
+  <a href="?customer_type={{ customer_type }}" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
+</form>
+
+<!-- ===== KPI CARDS ===== -->
 <div class="kpi-grid">
   <div class="kpi-card">
-    <span class="icon"><i class="fas fa-user-friends"></i></span>
-    <div class="number">{{ total_customers }}</div>
-    <div class="label">Customers</div>
+    <span class="icon"><i class="fas fa-shopping-cart"></i></span>
+    <div class="number">{{ total_orders }}</div>
+    <div class="label">Total Orders</div>
   </div>
   <div class="kpi-card">
-    <span class="icon"><i class="fas fa-rupee-sign"></i></span>
+    <span class="icon"><i class="fas fa-coins"></i></span>
     <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
     <div class="label">Revenue</div>
   </div>
   <div class="kpi-card">
+    <span class="icon"><i class="fas fa-credit-card"></i></span>
+    <div class="number">₹{{ total_paid|floatformat:0 }}</div>
+    <div class="label">Total Paid</div>
+  </div>
+  <div class="kpi-card">
     <span class="icon"><i class="fas fa-hourglass-half"></i></span>
-    <div class="number">₹{{ total_pending_all|floatformat:0 }}</div>
-    <div class="label">Pending</div>
+    <div class="number">₹{{ total_pending|floatformat:0 }}</div>
+    <div class="label">Pending Amount</div>
   </div>
   <div class="kpi-card">
     <span class="icon"><i class="fas fa-chart-line"></i></span>
-    <div class="number">₹{{ avg_customer_value|floatformat:2 }}</div>
-    <div class="label">Avg Value</div>
-  </div>
-  <div class="kpi-card">
-    <span class="icon"><i class="fas fa-shopping-cart"></i></span>
-    <div class="number">{{ total_orders_all }}</div>
-    <div class="label">Total Orders</div>
+    <div class="number">₹{{ avg_order_value|floatformat:2 }}</div>
+    <div class="label">Avg Order Value</div>
   </div>
 </div>
 
-<!-- Chart -->
-<div class="chart-container">
-  <canvas id="customerChart" height="250"></canvas>
-</div>
-
-<!-- Filter -->
-<div class="filter-bar">
-  <form method="get" class="search-box">
-    <i class="fas fa-search"></i>
-    <input type="text" name="search" placeholder="Search by name or phone..." value="{{ search }}">
-    <input type="hidden" name="type" value="{{ customer_type }}">
-    <input type="hidden" name="sort" value="{{ sort }}">
-    <input type="hidden" name="order" value="{{ order }}">
-    <button type="submit" style="display:none;"></button>
-  </form>
-  <div class="sort-options">
-    <select name="sort" onchange="this.form.submit()" form="filterForm">
-      <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
-      <option value="spent" {% if sort == 'spent' %}selected{% endif %}>Revenue</option>
-      <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Orders</option>
-      <option value="avg" {% if sort == 'avg' %}selected{% endif %}>Avg Order</option>
-      <option value="pending" {% if sort == 'pending' %}selected{% endif %}>Pending</option>
-    </select>
-    <select name="order" onchange="this.form.submit()" form="filterForm">
-      <option value="asc" {% if order == 'asc' %}selected{% endif %}>Asc</option>
-      <option value="desc" {% if order == 'desc' %}selected{% endif %}>Desc</option>
-    </select>
-    <button type="submit" class="btn-apply" form="filterForm">Apply</button>
-    <a href="?type={{ customer_type }}" class="btn-clear">Clear</a>
+<!-- ===== CHARTS ===== -->
+<div class="charts-grid">
+  <!-- Revenue Trend -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-chart-line"></i> Revenue Trend (Last 30 Days)</div>
+    <canvas id="revenueChart"></canvas>
   </div>
-  <form id="filterForm" method="get" style="display:none;">
-    <input type="hidden" name="type" value="{{ customer_type }}">
-  </form>
-</div>
-
-<!-- Customer Table -->
-<div class="table-wrap">
-  <div class="table-responsive">
-    <table class="table align-middle">
-      <thead>
-        <tr>
-          <th>Customer</th>
-          <th>Phone</th>
-          <th>Total Orders</th>
-          <th>Total Spent</th>
-          <th>Avg Order</th>
-          <th>Pending</th>
-          <th>Last Order</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in page_obj %}
-        <tr>
-          <td><a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="customer-link">{{ c.name }}</a></td>
-          <td>{{ c.phone }}</td>
-          <td>{{ c.total_orders }}</td>
-          <td>₹{{ c.total_spent|floatformat:2 }}</td>
-          <td>₹{{ c.avg_order|floatformat:2 }}</td>
-          <td>
-            {% if c.total_pending > 0 %}
-              <span class="badge-pending">₹{{ c.total_pending|floatformat:2 }}</span>
-            {% else %}
-              <span class="badge-none">No due</span>
-            {% endif %}
-          </td>
-          <td>{{ c.last_order|date:"d M Y"|default:"—" }}</td>
-          <td>
-            <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn btn-sm btn-outline-primary">
-              <i class="fas fa-user"></i> View Profile
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="8">
-            <div class="empty-state">
-              <i class="fas fa-users-slash"></i>
-              <p>No customers found.</p>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Orders Trend -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-chart-bar"></i> Orders Trend (Last 30 Days)</div>
+    <canvas id="ordersChart"></canvas>
+  </div>
+  <!-- Status Distribution -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-doughnut-chart"></i> Order Status</div>
+    <canvas id="statusChart"></canvas>
+  </div>
+  <!-- Payment Status -->
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-doughnut-chart"></i> Payment Status</div>
+    <canvas id="paymentChart"></canvas>
+  </div>
+  <!-- Top Customers -->
+  <div class="chart-box full-width">
+    <div class="chart-title"><i class="fas fa-users"></i> Top 10 Customers by Revenue</div>
+    <canvas id="customerChart"></canvas>
+  </div>
+  <!-- Top Categories -->
+  <div class="chart-box full-width">
+    <div class="chart-title"><i class="fas fa-tags"></i> Top 5 Categories by Revenue</div>
+    <canvas id="categoryChart"></canvas>
   </div>
 </div>
 
-<!-- Pagination -->
+<!-- ===== ORDERS TABLE ===== -->
+<div class="table-container">
+  <table class="table-premium">
+    <thead>
+      <tr>
+        <th><a href="?sort=id&order={% if sort == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">ID {% if sort == 'id' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=customer&order={% if sort == 'customer' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Customer {% if sort == 'customer' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th>Phone</th>
+        <th><a href="?sort=total&order={% if sort == 'total' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Total {% if sort == 'total' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=paid&order={% if sort == 'paid' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Paid {% if sort == 'paid' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=remaining&order={% if sort == 'remaining' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Remaining {% if sort == 'remaining' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=status&order={% if sort == 'status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Status {% if sort == 'status' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=payment_status&order={% if sort == 'payment_status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Payment {% if sort == 'payment_status' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=created_at&order={% if sort == 'created_at' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Date {% if sort == 'created_at' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in page_obj %}
+      <tr>
+        <td class="order-id">#{{ order.id }}</td>
+        <td>{{ order.customer.name }}</td>
+        <td>{{ order.customer.phone|default:"—" }}</td>
+        <td class="amount">₹{{ order.total_amount|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.amount_paid|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.remaining_amount|floatformat:2 }}</td>
+        <td>
+          <span class="badge-premium
+            {% if order.status == 'ready' %}badge-ready
+            {% elif order.status == 'completed' %}badge-completed
+            {% elif order.status == 'cancelled' %}badge-cancelled
+            {% else %}badge-pending{% endif %}">
+            {{ order.status|title }}
+          </span>
+        </td>
+        <td>
+          <span class="badge-premium
+            {% if order.payment_status == 'paid' %}badge-paid
+            {% elif order.payment_status == 'partial' %}badge-partial
+            {% else %}badge-unpaid{% endif %}">
+            {{ order.payment_status|title }}
+          </span>
+        </td>
+        <td>{{ order.created_at|date:"d M Y H:i" }}</td>
+        <td>
+          <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn btn-sm btn-outline-primary">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10">
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No orders match your filters.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== PAGINATION ===== -->
 {% if page_obj.has_other_pages %}
 <div class="pagination-wrap">
   <div class="step-links">
     {% if page_obj.has_previous %}
-      <a href="?page=1&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo; First</a>
-      <a href="?page={{ page_obj.previous_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Prev</a>
+      <a href="?page=1{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Prev</a>
     {% else %}
       <span class="disabled">&laquo; First</span>
       <span class="disabled">Prev</span>
@@ -593,8 +1026,8 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
     <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Next</a>
-      <a href="?page={{ page_obj.paginator.num_pages }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Last &raquo;</a>
+      <a href="?page={{ page_obj.next_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Last &raquo;</a>
     {% else %}
       <span class="disabled">Next</span>
       <span class="disabled">Last &raquo;</span>
@@ -605,436 +1038,166 @@ NEW_DESKTOP_TEMPLATE = '''{% extends "desktop/base.html" %}
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('customerChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
+    // Revenue Chart
+    new Chart(document.getElementById('revenueChart'), {
+      type: 'line',
       data: {
-        labels: {{ chart_labels|safe }},
+        labels: {{ revenue_labels|safe }},
         datasets: [{
           label: 'Revenue (₹)',
-          data: {{ chart_data }},
-          backgroundColor: 'rgba(26,42,58,0.7)',
-          borderColor: 'var(--accent)',
-          borderWidth: 2,
-          borderRadius: 4,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          title: {
-            display: true,
-            text: 'Top 10 Customers by Revenue',
-            color: '#6b7280',
-            font: { size: 14, weight: '600' }
-          }
-        },
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
-          x: { grid: { display: false } }
-        }
-      }
-    });
-  });
-</script>
-
-{% endblock %}
-'''
-
-NEW_MOBILE_TEMPLATE = '''{% extends "mobile/base.html" %}
-{% load static %}
-{% block title %}Customer Analytics | {{ tenant.name }}{% endblock %}
-{% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  .tabs-bar {
-    display: flex;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.3rem;
-  }
-  .tab-link {
-    flex: 1;
-    text-align: center;
-    padding: 0.4rem 0;
-    border-radius: var(--radius);
-    font-weight: 600;
-    font-size: 0.8rem;
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid transparent;
-    text-decoration: none;
-    transition: 0.2s;
-  }
-  .tab-link.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 2px 8px rgba(230,126,34,0.2);
-  }
-  .tab-link .badge {
-    margin-left: 0.2rem;
-    background: rgba(0,0,0,0.08);
-    border-radius: 30px;
-    padding: 0.05rem 0.4rem;
-    font-size: 0.6rem;
-    font-weight: 600;
-  }
-  .tab-link.active .badge {
-    background: rgba(255,255,255,0.2);
-  }
-
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.6rem;
-    margin-bottom: 1rem;
-  }
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.8rem 0.3rem;
-    text-align: center;
-    box-shadow: var(--shadow);
-  }
-  .kpi-card .number {
-    font-size: 1.2rem;
-    font-weight: 700;
-  }
-  .kpi-card .label {
-    font-size: 0.55rem;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 600;
-  }
-
-  .filter-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.6rem;
-    margin-bottom: 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-  .filter-bar .search-box {
-    flex: 2;
-    min-width: 100px;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: var(--bg);
-    border-radius: 30px;
-    padding: 0.1rem 0.6rem;
-    border: 1px solid var(--border);
-  }
-  .filter-bar .search-box input {
-    border: none;
-    background: transparent;
-    padding: 0.3rem 0;
-    font-size: 0.8rem;
-    width: 100%;
-    outline: none;
-    color: var(--text);
-  }
-  .filter-bar select {
-    padding: 0.2rem 0.5rem;
-    border-radius: 30px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    font-size: 0.7rem;
-    color: var(--text);
-    outline: none;
-  }
-  .filter-bar .btn-apply {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 30px;
-    padding: 0.2rem 0.8rem;
-    font-weight: 600;
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-  .filter-bar .btn-clear {
-    font-size: 0.7rem;
-    color: var(--muted);
-    text-decoration: none;
-    padding: 0.2rem 0.4rem;
-  }
-
-  .chart-container {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 0.6rem;
-    border: 1px solid var(--border);
-    margin-bottom: 1rem;
-  }
-
-  .customer-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem;
-    box-shadow: var(--shadow);
-  }
-  .customer-card .top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .customer-card .name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--text);
-  }
-  .customer-card .phone {
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-  .customer-card .stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.2rem;
-    margin-top: 0.3rem;
-    font-size: 0.7rem;
-  }
-  .customer-card .stats .label {
-    color: var(--muted);
-  }
-  .customer-card .stats .value {
-    font-weight: 600;
-  }
-  .badge-pending {
-    background: #fef3e2;
-    color: #d35400;
-    padding: 0.1rem 0.5rem;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 0.65rem;
-  }
-  .badge-none {
-    background: #e8f8f0;
-    color: #1e7e34;
-    padding: 0.1rem 0.5rem;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 0.65rem;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: var(--muted);
-  }
-  .empty-state i {
-    font-size: 2.5rem;
-    display: block;
-    margin-bottom: 0.3rem;
-    color: var(--border);
-  }
-
-  .pagination-wrap {
-    display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-    gap: 0.2rem;
-    flex-wrap: wrap;
-  }
-  .pagination-wrap a, .pagination-wrap .current {
-    padding: 0.2rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 0.8rem;
-    text-decoration: none;
-    color: var(--text);
-  }
-  .pagination-wrap .current {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-  .pagination-wrap .disabled {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-</style>
-{% endblock %}
-
-{% block body %}
-<h5 class="fw-bold">👥 Customer Analytics</h5>
-
-<!-- Tabs -->
-<div class="tabs-bar">
-  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">
-    Regular <span class="badge">{{ total_customers }}</span>
-  </a>
-  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">
-    Walk‑in <span class="badge">{{ total_customers }}</span>
-  </a>
-</div>
-
-<!-- KPI -->
-<div class="kpi-grid">
-  <div class="kpi-card"><div class="number">{{ total_customers }}</div><div class="label">Customers</div></div>
-  <div class="kpi-card"><div class="number">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Revenue</div></div>
-  <div class="kpi-card"><div class="number">₹{{ total_pending_all|floatformat:0 }}</div><div class="label">Pending</div></div>
-  <div class="kpi-card"><div class="number">₹{{ avg_customer_value|floatformat:2 }}</div><div class="label">Avg Value</div></div>
-  <div class="kpi-card" style="grid-column: span 2;"><div class="number">{{ total_orders_all }}</div><div class="label">Total Orders</div></div>
-</div>
-
-<!-- Chart -->
-<div class="chart-container"><canvas id="customerChart" height="180"></canvas></div>
-
-<!-- Filter -->
-<div class="filter-bar">
-  <form method="get" class="search-box" style="flex:2;">
-    <i class="fas fa-search"></i>
-    <input type="text" name="search" placeholder="Search..." value="{{ search }}">
-    <input type="hidden" name="type" value="{{ customer_type }}">
-    <input type="hidden" name="sort" value="{{ sort }}">
-    <input type="hidden" name="order" value="{{ order }}">
-  </form>
-  <select name="sort" onchange="this.form.submit()" form="filterFormMobile">
-    <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
-    <option value="spent" {% if sort == 'spent' %}selected{% endif %}>Revenue</option>
-    <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Orders</option>
-    <option value="avg" {% if sort == 'avg' %}selected{% endif %}>Avg Order</option>
-    <option value="pending" {% if sort == 'pending' %}selected{% endif %}>Pending</option>
-  </select>
-  <select name="order" onchange="this.form.submit()" form="filterFormMobile">
-    <option value="asc" {% if order == 'asc' %}selected{% endif %}>↑</option>
-    <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓</option>
-  </select>
-  <button type="submit" class="btn-apply" form="filterFormMobile">Go</button>
-  <a href="?type={{ customer_type }}" class="btn-clear">Clear</a>
-  <form id="filterFormMobile" method="get" style="display:none;">
-    <input type="hidden" name="type" value="{{ customer_type }}">
-  </form>
-</div>
-
-<!-- Customer Cards -->
-{% for c in page_obj %}
-<div class="customer-card">
-  <div class="top">
-    <span class="name">{{ c.name }}</span>
-    <span class="phone">{{ c.phone }}</span>
-  </div>
-  <div class="stats">
-    <span class="label">Orders</span><span class="value">{{ c.total_orders }}</span>
-    <span class="label">Revenue</span><span class="value">₹{{ c.total_spent|floatformat:2 }}</span>
-    <span class="label">Avg Order</span><span class="value">₹{{ c.avg_order|floatformat:2 }}</span>
-    <span class="label">Pending</span>
-    <span class="value">
-      {% if c.total_pending > 0 %}
-        <span class="badge-pending">₹{{ c.total_pending|floatformat:2 }}</span>
-      {% else %}
-        <span class="badge-none">No due</span>
-      {% endif %}
-    </span>
-  </div>
-  <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn btn-sm btn-outline-primary w-100 mt-2">
-    <i class="fas fa-user"></i> View Profile
-  </a>
-</div>
-{% empty %}
-<div class="empty-state"><i class="fas fa-users-slash"></i>No customers found.</div>
-{% endfor %}
-
-<!-- Pagination -->
-{% if page_obj.has_other_pages %}
-<div class="pagination-wrap">
-  {% if page_obj.has_previous %}<a href="?page=1&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>{% else %}<span class="disabled">&laquo;</span>{% endif %}
-  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>{% else %}<span class="disabled">‹</span>{% endif %}
-  <span class="current">{{ page_obj.number }}</span>
-  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">›</a>{% else %}<span class="disabled">›</span>{% endif %}
-  {% if page_obj.has_next %}<a href="?page={{ page_obj.paginator.num_pages }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&raquo;</a>{% else %}<span class="disabled">&raquo;</span>{% endif %}
-</div>
-{% endif %}
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('customerChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: {{ chart_labels|safe }},
-        datasets: [{
-          label: 'Revenue (₹)',
-          data: {{ chart_data }},
-          backgroundColor: 'rgba(245,158,11,0.7)',
-          borderColor: '#f59e0b',
-          borderWidth: 2,
-          borderRadius: 4,
+          data: {{ revenue_data }},
+          borderColor: '#e67e22',
+          backgroundColor: 'rgba(230,126,34,0.1)',
+          tension: 0.2,
+          fill: true
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
-          x: { grid: { display: false } }
-        }
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Orders Chart
+    new Chart(document.getElementById('ordersChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ revenue_labels|safe }},
+        datasets: [{
+          label: 'Orders',
+          data: {{ orders_data }},
+          backgroundColor: 'rgba(26,42,58,0.6)',
+          borderColor: 'var(--accent)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, stepSize: 1 } }
+      }
+    });
+
+    // Status Chart
+    new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ status_dist.keys|safe }},
+        datasets: [{
+          data: {{ status_dist.values|safe }},
+          backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+
+    // Payment Status Chart
+    new Chart(document.getElementById('paymentChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ payment_dist.keys|safe }},
+        datasets: [{
+          data: {{ payment_dist.values|safe }},
+          backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+
+    // Top Customers Chart
+    new Chart(document.getElementById('customerChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ top_customer_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ top_customer_data }},
+          backgroundColor: 'rgba(26,42,58,0.7)',
+          borderColor: 'var(--accent)',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Top Categories Chart
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ cat_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ cat_data }},
+          backgroundColor: ['#3498db','#e67e22','#2ecc71','#9b59b6','#f1c40f'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
       }
     });
   });
 </script>
-{% endblock %}
-'''
 
-def backup_file(filepath):
-    if filepath.exists():
-        backup = filepath.with_suffix(filepath.suffix + '.bak')
-        shutil.copy2(filepath, backup)
-        print(f"✅ Backup: {backup.relative_to(PROJECT_ROOT)}")
+{% endblock %}'''
+
+# ----------------------------------------------------------------------
+# PATHS (relative to project root)
+# ----------------------------------------------------------------------
+VIEWS_PATH = Path('reports/views.py')
+TEMPLATE_PATH = Path('reports/templates/desktop/reports_orders.html')
+
+def backup_file(path):
+    """Create a backup copy of the file if it exists."""
+    if path.exists():
+        backup = path.with_suffix(path.suffix + '.bak')
+        shutil.copy2(path, backup)
+        print(f'✅ Backup created: {backup}')
     else:
-        print(f"⚠️ File not found, skipping backup: {filepath.relative_to(PROJECT_ROOT)}")
+        print(f'⚠️  File {path} does not exist, will create new.')
 
-def write_file(filepath, content):
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    with open(filepath, 'w', encoding='utf-8') as f:
+def write_file(path, content):
+    """Write content to file, creating directories if needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"✅ Updated: {filepath.relative_to(PROJECT_ROOT)}")
-
-def patch_views():
-    if not VIEWS_FILE.exists():
-        print("❌ views.py not found.")
-        return
-    backup_file(VIEWS_FILE)
-    with open(VIEWS_FILE, 'r', encoding='utf-8') as f:
-        content = f.read()
-    # Replace the entire customers function
-    pattern = r'(def customers\(request, \*\*kwargs\):.*?)(?=^def |\Z)'
-    import re
-    match = re.search(pattern, content, re.DOTALL | re.MULTILINE)
-    if not match:
-        print("❌ Could not find customers function. Skipping views patch.")
-        return
-    start = match.start()
-    end = match.end()
-    new_content = content[:start] + NEW_VIEWS_CUSTOMERS_FUNCTION + content[end:]
-    write_file(VIEWS_FILE, new_content)
-
-def patch_templates():
-    backup_file(DESKTOP_TEMPLATE)
-    write_file(DESKTOP_TEMPLATE, NEW_DESKTOP_TEMPLATE)
-    backup_file(MOBILE_TEMPLATE)
-    write_file(MOBILE_TEMPLATE, NEW_MOBILE_TEMPLATE)
+    print(f'✅ Written: {path}')
 
 def main():
-    print("🔧 Starting Full Customer Report Mega Patcher...")
-    patch_views()
-    patch_templates()
-    print("\n✅ All done! Now visit: http://localhost:8000/portal/j/reports/customers/")
-    print("💡 Use '?type=regular' or '?type=walkin' to switch tabs (tabs are built in).")
-    print("🎉 Your customer report is now fully mega-depth with regular/walk-in separation.")
+    print('🚀 Starting Orders Report Mega Patcher...\n')
 
-if __name__ == "__main__":
+    # Backup and write views.py
+    backup_file(VIEWS_PATH)
+    write_file(VIEWS_PATH, NEW_VIEWS)
+
+    # Backup and write template
+    backup_file(TEMPLATE_PATH)
+    write_file(TEMPLATE_PATH, NEW_TEMPLATE)
+
+    print('\n✅ Done!')
+    print('📌 Visit /portal/<your-tenant>/reports/orders/ to see the mega report.')
+    print('🔄 If the server is running, changes will reflect after a reload (or restart).')
+    print('📊 Now you have full analytics: All / Regular / Walk‑in tabs, working filters, 6 charts, and a sortable table.')
+
+if __name__ == '__main__':
     main()

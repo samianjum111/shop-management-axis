@@ -25,49 +25,6 @@
     margin-right: 0.5rem;
   }
 
-  /* Customer type tabs */
-  .tabs-bar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 0.3rem;
-  }
-  .tab-link {
-    padding: 0.5rem 1.5rem;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid transparent;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .tab-link:hover {
-    border-color: var(--border);
-    color: var(--text);
-  }
-  .tab-link.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 2px 12px rgba(26,42,58,0.2);
-  }
-  .tab-link .badge {
-    margin-left: 0.4rem;
-    background: rgba(0,0,0,0.08);
-    color: var(--text-secondary);
-    border-radius: 30px;
-    padding: 0.05rem 0.5rem;
-    font-weight: 600;
-    font-size: 0.7rem;
-  }
-  .tab-link.active .badge {
-    background: rgba(255,255,255,0.2);
-    color: #fff;
-  }
-
   /* Filter bar */
   .filter-bar {
     background: var(--surface);
@@ -375,22 +332,8 @@
   <h2><i class="fas fa-clipboard-list"></i> Orders Report</h2>
 </div>
 
-<!-- ===== CUSTOMER TYPE TABS ===== -->
-<div class="tabs-bar">
-  <a href="?customer_type=all{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="tab-link {% if customer_type == 'all' %}active{% endif %}">
-    All <span class="badge">{{ total_orders }}</span>
-  </a>
-  <a href="?customer_type=regular{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">
-    Regular <span class="badge">{{ total_orders }}</span>
-  </a>
-  <a href="?customer_type=walkin{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">
-    Walk‑in <span class="badge">{{ total_orders }}</span>
-  </a>
-</div>
-
 <!-- ===== FILTER BAR ===== -->
 <form method="get" class="filter-bar">
-  <input type="hidden" name="customer_type" value="{{ customer_type }}">
   <div class="form-group">
     <label>From</label>
     <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
@@ -414,7 +357,7 @@
     <input type="text" name="search" class="form-control" placeholder="Customer, phone, order ID..." value="{{ search|default:'' }}">
   </div>
   <button type="submit" class="btn-apply"><i class="fas fa-filter"></i> Apply</button>
-  <a href="?customer_type={{ customer_type }}" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
+  <a href="?" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
 </form>
 
 <!-- ===== KPI CARDS ===== -->
@@ -485,15 +428,15 @@
   <table class="table-premium">
     <thead>
       <tr>
-        <th><a href="?sort=id&order={% if sort == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">ID {% if sort == 'id' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
-        <th><a href="?sort=customer&order={% if sort == 'customer' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Customer {% if sort == 'customer' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=id&order={% if sort == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">ID {% if sort == 'id' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=customer&order={% if sort == 'customer' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Customer {% if sort == 'customer' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
         <th>Phone</th>
-        <th><a href="?sort=total&order={% if sort == 'total' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Total {% if sort == 'total' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
-        <th><a href="?sort=paid&order={% if sort == 'paid' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Paid {% if sort == 'paid' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
-        <th><a href="?sort=remaining&order={% if sort == 'remaining' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Remaining {% if sort == 'remaining' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
-        <th><a href="?sort=status&order={% if sort == 'status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Status {% if sort == 'status' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
-        <th><a href="?sort=payment_status&order={% if sort == 'payment_status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Payment {% if sort == 'payment_status' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
-        <th><a href="?sort=created_at&order={% if sort == 'created_at' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Date {% if sort == 'created_at' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=total&order={% if sort == 'total' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Total {% if sort == 'total' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=paid&order={% if sort == 'paid' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Paid {% if sort == 'paid' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=remaining&order={% if sort == 'remaining' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Remaining {% if sort == 'remaining' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=status&order={% if sort == 'status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Status {% if sort == 'status' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=payment_status&order={% if sort == 'payment_status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Payment {% if sort == 'payment_status' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
+        <th><a href="?sort=created_at&order={% if sort == 'created_at' and order == 'asc' %}desc{% else %}asc{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if page_obj.number %}&page={{ page_obj.number }}{% endif %}">Date {% if sort == 'created_at' %}{% if order == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
         <th>Action</th>
       </tr>
     </thead>
@@ -547,8 +490,8 @@
 <div class="pagination-wrap">
   <div class="step-links">
     {% if page_obj.has_previous %}
-      <a href="?page=1{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo; First</a>
-      <a href="?page={{ page_obj.previous_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Prev</a>
+      <a href="?page=1{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Prev</a>
     {% else %}
       <span class="disabled">&laquo; First</span>
       <span class="disabled">Prev</span>
@@ -557,8 +500,8 @@
     <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Next</a>
-      <a href="?page={{ page_obj.paginator.num_pages }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Last &raquo;</a>
+      <a href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if status and status != 'all' %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Last &raquo;</a>
     {% else %}
       <span class="disabled">Next</span>
       <span class="disabled">Last &raquo;</span>
