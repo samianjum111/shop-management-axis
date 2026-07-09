@@ -467,6 +467,9 @@
     {% if order.status != 'completed' %}
       <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn btn-success btn-sm">✅ Complete</a>
     {% endif %}
+    {% if order.status == 'completed' and order.payment_status == 'partial' %}
+      <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn btn-warning btn-sm">💰 Collect Pending</a>
+    {% endif %}
     {% if order.can_cancel %}
         <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn btn-danger btn-sm" onclick="return confirm(\'Cancel this order?\')">Cancel</a>
     {% endif %}

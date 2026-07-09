@@ -418,45 +418,57 @@
       </div>
     </div>
 
-    <!-- Choice -->
     <form method="post" id="paymentForm">
       {% csrf_token %}
 
-      <div class="choice-group">
-        <div class="choice-btn active" data-choice="full" onclick="selectChoice('full')">
-          <span class="icon"><i class="fas fa-check-circle"></i></span>
-          <span class="label">Full Payment</span>
-        </div>
-        <div class="choice-btn" data-choice="partial" onclick="selectChoice('partial')">
-          <span class="icon"><i class="fas fa-pen"></i></span>
-          <span class="label">Partial Payment</span>
-        </div>
-      </div>
-
-      <!-- Partial section -->
-      <div class="partial-section" id="partialSection">
-        <div class="form-group">
-          <label for="receive_amount">Enter amount to receive</label>
-          <div class="input-wrapper">
-            <span class="currency">₹</span>
-            <input type="number" step="0.01" min="0.01" max="{{ remaining }}" name="receive_amount" id="receive_amount" class="form-control" placeholder="e.g. 250.00">
+      {% if partial %}
+        <!-- If partially paid, show payment choice -->
+        <div class="choice-group">
+          <div class="choice-btn active" data-choice="full" onclick="selectChoice('full')">
+            <span class="icon"><i class="fas fa-check-circle"></i></span>
+            <span class="label">Full Payment</span>
           </div>
-          <span class="hint">Maximum: ₹{{ remaining|floatformat:2 }}</span>
+          <div class="choice-btn" data-choice="partial" onclick="selectChoice('partial')">
+            <span class="icon"><i class="fas fa-pen"></i></span>
+            <span class="label">Partial Payment</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Actions -->
-      <div class="actions">
-        <button type="submit" name="payment_choice" value="full" class="btn-premium-primary" id="fullBtn">
-          <i class="fas fa-check-circle"></i> Complete Order
-        </button>
-        <button type="submit" name="payment_choice" value="partial" class="btn-premium-success" id="partialBtn" style="display:none;">
-          <i class="fas fa-arrow-right"></i> Receive & Complete
-        </button>
-        <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-premium-secondary">
-          <i class="fas fa-times"></i> Cancel
-        </a>
-      </div>
+        <!-- Partial section -->
+        <div class="partial-section" id="partialSection">
+          <div class="form-group">
+            <label for="receive_amount">Enter amount to receive</label>
+            <div class="input-wrapper">
+              <span class="currency">₹</span>
+              <input type="number" step="0.01" min="0.01" max="{{ remaining }}" name="receive_amount" id="receive_amount" class="form-control" placeholder="e.g. 250.00">
+            </div>
+            <span class="hint">Maximum: ₹{{ remaining|floatformat:2 }}</span>
+          </div>
+        </div>
+
+        <!-- Actions for partial -->
+        <div class="actions">
+          <button type="submit" name="payment_choice" value="full" class="btn-premium-primary" id="fullBtn">
+            <i class="fas fa-check-circle"></i> Complete Order
+          </button>
+          <button type="submit" name="payment_choice" value="partial" class="btn-premium-success" id="partialBtn" style="display:none;">
+            <i class="fas fa-arrow-right"></i> Receive & Complete
+          </button>
+          <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-premium-secondary">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      {% else %}
+        <!-- Fully paid: only confirm -->
+        <div class="actions">
+          <button type="submit" name="payment_choice" value="full" class="btn-premium-primary">
+            <i class="fas fa-check-circle"></i> Confirm Completion
+          </button>
+          <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn-premium-secondary">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      {% endif %}
     </form>
   </div>
 </div>
@@ -472,15 +484,15 @@
 
     if (choice === 'full') {
       document.querySelector('.choice-btn[data-choice="full"]').classList.add('active');
-      fullBtn.style.display = 'inline-flex';
-      partialBtn.style.display = 'none';
-      partialSection.classList.remove('visible');
+      if (fullBtn) fullBtn.style.display = 'inline-flex';
+      if (partialBtn) partialBtn.style.display = 'none';
+      if (partialSection) partialSection.classList.remove('visible');
       document.getElementById('receive_amount').required = false;
     } else {
       document.querySelector('.choice-btn[data-choice="partial"]').classList.add('active');
-      fullBtn.style.display = 'none';
-      partialBtn.style.display = 'inline-flex';
-      partialSection.classList.add('visible');
+      if (fullBtn) fullBtn.style.display = 'none';
+      if (partialBtn) partialBtn.style.display = 'inline-flex';
+      if (partialSection) partialSection.classList.add('visible');
       document.getElementById('receive_amount').required = true;
       const max = {{ remaining|floatformat:2 }};
       document.getElementById('receive_amount').max = max;
@@ -488,7 +500,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    selectChoice('full');
+    {% if partial %}
+      selectChoice('full');
+    {% endif %}
   });
 </script>
 

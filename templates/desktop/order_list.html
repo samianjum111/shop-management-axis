@@ -307,6 +307,10 @@
             <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn-sm-premium btn-sm-primary">
               <i class="fas fa-check-circle"></i> Complete
             </a>
+          {% elif o.status == 'completed' and o.payment_status == 'partial' %}
+            <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn-sm-premium" style="background:#ffc107;color:#212529;">
+              <i class="fas fa-hand-holding-usd"></i> Collect Pending
+            </a>
           {% else %}
             <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn-sm-premium btn-sm-secondary">
               <i class="fas fa-eye"></i> View

@@ -773,42 +773,17 @@ def add_customer_from_order(request, order_id, **kwargs):
 
 @login_required
 def complete_order_action(request, order_id, **kwargs):
-    """Handle completion from pending list with confirmation and partial handling."""
+    """Unified completion: handles full and partial payments on one page."""
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
+
     if order.status == 'completed':
         messages.info(request, f"Order #{order.id} is already completed.")
         return redirect('chakki_home', schema_name=request.tenant.schema_name)
 
-    # If fully paid, show confirmation page
-    if order.remaining_amount == 0:
-        if request.method == 'POST':
-            order.status = 'completed'
-            order.completed_at = timezone.now()
-            order.save()
-            messages.success(request, f"Order #{order.id} Completed!")
-            return redirect('chakki_home', schema_name=request.tenant.schema_name)
-        # GET: show confirmation template
-        context = {'order': order, 'tenant': request.tenant, 'partial': False}
-        template = 'mobile/order_complete_confirm.html' if request.mobile else 'desktop/order_complete_confirm.html'
-        return render(request, template, context)
-
-    # Partial payment: redirect to completion page with options
-    return redirect('order_complete_partial', schema_name=request.tenant.schema_name, order_id=order.id)
-
-@login_required
-def order_complete_partial(request, order_id, **kwargs):
-    """Page for partial paid orders to choose payment and complete."""
-    order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
-    if order.status == 'completed':
-        messages.info(request, "Order already completed.")
-        return redirect('chakki_home', schema_name=request.tenant.schema_name)
-    if order.remaining_amount == 0:
-        return redirect('complete_order_action', schema_name=request.tenant.schema_name, order_id=order.id)
-
     if request.method == 'POST':
-        payment_choice = request.POST.get('payment_choice')  # 'full' or 'partial'
+        payment_choice = request.POST.get('payment_choice')
         if payment_choice == 'full':
-            # Pay full remaining
+            # Pay remaining in full
             order.amount_paid = order.total_amount
             order.status = 'completed'
             order.completed_at = timezone.now()
@@ -823,24 +798,33 @@ def order_complete_partial(request, order_id, **kwargs):
                 if new_paid > order.total_amount:
                     new_paid = order.total_amount
                 order.amount_paid = new_paid
-                # Complete order regardless of full payment
                 order.status = 'completed'
                 order.completed_at = timezone.now()
                 order.save()
-                messages.success(request, f"Order #{order.id} completed. Received ₹{receive_amount:.2f}. Remaining balance: ₹{order.remaining_amount:.2f}")
+                messages.success(request,
+                    f"Order #{order.id} completed. Received ₹{receive_amount:.2f}. "
+                    f"Remaining balance: ₹{order.remaining_amount:.2f}")
                 return redirect('chakki_home', schema_name=request.tenant.schema_name)
             else:
                 messages.error(request, "Please enter a valid amount to receive.")
         else:
             messages.error(request, "Invalid payment choice.")
+        # If error, re‑render the page with messages
 
+    # GET or after POST error: show the confirmation page with payment options if partial
     context = {
         'order': order,
-        'remaining': order.remaining_amount,
         'tenant': request.tenant,
+        'partial': order.remaining_amount > 0,   # flag for template
+        'remaining': order.remaining_amount,
     }
-    template = 'mobile/order_complete_partial.html' if request.mobile else 'desktop/order_complete_partial.html'
+    template = 'mobile/order_complete_confirm.html' if request.mobile else 'desktop/order_complete_confirm.html'
     return render(request, template, context)
+
+@login_required
+def order_complete_partial(request, order_id, **kwargs):
+    """Redirect to the unified complete_action."""
+    return redirect('complete_order_action', schema_name=request.tenant.schema_name, order_id=order_id)
 
 @login_required
 def walk_profile(request, **kwargs):
