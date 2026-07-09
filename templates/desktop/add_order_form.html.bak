@@ -1,0 +1,1129 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}{% if customer %}Order for {{ customer.name }}{% else %}New Order{% endif %} | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ===== Premium Add Order Form Styles ===== */
+
+  /* Page Header */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .page-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .page-header h2 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .page-header .sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .btn-back {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.4rem 1.4rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+  }
+  .btn-back:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  /* Form Card */
+  .form-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    padding: 2rem 2rem 1.8rem;
+    transition: 0.25s;
+  }
+  .form-card:hover {
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+  }
+
+  .form-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  .form-section-title i {
+    margin-right: 0.4rem;
+    color: var(--accent);
+  }
+
+  /* Customer Summary */
+  .customer-summary {
+    background: var(--bg);
+    border-radius: 16px;
+    border-left: 4px solid var(--accent);
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem 2rem;
+  }
+  .customer-summary .name {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--text);
+  }
+  .customer-summary .name i {
+    color: var(--accent);
+    margin-right: 0.3rem;
+  }
+  .customer-summary .phone {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  .customer-summary .phone i {
+    margin-right: 0.3rem;
+    color: var(--muted);
+  }
+  .customer-summary .address {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+  .customer-summary .address i {
+    margin-right: 0.3rem;
+    color: var(--muted);
+  }
+  .customer-summary .pending {
+    color: #d35400;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-left: auto;
+    background: #fef3e2;
+    padding: 0.2rem 1rem;
+    border-radius: 30px;
+  }
+  .customer-summary .pending i {
+    margin-right: 0.3rem;
+  }
+
+  /* Form Groups */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .form-group label .required {
+    color: #e74c3c;
+    margin-left: 0.2rem;
+  }
+  .form-group .input-wrap {
+    position: relative;
+  }
+  .form-group .input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.95rem;
+    z-index: 2;
+    transition: 0.2s;
+  }
+  .form-group .input-wrap input,
+  .form-group .input-wrap select,
+  .form-group .input-wrap textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem 0.6rem 2.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .form-group .input-wrap input:focus,
+  .form-group .input-wrap select:focus,
+  .form-group .input-wrap textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    background: var(--surface);
+  }
+  .form-group .input-wrap input::placeholder,
+  .form-group .input-wrap textarea::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .form-group .input-wrap textarea {
+    padding-left: 2.6rem;
+    min-height: 60px;
+    resize: vertical;
+  }
+  .form-group .input-wrap select {
+    appearance: none;
+    padding-right: 2.4rem;
+    cursor: pointer;
+  }
+  .form-group .input-wrap select + i.fa-chevron-down {
+    right: 14px;
+    left: auto;
+    pointer-events: none;
+  }
+
+  /* Items Section */
+  .items-section {
+    margin-top: 1.8rem;
+  }
+  .items-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+  .items-header h5 {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin: 0;
+  }
+  .items-header h5 i {
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .items-header .btn-add-item {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.3rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: 0.2s;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .items-header .btn-add-item:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .item-row {
+    background: var(--bg);
+    border-radius: 14px;
+    padding: 0.8rem 0.8rem;
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--border);
+    transition: 0.2s;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .item-row:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .item-row .col-field {
+    flex: 1;
+    min-width: 100px;
+  }
+  .item-row .col-field-sm {
+    flex: 0 0 80px;
+  }
+  .item-row .col-field-xs {
+    flex: 0 0 50px;
+  }
+  .item-row .col-field .form-select,
+  .item-row .col-field .form-control {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    transition: 0.2s;
+    width: 100%;
+  }
+  .item-row .col-field .form-select:focus,
+  .item-row .col-field .form-control:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,42,58,0.06);
+  }
+  .item-row .col-field .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+  }
+  .item-row .col-field .form-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .item-row .col-field .form-check label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin: 0;
+  }
+  .item-row .btn-remove-item {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    transition: 0.2s;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .item-row .btn-remove-item:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  /* Payment Section */
+  .payment-section {
+    margin-top: 1.8rem;
+  }
+  .payment-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .payment-toggle .btn-option {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  .payment-toggle .btn-option:hover {
+    border-color: var(--muted);
+  }
+  .payment-toggle .btn-option.active {
+    border-color: var(--accent);
+    background: var(--accent-light, #f0f4f8);
+    color: var(--accent);
+  }
+  .payment-toggle .btn-option i {
+    margin-right: 0.3rem;
+  }
+  .amount-input {
+    display: none;
+    margin-top: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .amount-input.show {
+    display: block;
+  }
+  .amount-input label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .amount-input .input-wrap {
+    position: relative;
+  }
+  .amount-input .input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+  }
+  .amount-input .input-wrap input {
+    width: 100%;
+    padding: 0.5rem 0.8rem 0.5rem 2.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: 0.2s;
+    outline: none;
+  }
+  .amount-input .input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
+  }
+  .amount-input .remaining-display {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    font-weight: 500;
+  }
+  .amount-input .remaining-display strong {
+    color: var(--accent);
+  }
+
+  /* Totals */
+  .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0 1rem;
+  }
+  .total-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.8rem 0.5rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: 0.2s;
+  }
+  .total-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+  .total-card .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .total-card .value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 0.1rem;
+  }
+  .total-card .value.grinding { color: #2e7d32; }
+  .total-card .value.cleaning { color: #0d47a1; }
+  .total-card .value.selling { color: #e65100; }
+  .total-card .value.grand { color: var(--accent); }
+
+  .pending-row {
+    background: #fef3e2;
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #7a4a00;
+    margin-bottom: 1rem;
+  }
+  .pending-row span:last-child {
+    color: #d35400;
+  }
+
+  /* Actions */
+  .form-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-preview {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.6rem 2.2rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(26,42,58,0.15);
+  }
+  .btn-preview:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(26,42,58,0.2);
+  }
+  .btn-preview i {
+    font-size: 1rem;
+  }
+  .btn-cancel {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .btn-cancel:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  /* Modal */
+  .modal-content {
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+  }
+  .modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .totals-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .form-card { padding: 1.2rem; }
+    .page-header h2 { font-size: 1.4rem; }
+    .customer-summary { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+    .customer-summary .pending { margin-left: 0; align-self: flex-start; }
+    .item-row { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+    .item-row .col-field { min-width: 100%; }
+    .item-row .col-field-sm { flex: 1; }
+    .item-row .col-field-xs { flex: 1; }
+    .totals-grid { grid-template-columns: 1fr 1fr; }
+    .payment-toggle { flex-direction: column; }
+    .form-actions { flex-direction: column; }
+    .btn-preview, .btn-cancel { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 576px) {
+    .form-card { padding: 1rem; border-radius: 14px; }
+    .totals-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ====== PAGE HEADER ====== -->
+<div class="page-header">
+  <div>
+    <h2><i class="fas fa-plus-circle"></i> {% if customer %}Order for {{ customer.name }}{% else %}New Order{% endif %}</h2>
+    <p class="sub">{% if customer %}Create a new order for this customer{% else %}Walk‑in customer order{% endif %}</p>
+  </div>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Back
+  </a>
+</div>
+
+<!-- ====== FORM CARD ====== -->
+<div class="form-card">
+  <form method="post" id="orderForm">
+    <div id="formErrors" class="alert alert-danger" style="display:none; border-radius:12px;"></div>
+    {% csrf_token %}
+    <input type="hidden" name="customer_id" value="{{ customer.id|default:'' }}">
+    <input type="hidden" name="walkin" value="{% if walkin %}1{% else %}0{% endif %}">
+
+    <!-- ====== CUSTOMER DETAILS ====== -->
+    {% if customer %}
+      <div class="customer-summary">
+        <span class="name"><i class="fas fa-user-circle"></i> {{ customer.name }}</span>
+        <span class="phone"><i class="fas fa-phone"></i> {{ customer.phone|default:"No phone" }}</span>
+        <span class="address"><i class="fas fa-map-marker-alt"></i> {{ customer.address|default:"No address" }}</span>
+        <span class="pending"><i class="fas fa-clock"></i> ₹{{ customer.total_pending|floatformat:2 }} pending</span>
+      </div>
+    {% else %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Name <span class="required">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-user"></i>
+              <input type="text" name="name" id="walkin_name" placeholder="Customer name" required>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Phone <span class="required">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-phone"></i>
+              <input type="text" name="phone" id="walkin_phone" placeholder="Phone number" required>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="form-group">
+            <label>Address</label>
+            <div class="input-wrap">
+              <i class="fas fa-map-marker-alt" style="top:18px; transform:none;"></i>
+              <textarea name="address" id="walkin_address" rows="2" placeholder="Customer address (optional)"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- ====== READY TIME ====== -->
+    <div class="row g-3 mt-2">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Ready in <span class="required">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-clock"></i>
+            <input type="number" name="time_value" placeholder="e.g. 2" value="1" required>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div class="input-wrap">
+            <i class="fas fa-calendar-alt"></i>
+            <select name="time_type">
+              <option value="minutes">Minutes</option>
+              <option value="hours" selected>Hours</option>
+              <option value="days">Days</option>
+            </select>
+            <i class="fas fa-chevron-down" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== ITEMS SECTION ====== -->
+    <div class="items-section">
+      <div class="items-header">
+        <h5><i class="fas fa-list"></i> Order Items</h5>
+        <button type="button" class="btn-add-item" id="addItemBtn">
+          <i class="fas fa-plus"></i> Add Item
+        </button>
+      </div>
+
+      <div id="itemsContainer">
+        <!-- Item row 1 (dynamic) -->
+        <div class="item-row" id="itemRow1">
+          <div class="col-field" style="flex:0 0 120px;">
+            <select name="item_type_1" class="form-select item-type-select">
+              <option value="grinding">Grinding</option>
+              <option value="selling">Selling</option>
+            </select>
+          </div>
+
+          <!-- Grinding fields -->
+          <div class="col-field grinding-fields" style="flex:1;">
+            <select name="category_1" class="form-select category-select">
+              <option value="">Select Grinding Category</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-field grinding-fields" style="flex:0 0 90px;">
+            <input type="number" name="total_kg_1" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+          </div>
+          <div class="col-field grinding-fields" style="flex:0 0 100px;">
+            <div class="form-check">
+              <input type="checkbox" name="cleaning_1" value="on" id="cleaning_1">
+              <label for="cleaning_1">Cleaning</label>
+            </div>
+          </div>
+
+          <!-- Selling fields -->
+          <div class="col-field selling-fields" style="display:none; flex:1;">
+            <select name="selling_category_1" class="form-select selling-category-select">
+              <option value="">Select Selling Category</option>
+              {% for cat in selling_categories %}
+              <option value="{{ cat.id }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-field selling-fields" style="display:none; flex:1;">
+            <select name="selling_price_1" class="form-select selling-price-select">
+              <option value="">Select Measurement</option>
+            </select>
+          </div>
+          <div class="col-field selling-fields" style="display:none; flex:0 0 90px;">
+            <input type="number" name="quantity_1" class="form-control quantity" step="0.1" placeholder="Qty" value="0">
+          </div>
+
+          <!-- Remove button -->
+          <div style="flex:0 0 40px;">
+            <button type="button" class="btn-remove-item remove-item" title="Remove item">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAYMENT TYPE ====== -->
+    <div class="payment-section">
+      <label class="fw-bold" style="font-size:0.95rem; display:block; margin-bottom:0.4rem;">Payment Type</label>
+      <div class="payment-toggle">
+        <div class="btn-option active" data-value="full" onclick="setPayment('full')">
+          <i class="fas fa-check-circle"></i> Full Payment
+        </div>
+        <div class="btn-option" data-value="partial" onclick="setPayment('partial')">
+          <i class="fas fa-hand-holding-usd"></i> Partial Payment
+        </div>
+      </div>
+      <input type="hidden" name="payment_type" id="payment_type" value="full">
+
+      <div class="amount-input" id="partial_amount_div">
+        <label>Amount Received (₹)</label>
+        <div class="input-wrap">
+          <i class="fas fa-rupee-sign"></i>
+          <input type="number" name="payment_amount" id="payment_amount" step="0.01" value="0">
+        </div>
+        <div class="remaining-display" id="remaining_display">Remaining: <strong>₹0.00</strong></div>
+      </div>
+    </div>
+
+    <!-- ====== TOTALS ====== -->
+    <div class="totals-grid">
+      <div class="total-card">
+        <div class="label">Grinding</div>
+        <div class="value grinding" id="total_grinding_display">₹0.00</div>
+      </div>
+      <div class="total-card">
+        <div class="label">Cleaning</div>
+        <div class="value cleaning" id="total_cleaning_display">₹0.00</div>
+      </div>
+      <div class="total-card">
+        <div class="label">Selling</div>
+        <div class="value selling" id="total_selling_display">₹0.00</div>
+      </div>
+      <div class="total-card">
+        <div class="label">Grand Total</div>
+        <div class="value grand" id="grand_total_display">₹0.00</div>
+      </div>
+    </div>
+
+    {% if customer and customer.total_pending > 0 %}
+    <div class="pending-row">
+      <span>Customer Pending Balance</span>
+      <span>₹{{ customer.total_pending|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+
+    <!-- ====== ACTIONS ====== -->
+    <div class="form-actions">
+      <button type="button" class="btn-preview" id="previewBtn">
+        <i class="fas fa-eye"></i> Preview & Confirm
+      </button>
+      <button type="button" class="btn-cancel" onclick="window.location.href='/portal/{{ tenant.schema_name }}/chakki/'">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </div>
+
+    <input type="hidden" name="item_count" id="item_count" value="1">
+  </form>
+</div>
+
+<!-- ====== CONFIRMATION MODAL ====== -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-check-circle" style="color:var(--accent);"></i> Confirm Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Filled by JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmit" style="background:var(--accent); border:none; border-radius:40px; padding:0.5rem 2rem; font-weight:700;">
+          <i class="fas fa-check"></i> Confirm Order
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ====== Payment toggle ======
+  function setPayment(val) {
+    document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.payment-toggle .btn-option[data-value="${val}"]`).classList.add('active');
+    document.getElementById('payment_type').value = val;
+    var div = document.getElementById('partial_amount_div');
+    var amountInput = document.getElementById('payment_amount');
+    if (val === 'partial') {
+      div.classList.add('show');
+      if (amountInput) amountInput.setAttribute('required', 'required');
+    } else {
+      div.classList.remove('show');
+      if (amountInput) amountInput.removeAttribute('required');
+    }
+    if (typeof updateRemaining === 'function') updateRemaining();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setPayment('full');
+
+    var amountInput = document.getElementById('payment_amount');
+    if (amountInput) {
+      amountInput.addEventListener('input', function() {
+        if (typeof updateRemaining === 'function') updateRemaining();
+      });
+    }
+
+    // ====== Main logic ======
+    let itemCount = 1;
+    const container = document.getElementById('itemsContainer');
+    const addBtn = document.getElementById('addItemBtn');
+    const totalGrindingDisplay = document.getElementById('total_grinding_display');
+    const totalCleaningDisplay = document.getElementById('total_cleaning_display');
+    const totalSellingDisplay = document.getElementById('total_selling_display');
+    const grandTotalDisplay = document.getElementById('grand_total_display');
+    const previewBtn = document.getElementById('previewBtn');
+    const modalBody = document.getElementById('modalBody');
+    const confirmSubmit = document.getElementById('confirmSubmit');
+    const itemCountInput = document.getElementById('item_count');
+
+    function updateTotals() {
+      let totalGrinding = 0, totalCleaning = 0, totalSelling = 0;
+      document.querySelectorAll('.item-row').forEach(row => {
+        const itemType = row.querySelector('.item-type-select').value;
+        if (itemType === 'grinding') {
+          const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+          const cleaning = row.querySelector('input[type="checkbox"]').checked;
+          const catSelect = row.querySelector('.category-select');
+          const selectedOption = catSelect.options[catSelect.selectedIndex];
+          const grindRate = parseFloat(selectedOption.getAttribute('data-grind-rate')) || 0;
+          const cleanRate = parseFloat(selectedOption.getAttribute('data-clean-rate')) || 0;
+          totalGrinding += kg * grindRate;
+          if (cleaning) totalCleaning += kg * cleanRate;
+        } else if (itemType === 'selling') {
+          const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+          const priceSelect = row.querySelector('.selling-price-select');
+          const price = parseFloat(priceSelect.options[priceSelect.selectedIndex]?.getAttribute('data-price')) || 0;
+          totalSelling += qty * price;
+        }
+      });
+      const grandTotal = totalGrinding + totalCleaning + totalSelling;
+      totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
+      totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
+      totalSellingDisplay.textContent = '₹' + totalSelling.toFixed(2);
+      grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+      window._totals = { grinding: totalGrinding, cleaning: totalCleaning, selling: totalSelling, grand: grandTotal };
+      updateRemaining();
+    }
+
+    function updateRemaining() {
+      const grand = window._totals ? window._totals.grand : 0;
+      const paid = parseFloat(document.getElementById('payment_amount')?.value) || 0;
+      const remaining = Math.max(0, grand - paid);
+      const display = document.getElementById('remaining_display');
+      if (display) display.innerHTML = 'Remaining: <strong>₹' + remaining.toFixed(2) + '</strong>';
+    }
+
+    function fetchPrices(selectEl) {
+      const catId = selectEl.value;
+      const row = selectEl.closest('.item-row');
+      const priceSelect = row.querySelector('.selling-price-select');
+      priceSelect.innerHTML = '<option value="">Select Measurement</option>';
+      if (catId) {
+        fetch(`/portal/{{ tenant.schema_name }}/chakki/api/selling-prices/?category=${catId}`)
+          .then(response => response.json())
+          .then(data => {
+            data.forEach(item => {
+              const opt = document.createElement('option');
+              opt.value = item.id;
+              opt.textContent = item.measurement + ' - ₹' + item.price + ' (Stock: ' + item.stock + ')';
+              opt.setAttribute('data-price', item.price);
+              opt.setAttribute('data-stock', item.stock);
+              opt.setAttribute('data-measurement', item.measurement);
+              priceSelect.appendChild(opt);
+            });
+          })
+          .catch(err => console.error(err));
+      }
+    }
+
+    function toggleFields(row) {
+      const type = row.querySelector('.item-type-select').value;
+      const grindingFields = row.querySelectorAll('.grinding-fields');
+      const sellingFields = row.querySelectorAll('.selling-fields');
+      if (type === 'grinding') {
+        grindingFields.forEach(el => el.style.display = '');
+        sellingFields.forEach(el => el.style.display = 'none');
+      } else {
+        grindingFields.forEach(el => el.style.display = 'none');
+        sellingFields.forEach(el => el.style.display = '');
+      }
+      updateTotals();
+    }
+
+    function addItemRow() {
+      itemCount++;
+      const newRow = document.createElement('div');
+      newRow.className = 'item-row';
+      newRow.innerHTML = `
+        <div class="col-field" style="flex:0 0 120px;">
+          <select name="item_type_${itemCount}" class="form-select item-type-select">
+            <option value="grinding">Grinding</option>
+            <option value="selling">Selling</option>
+          </select>
+        </div>
+        <div class="col-field grinding-fields" style="flex:1;">
+          <select name="category_${itemCount}" class="form-select category-select">
+            <option value="">Select Grinding Category</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-field grinding-fields" style="flex:0 0 90px;">
+          <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
+        </div>
+        <div class="col-field grinding-fields" style="flex:0 0 100px;">
+          <div class="form-check">
+            <input type="checkbox" name="cleaning_${itemCount}" value="on" id="cleaning_${itemCount}">
+            <label for="cleaning_${itemCount}">Cleaning</label>
+          </div>
+        </div>
+        <div class="col-field selling-fields" style="display:none; flex:1;">
+          <select name="selling_category_${itemCount}" class="form-select selling-category-select">
+            <option value="">Select Selling Category</option>
+            {% for cat in selling_categories %}
+            <option value="{{ cat.id }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-field selling-fields" style="display:none; flex:1;">
+          <select name="selling_price_${itemCount}" class="form-select selling-price-select">
+            <option value="">Select Measurement</option>
+          </select>
+        </div>
+        <div class="col-field selling-fields" style="display:none; flex:0 0 90px;">
+          <input type="number" name="quantity_${itemCount}" class="form-control quantity" step="0.1" placeholder="Qty" value="0">
+        </div>
+        <div style="flex:0 0 40px;">
+          <button type="button" class="btn-remove-item remove-item" title="Remove item">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(newRow);
+      itemCountInput.value = itemCount;
+
+      // Bind events
+      newRow.querySelector('.item-type-select').addEventListener('change', function() { toggleFields(newRow); });
+      newRow.querySelector('.selling-category-select').addEventListener('change', function() { fetchPrices(this); });
+      newRow.querySelectorAll('.total-kg, .quantity, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
+      newRow.querySelector('.remove-item').addEventListener('click', function() {
+        if (container.children.length > 1) {
+          newRow.remove();
+          itemCount--;
+          itemCountInput.value = itemCount;
+          updateTotals();
+        }
+      });
+      toggleFields(newRow);
+      updateTotals();
+    }
+
+    // Initial event binding for existing rows
+    document.querySelectorAll('.item-row').forEach(row => {
+      row.querySelector('.item-type-select').addEventListener('change', function() { toggleFields(row); });
+      row.querySelector('.selling-category-select').addEventListener('change', function() { fetchPrices(this); });
+      row.querySelectorAll('.total-kg, .quantity, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
+      row.querySelector('.remove-item').addEventListener('click', function() {
+        if (document.querySelectorAll('.item-row').length > 1) {
+          row.remove();
+          itemCount--;
+          itemCountInput.value = itemCount;
+          updateTotals();
+        }
+      });
+      toggleFields(row);
+    });
+
+    addBtn.addEventListener('click', addItemRow);
+    document.getElementById('payment_amount')?.addEventListener('input', updateRemaining);
+
+    // Preview & Confirm
+    previewBtn.addEventListener('click', function() {
+      if (!validateOrder()) return;
+      const totals = window._totals || { grand: 0 };
+      const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
+      let itemsHtml = '';
+      document.querySelectorAll('.item-row').forEach(row => {
+        const type = row.querySelector('.item-type-select').value;
+        if (type === 'grinding') {
+          const cat = row.querySelector('.category-select').options[row.querySelector('.category-select').selectedIndex]?.text || 'N/A';
+          const kg = row.querySelector('.total-kg').value || 0;
+          const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
+          itemsHtml += `<p><strong>${cat}</strong> (Grinding) - ${kg}kg, Cleaning: ${cleaning}</p>`;
+        } else {
+          const cat = row.querySelector('.selling-category-select').options[row.querySelector('.selling-category-select').selectedIndex]?.text || 'N/A';
+          const meas = row.querySelector('.selling-price-select').options[row.querySelector('.selling-price-select').selectedIndex]?.text || 'N/A';
+          const qty = row.querySelector('.quantity').value || 0;
+          itemsHtml += `<p><strong>${cat}</strong> (Selling) - ${qty} ${meas}</p>`;
+        }
+      });
+      const paymentType = document.getElementById('payment_type').value;
+      let paymentAmount = 0;
+      if (paymentType === 'partial') {
+        paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
+      } else {
+        paymentAmount = totals.grand;
+      }
+      modalBody.innerHTML = `
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Customer:</strong> ${customerName}</p>
+            <p><strong>Payment Type:</strong> ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</p>
+            <p><strong>Amount Paid:</strong> ₹${paymentAmount.toFixed(2)}</p>
+            <p><strong>Remaining:</strong> ₹${(totals.grand - paymentAmount).toFixed(2)}</p>
+          </div>
+          <div class="col-md-6">
+            <h6>Items:</h6>
+            ${itemsHtml}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-md-3"><strong>Grinding:</strong> ₹${totals.grinding.toFixed(2)}</div>
+          <div class="col-md-3"><strong>Cleaning:</strong> ₹${totals.cleaning.toFixed(2)}</div>
+          <div class="col-md-3"><strong>Selling:</strong> ₹${totals.selling.toFixed(2)}</div>
+          <div class="col-md-3"><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</div>
+        </div>
+      `;
+      var modalEl = document.getElementById('confirmModal');
+      if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+          var modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        } else {
+          modalEl.style.display = 'block';
+          modalEl.classList.add('show');
+          document.body.classList.add('modal-open');
+          if (!document.querySelector('.modal-backdrop')) {
+            var backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+          }
+        }
+      }
+    });
+
+    confirmSubmit.addEventListener('click', function() {
+      document.getElementById('orderForm').submit();
+    });
+
+    // Validation
+    function validateOrder() {
+      let errors = [];
+      const customerId = document.querySelector('input[name="customer_id"]')?.value;
+      if (!customerId) {
+        const name = document.querySelector('input[name="name"]')?.value.trim();
+        if (!name) errors.push('Name is required for walk-in customer.');
+      }
+      const paymentType = document.getElementById('payment_type').value;
+      if (paymentType === 'partial') {
+        const phone = document.getElementById('walkin_phone')?.value.trim();
+        if (!phone) errors.push('Phone is required for partial payment.');
+      }
+      let hasItem = false;
+      document.querySelectorAll('.item-row').forEach(row => {
+        const type = row.querySelector('.item-type-select').value;
+        if (type === 'grinding') {
+          const cat = row.querySelector('.category-select').value;
+          const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
+          if (cat && kg > 0) hasItem = true;
+        } else {
+          const price = row.querySelector('.selling-price-select').value;
+          const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+          if (price && qty > 0) hasItem = true;
+        }
+      });
+
+      // Stock check for selling items
+      document.querySelectorAll('.item-row').forEach(row => {
+        const itemType = row.querySelector('.item-type-select').value;
+        if (itemType === 'selling') {
+          const priceSelect = row.querySelector('.selling-price-select');
+          const selectedOption = priceSelect.options[priceSelect.selectedIndex];
+          if (selectedOption && selectedOption.value) {
+            const stock = parseFloat(selectedOption.getAttribute('data-stock')) || 0;
+            const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+            if (qty > stock) {
+              const categorySelect = row.querySelector('.selling-category-select');
+              const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || 'Unknown';
+              const measurement = selectedOption.getAttribute('data-measurement') || '';
+              errors.push(`Insufficient stock for "${categoryName}". Available: ${stock} ${measurement}`);
+            }
+          }
+        }
+      });
+
+      if (!hasItem) errors.push('Please add at least one valid item.');
+      const errorDiv = document.getElementById('formErrors');
+      if (errors.length > 0) {
+        errorDiv.style.display = 'block';
+        errorDiv.innerHTML = errors.join('<br>');
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      } else {
+        errorDiv.style.display = 'none';
+        return true;
+      }
+    }
+
+    updateTotals();
+  });
+</script>
+
+{% endblock %}
