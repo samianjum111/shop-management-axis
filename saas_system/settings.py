@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'core',
     'chakki',
     'expenses',
+    'reports',
 ]
 
 MIDDLEWARE = [
