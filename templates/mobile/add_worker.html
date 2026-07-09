@@ -1,64 +1,253 @@
 {% extends "mobile/base.html" %}
 {% block title %}Add Worker | {{ tenant.name }}{% endblock %}
-{% block body %}
-<h5 class="fw-bold">Add Worker</h5>
-<form method="post">
-    {% csrf_token %}
-    <div class="form-group">
-        <label>Name *</label>
-        <input type="text" name="name" class="form-control" value="{{ name|default:"" }}" required>
-    </div>
-    <div class="form-group">
-        <label>Father Name</label>
-        <input type="text" name="father_name" class="form-control" value="{{ father_name|default:"" }}">
-    </div>
-    <div class="form-group">
-        <label>CNIC</label>
-        <input type="text" name="cnic" class="form-control" value="{{ cnic|default:"" }}">
-    </div>
-    <div class="form-group">
-        <label>Phone</label>
-        <input type="text" name="phone" class="form-control" value="{{ phone|default:"" }}">
-    </div>
-    <div class="form-group">
-        <label>Address</label>
-        <textarea name="address" class="form-control">{{ address|default:"" }}</textarea>
-    </div>
-    <div class="form-group">
-        <label>Category</label>
-        <select name="category" class="form-control">
-            <option value="">None</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if category_id|add:"0" == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
+{% block extra_head %}
+<style>
+    /* ===== Premium Add Worker ===== */
+    .page-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .page-title i {
+        color: var(--accent);
+    }
 
-    <div class="form-group">
-        <label>Joining Date</label>
-        <input type="date" name="joining_date" class="form-control" value="{% if joining_date %}{{ joining_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
-    </div>
-    
-    <div class="form-group">
-        <label>Status</label>
-        <select name="status" class="form-control">
-            <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
-            <option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspended</option>
-            <option value="resigned" {% if status == "resigned" %}selected{% endif %}>Resigned</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>Salary Type</label>
-        <select name="salary_type" class="form-control">
-            <option value="daily" {% if salary_type == "daily" %}selected{% endif %}>Daily</option>
-            <option value="monthly" {% if salary_type == "monthly" %}selected{% endif %}>Monthly</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>Salary Amount</label>
-        <input type="number" name="salary_amount" step="0.01" class="form-control" value="{{ salary_amount|default:"" }}">
-    </div>
-    
-    <button type="submit" class="btn btn-primary-custom w-100">Save</button>
-</form>
+    .form-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.2rem;
+        box-shadow: var(--shadow);
+        margin-top: 0.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .form-group label {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        display: block;
+        margin-bottom: 0.2rem;
+    }
+    .form-group label .required {
+        color: #dc3545;
+        margin-left: 0.2rem;
+    }
+    .form-group .input-wrap {
+        position: relative;
+    }
+    .form-group .input-wrap i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 0.9rem;
+        z-index: 2;
+        transition: color 0.2s;
+    }
+    .form-group .input-wrap textarea + i {
+        top: 16px;
+        transform: none;
+    }
+    .form-group .input-wrap input,
+    .form-group .input-wrap select,
+    .form-group .input-wrap textarea {
+        width: 100%;
+        padding: 0.5rem 0.7rem 0.5rem 2.2rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.9rem;
+        transition: 0.2s;
+        outline: none;
+    }
+    .form-group .input-wrap input:focus,
+    .form-group .input-wrap select:focus,
+    .form-group .input-wrap textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(230,126,34,0.1);
+    }
+    .form-group .input-wrap textarea {
+        padding-left: 2.2rem;
+        min-height: 60px;
+        resize: vertical;
+    }
+    .form-group .input-wrap select {
+        appearance: none;
+        padding-right: 2rem;
+    }
+    .form-group .input-wrap select + i.fa-chevron-down {
+        left: auto;
+        right: 12px;
+        pointer-events: none;
+    }
+
+    .btn-primary-custom {
+        background: var(--gradient-accent);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(230,126,34,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 1rem;
+    }
+    .btn-primary-custom:active {
+        transform: scale(0.97);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+    .back-link:hover {
+        color: var(--accent);
+    }
+
+    @media (max-width: 400px) {
+        .form-card {
+            padding: 0.8rem;
+        }
+        .form-group .input-wrap input,
+        .form-group .input-wrap select,
+        .form-group .input-wrap textarea {
+            font-size: 0.85rem;
+            padding-left: 1.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="back-link">
+    <i class="fas fa-arrow-left"></i> Back
+</a>
+
+<div class="page-title">
+    <i class="fas fa-user-plus"></i> Add Worker
+</div>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Full Name <span class="required">*</span></label>
+            <div class="input-wrap">
+                <i class="fas fa-user"></i>
+                <input type="text" name="name" class="form-control" value="{{ name|default:"" }}" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Father Name</label>
+            <div class="input-wrap">
+                <i class="fas fa-user-friends"></i>
+                <input type="text" name="father_name" class="form-control" value="{{ father_name|default:"" }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>CNIC</label>
+            <div class="input-wrap">
+                <i class="fas fa-id-card"></i>
+                <input type="text" name="cnic" class="form-control" value="{{ cnic|default:"" }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Phone</label>
+            <div class="input-wrap">
+                <i class="fas fa-phone"></i>
+                <input type="text" name="phone" class="form-control" value="{{ phone|default:"" }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Address</label>
+            <div class="input-wrap">
+                <i class="fas fa-map-marker-alt" style="top:16px; transform:none;"></i>
+                <textarea name="address" class="form-control" rows="2">{{ address|default:"" }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Category</label>
+            <div class="input-wrap">
+                <i class="fas fa-tags"></i>
+                <select name="category" class="form-control">
+                    <option value="">None</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_id|add:"0" == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Joining Date <span class="required">*</span></label>
+            <div class="input-wrap">
+                <i class="fas fa-calendar-alt"></i>
+                <input type="date" name="joining_date" class="form-control" value="{% if joining_date %}{{ joining_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <div class="input-wrap">
+                <i class="fas fa-circle"></i>
+                <select name="status" class="form-control">
+                    <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+                    <option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspended</option>
+                    <option value="resigned" {% if status == "resigned" %}selected{% endif %}>Resigned</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Salary Type</label>
+            <div class="input-wrap">
+                <i class="fas fa-money-bill-wave"></i>
+                <select name="salary_type" class="form-control">
+                    <option value="daily" {% if salary_type == "daily" %}selected{% endif %}>Daily</option>
+                    <option value="monthly" {% if salary_type == "monthly" %}selected{% endif %}>Monthly</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Salary Amount (₹)</label>
+            <div class="input-wrap">
+                <i class="fas fa-rupee-sign"></i>
+                <input type="number" name="salary_amount" step="0.01" class="form-control" value="{{ salary_amount|default:"" }}">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary-custom">
+            <i class="fas fa-save"></i> Save Worker
+        </button>
+    </form>
+</div>
 {% endblock %}

@@ -5,7 +5,7 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  /* ===== PREMIUM MOBILE CATEGORY DETAIL – REFINED ===== */
+  /* ===== PREMIUM MOBILE CATEGORY DETAIL – FULL DEPTH ===== */
   :root {
     --hero-grad: linear-gradient(145deg, #0f1a2e, #1a2d4a);
     --accent-grad: linear-gradient(135deg, #f59e0b, #d97706);
@@ -50,9 +50,12 @@
     align-items: center;
     gap: 0.4rem;
   }
-  .hero-section .hero-title i {
-    color: #f59e0b;
-    font-size: 1.6rem;
+  .hero-section .hero-title svg {
+    width: 1.8rem;
+    height: 1.8rem;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
   }
   .hero-section .hero-type {
     background: rgba(255,255,255,0.15);
@@ -156,14 +159,16 @@
   .kpi-card .icon {
     display: block;
     margin: 0 auto 0.1rem;
-    font-size: 1.2rem;
-    color: var(--accent);
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke: var(--accent);
+    fill: none;
   }
   .kpi-card .icon.profit {
-    color: #22c55e;
+    stroke: #22c55e;
   }
   .kpi-card .icon.cost {
-    color: #ef4444;
+    stroke: #ef4444;
   }
 
   /* ----- CHART CAROUSEL ----- */
@@ -184,8 +189,11 @@
     align-items: center;
     gap: 0.3rem;
   }
-  .carousel-premium .carousel-title i {
-    color: var(--accent);
+  .carousel-premium .carousel-title svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke: var(--accent);
+    fill: none;
   }
   .carousel-premium .carousel-inner {
     border-radius: 12px;
@@ -350,11 +358,14 @@
     border-radius: var(--card-radius);
     border: 1px solid var(--border);
   }
-  .empty-state i {
-    font-size: 2.8rem;
-    color: var(--border);
+  .empty-state svg {
+    width: 2.8rem;
+    height: 2.8rem;
+    stroke: var(--border);
+    fill: none;
+    stroke-width: 1.5;
     display: block;
-    margin-bottom: 0.5rem;
+    margin: 0 auto 0.3rem;
   }
   .empty-state p {
     font-size: 0.9rem;
@@ -453,12 +464,13 @@
 {% endblock %}
 
 {% block body %}
+
 <!-- ===== HERO ===== -->
 <div class="hero-section">
   <div class="hero-top">
     <div>
       <div class="hero-title">
-        <i class="fas fa-chart-pie"></i>
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><path d="M9 7l6 5-6 5V7z"/></svg>
         {{ category.name }}
       </div>
       <div class="hero-sub">{{ tenant.name }} · {{ type|title }} category</div>
@@ -470,15 +482,18 @@
   <div class="hero-revenue">Total Revenue: ₹{{ total_revenue|floatformat:2 }}</div>
   <div class="hero-actions">
     <a href="{% url 'chakki_settings' schema_name=tenant.schema_name %}" class="btn btn-back">
-      <i class="fas fa-arrow-left"></i> Back
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Back
     </a>
     {% if type == 'grinding' %}
       <button class="btn btn-edit" data-bs-toggle="modal" data-bs-target="#editGrindingModal">
-        <i class="fas fa-edit"></i> Edit
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
       </button>
     {% else %}
       <button class="btn btn-edit" data-bs-toggle="modal" data-bs-target="#editSellingModal">
-        <i class="fas fa-edit"></i> Edit
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
       </button>
     {% endif %}
   </div>
@@ -488,37 +503,37 @@
 <div class="kpi-strip">
   {% if type == 'selling' %}
     <div class="kpi-card">
-      <span class="icon"><i class="fas fa-shopping-bag"></i></span>
+      <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <div class="number">{{ total_qty|floatformat:2 }}</div>
       <div class="label">Sold</div>
     </div>
     <div class="kpi-card">
-      <span class="icon"><i class="fas fa-boxes"></i></span>
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
       <div class="number">{{ total_stock|floatformat:2 }}</div>
       <div class="label">Remaining</div>
     </div>
-  {% else %}
+{% else %}
     <div class="kpi-card">
-      <span class="icon"><i class="fas fa-weight-hanging"></i></span>
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
       <div class="number">{{ total_kg|floatformat:2 }}</div>
       <div class="label">KG</div>
     </div>
-  {% endif %}
+{% endif %}
   <div class="kpi-card">
-    <span class="icon"><i class="fas fa-coins"></i></span>
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
     <div class="label">Revenue</div>
   </div>
   {% if total_cost is not None %}
   <div class="kpi-card">
-    <span class="icon cost"><i class="fas fa-arrow-down"></i></span>
+    <svg class="icon cost" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
     <div class="number">₹{{ total_cost|floatformat:0 }}</div>
     <div class="label">Cost</div>
   </div>
   {% endif %}
   {% if total_profit is not None %}
   <div class="kpi-card">
-    <span class="icon profit"><i class="fas fa-arrow-up"></i></span>
+    <svg class="icon profit" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     <div class="number">₹{{ total_profit|floatformat:0 }}</div>
     <div class="label">Profit</div>
   </div>
@@ -529,7 +544,8 @@
 {% if order_data %}
 <div class="carousel-premium">
   <div class="carousel-title">
-    <i class="fas fa-chart-line"></i> Charts
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><path d="M9 7l6 5-6 5V7z"/></svg>
+    Charts
   </div>
   <div id="chartCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000" data-bs-touch="true">
     <div class="carousel-indicators">
@@ -572,7 +588,7 @@
   </div>
   <div class="customer">{{ entry.order.customer.name }}</div>
   <div class="meta">
-    <span><i class="far fa-clock"></i> {{ entry.order.created_at|date:"d M H:i" }}</span>
+    <span>🕒 {{ entry.order.created_at|date:"d M H:i" }}</span>
     {% if entry.profit is not None %}
     <span>Profit: <strong class="{% if entry.profit >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ entry.profit|floatformat:2 }}</strong></span>
     {% endif %}
@@ -593,13 +609,13 @@
     </span>
   </div>
   <div class="actions">
-    <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn-sm btn-outline-primary"><i class="fas fa-eye"></i> View</a>
-    <button class="btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}"><i class="fas fa-file-invoice"></i> Transcript</button>
+    <a href="{% url 'order_detail' schema_name=tenant.schema_name order_id=entry.order.id %}" class="btn-sm btn-outline-primary">View</a>
+    <button class="btn-sm btn-outline-secondary view-transcript" data-order-id="{{ entry.order.id }}">📄 Transcript</button>
   </div>
 </div>
 {% empty %}
 <div class="empty-state">
-  <i class="fas fa-inbox"></i>
+  <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
   <p>No orders for this category.</p>
 </div>
 {% endfor %}
@@ -609,7 +625,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Order Transcript</h5>
+        <h5 class="modal-title">Order Transcript</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="transcriptModalBody">
@@ -617,7 +633,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="printTranscriptBtn"><i class="fas fa-print"></i> Print</button>
+        <button type="button" class="btn btn-primary" id="printTranscriptBtn">Print</button>
       </div>
     </div>
   </div>
@@ -668,6 +684,8 @@
 
 <!-- Edit Selling Modal -->
 {% if type == 'selling' %}
+
+<!-- ===== EDIT SELLING MODAL (FULL) ===== -->
 <div class="modal fade" id="editSellingModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -726,6 +744,7 @@
     </div>
   </div>
 </div>
+
 {% endif %}
 
 <script>
@@ -925,4 +944,5 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+
 {% endblock %}
