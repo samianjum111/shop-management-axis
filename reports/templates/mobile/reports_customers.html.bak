@@ -4,44 +4,6 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  .tabs-bar {
-    display: flex;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.3rem;
-  }
-  .tab-link {
-    flex: 1;
-    text-align: center;
-    padding: 0.4rem 0;
-    border-radius: var(--radius);
-    font-weight: 600;
-    font-size: 0.8rem;
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid transparent;
-    text-decoration: none;
-    transition: 0.2s;
-  }
-  .tab-link.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 2px 8px rgba(230,126,34,0.2);
-  }
-  .tab-link .badge {
-    margin-left: 0.2rem;
-    background: rgba(0,0,0,0.08);
-    border-radius: 30px;
-    padding: 0.05rem 0.4rem;
-    font-size: 0.6rem;
-    font-weight: 600;
-  }
-  .tab-link.active .badge {
-    background: rgba(255,255,255,0.2);
-  }
-
   .kpi-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -66,7 +28,6 @@
     color: var(--muted);
     font-weight: 600;
   }
-
   .filter-bar {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -122,7 +83,6 @@
     text-decoration: none;
     padding: 0.2rem 0.4rem;
   }
-
   .chart-container {
     background: var(--surface);
     border-radius: var(--radius);
@@ -130,7 +90,6 @@
     border: 1px solid var(--border);
     margin-bottom: 1rem;
   }
-
   .customer-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -182,7 +141,6 @@
     font-weight: 600;
     font-size: 0.65rem;
   }
-
   .empty-state {
     text-align: center;
     padding: 2rem;
@@ -194,7 +152,6 @@
     margin-bottom: 0.3rem;
     color: var(--border);
   }
-
   .pagination-wrap {
     display: flex;
     justify-content: center;
@@ -225,23 +182,12 @@
 {% block body %}
 <h5 class="fw-bold">👥 Customer Analytics</h5>
 
-<!-- Tabs -->
-<div class="tabs-bar">
-  <a href="?type=regular{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'regular' %}active{% endif %}">
-    Regular <span class="badge">{{ total_customers }}</span>
-  </a>
-  <a href="?type=walkin{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}" class="tab-link {% if customer_type == 'walkin' %}active{% endif %}">
-    Walk‑in <span class="badge">{{ total_customers }}</span>
-  </a>
-</div>
-
 <!-- KPI -->
 <div class="kpi-grid">
   <div class="kpi-card"><div class="number">{{ total_customers }}</div><div class="label">Customers</div></div>
   <div class="kpi-card"><div class="number">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Revenue</div></div>
   <div class="kpi-card"><div class="number">₹{{ total_pending_all|floatformat:0 }}</div><div class="label">Pending</div></div>
   <div class="kpi-card"><div class="number">₹{{ avg_customer_value|floatformat:2 }}</div><div class="label">Avg Value</div></div>
-  <div class="kpi-card" style="grid-column: span 2;"><div class="number">{{ total_orders_all }}</div><div class="label">Total Orders</div></div>
 </div>
 
 <!-- Chart -->
@@ -252,26 +198,19 @@
   <form method="get" class="search-box" style="flex:2;">
     <i class="fas fa-search"></i>
     <input type="text" name="search" placeholder="Search..." value="{{ search }}">
-    <input type="hidden" name="type" value="{{ customer_type }}">
-    <input type="hidden" name="sort" value="{{ sort }}">
-    <input type="hidden" name="order" value="{{ order }}">
   </form>
-  <select name="sort" onchange="this.form.submit()" form="filterFormMobile">
+  <select name="sort">
     <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
     <option value="spent" {% if sort == 'spent' %}selected{% endif %}>Revenue</option>
     <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Orders</option>
-    <option value="avg" {% if sort == 'avg' %}selected{% endif %}>Avg Order</option>
     <option value="pending" {% if sort == 'pending' %}selected{% endif %}>Pending</option>
   </select>
-  <select name="order" onchange="this.form.submit()" form="filterFormMobile">
+  <select name="order">
     <option value="asc" {% if order == 'asc' %}selected{% endif %}>↑</option>
     <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓</option>
   </select>
-  <button type="submit" class="btn-apply" form="filterFormMobile">Go</button>
-  <a href="?type={{ customer_type }}" class="btn-clear">Clear</a>
-  <form id="filterFormMobile" method="get" style="display:none;">
-    <input type="hidden" name="type" value="{{ customer_type }}">
-  </form>
+  <button type="submit" class="btn-apply">Go</button>
+  <a href="?" class="btn-clear">Clear</a>
 </div>
 
 <!-- Customer Cards -->
@@ -294,9 +233,7 @@
       {% endif %}
     </span>
   </div>
-  <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn btn-sm btn-outline-primary w-100 mt-2">
-    <i class="fas fa-user"></i> View Profile
-  </a>
+  <a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ c.id }}/" class="btn btn-sm btn-outline-primary w-100 mt-2">View Profile</a>
 </div>
 {% empty %}
 <div class="empty-state"><i class="fas fa-users-slash"></i>No customers found.</div>
@@ -305,11 +242,11 @@
 <!-- Pagination -->
 {% if page_obj.has_other_pages %}
 <div class="pagination-wrap">
-  {% if page_obj.has_previous %}<a href="?page=1&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>{% else %}<span class="disabled">&laquo;</span>{% endif %}
-  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>{% else %}<span class="disabled">‹</span>{% endif %}
+  {% if page_obj.has_previous %}<a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo;</a>{% else %}<span class="disabled">&laquo;</span>{% endif %}
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">‹</a>{% else %}<span class="disabled">‹</span>{% endif %}
   <span class="current">{{ page_obj.number }}</span>
-  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">›</a>{% else %}<span class="disabled">›</span>{% endif %}
-  {% if page_obj.has_next %}<a href="?page={{ page_obj.paginator.num_pages }}&type={{ customer_type }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&raquo;</a>{% else %}<span class="disabled">&raquo;</span>{% endif %}
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">›</a>{% else %}<span class="disabled">›</span>{% endif %}
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&raquo;</a>{% else %}<span class="disabled">&raquo;</span>{% endif %}
 </div>
 {% endif %}
 
