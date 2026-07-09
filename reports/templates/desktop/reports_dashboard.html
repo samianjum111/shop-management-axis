@@ -1,83 +1,290 @@
 {% extends "desktop/base.html" %}
 {% load static %}
 {% block title %}Reports Dashboard | {{ tenant.name }}{% endblock %}
+
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap:1.2rem; margin-bottom:2rem; }
-  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; text-align:center; box-shadow:var(--shadow); transition:0.25s; }
+  .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:0.8rem; }
+  .page-header h2 { font-size:2rem; font-weight:700; color:var(--text); margin:0; letter-spacing:-0.02em; }
+  .page-header h2 i { color:var(--accent); margin-right:0.5rem; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1.2rem; margin-bottom:2rem; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 0.6rem; text-align:center; box-shadow:var(--shadow); transition:0.25s; }
   .stat-card:hover { transform:translateY(-4px); box-shadow:var(--hover-shadow); border-color:var(--accent); }
-  .stat-card .number { font-size:2rem; font-weight:700; }
-  .stat-card .label { font-size:0.7rem; text-transform:uppercase; color:var(--muted); letter-spacing:0.04em; }
+  .stat-card .number { font-size:1.8rem; font-weight:700; color:var(--text); line-height:1.2; }
+  .stat-card .label { font-size:0.7rem; text-transform:uppercase; color:var(--muted); letter-spacing:0.04em; font-weight:600; margin-top:0.1rem; }
   .stat-card .icon { font-size:1.4rem; color:var(--accent); margin-bottom:0.2rem; display:block; }
-  .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem; }
-  .chart-container { background:var(--surface); border-radius:16px; padding:1rem; border:1px solid var(--border); }
-  .recent-table { background:var(--surface); border-radius:16px; border:1px solid var(--border); overflow:hidden; }
-  .recent-table table { width:100%; border-collapse:collapse; }
-  .recent-table th { background:var(--surface-alt); color:var(--text-secondary); font-weight:600; font-size:0.75rem; text-transform:uppercase; padding:0.8rem 1rem; text-align:left; }
-  .recent-table td { padding:0.7rem 1rem; border-bottom:1px solid var(--border); }
-  .recent-table tr:last-child td { border-bottom:none; }
-  .badge-status { display:inline-block; padding:0.2rem 0.7rem; border-radius:30px; font-weight:600; font-size:0.7rem; }
-  .badge-status.ready { background:#fef3e2; color:#d35400; }
-  .badge-status.completed { background:#e8f8f0; color:#1e7e34; }
-  .badge-status.pending { background:#f1f3f5; color:#495057; }
-  .badge-status.partial { background:#e3f0fd; color:#2980b9; }
-  @media (max-width:768px){ .stats-grid { grid-template-columns:1fr 1fr; } .chart-grid { grid-template-columns:1fr; } }
+
+  .filter-bar { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1rem 1.5rem; margin-bottom:2rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem; box-shadow:var(--shadow); }
+  .filter-bar .form-group { flex:1 1 160px; min-width:120px; }
+  .filter-bar .form-group label { display:block; font-weight:600; font-size:0.75rem; text-transform:uppercase; color:var(--muted); letter-spacing:0.04em; margin-bottom:0.2rem; }
+  .filter-bar .form-control, .filter-bar .form-select { border-radius:40px; border:1.5px solid var(--border); padding:0.4rem 1rem; font-size:0.9rem; background:var(--bg); color:var(--text); transition:0.2s; width:100%; }
+  .filter-bar .form-control:focus, .filter-bar .form-select:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(26,42,58,0.06); outline:none; }
+  .filter-bar .btn-apply { background:var(--accent); color:#fff; border:none; border-radius:40px; padding:0.4rem 1.6rem; font-weight:600; font-size:0.9rem; cursor:pointer; transition:0.2s; box-shadow:0 4px 12px rgba(26,42,58,0.15); flex:0 0 auto; }
+  .filter-bar .btn-apply:hover { background:var(--accent-hover); transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,42,58,0.2); }
+  .filter-bar .btn-clear { background:transparent; border:1px solid var(--border); border-radius:40px; padding:0.4rem 1.2rem; font-weight:600; font-size:0.9rem; color:var(--text-secondary); text-decoration:none; transition:0.2s; flex:0 0 auto; }
+  .filter-bar .btn-clear:hover { background:var(--surface-alt); border-color:var(--accent); color:var(--accent); }
+
+  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem; }
+  .chart-box { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1rem 1rem 0.5rem; box-shadow:var(--shadow); transition:0.25s; }
+  .chart-box:hover { box-shadow:var(--hover-shadow); }
+  .chart-box .chart-title { font-weight:600; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.3rem; }
+  .chart-box canvas { max-height:200px; width:100% !important; }
+  .chart-box.full-width { grid-column:1 / -1; }
+  .chart-box.full-width canvas { max-height:220px; }
+
+  .table-container { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:0.5rem 0; box-shadow:var(--shadow); overflow-x:auto; }
+  .table-premium { width:100%; border-collapse:separate; border-spacing:0; font-size:0.9rem; min-width:800px; }
+  .table-premium thead th { background:var(--surface-alt); color:var(--text-secondary); font-weight:600; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; padding:0.8rem 1rem; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2; }
+  .table-premium tbody td { padding:0.7rem 1rem; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  .table-premium tbody tr:last-child td { border-bottom:none; }
+  .table-premium tbody tr:hover td { background:var(--bg); }
+  .table-premium .order-id { font-weight:600; color:var(--accent); }
+  .table-premium .amount { font-weight:600; white-space:nowrap; }
+
+  .badge-premium { display:inline-block; padding:0.2rem 0.7rem; border-radius:40px; font-weight:600; font-size:0.7rem; text-transform:capitalize; }
+  .badge-ready { background:#fff3cd; color:#856404; }
+  .badge-completed { background:#d4edda; color:#155724; }
+  .badge-pending { background:#e2e3e5; color:#383d41; }
+  .badge-cancelled { background:#f8d7da; color:#b02a37; }
+  .badge-paid { background:#d4edda; color:#155724; }
+  .badge-partial { background:#d1ecf1; color:#0c5460; }
+  .badge-unpaid { background:#f8d7da; color:#b02a37; }
+
+  .pagination-wrap { display:flex; justify-content:center; margin-top:1.5rem; gap:0.3rem; flex-wrap:wrap; }
+  .pagination-wrap .step-links a, .pagination-wrap .step-links .current, .pagination-wrap .step-links .disabled { display:inline-block; padding:0.3rem 0.8rem; border:1px solid var(--border); border-radius:8px; text-decoration:none; color:var(--text); font-weight:500; font-size:0.9rem; transition:0.2s; }
+  .pagination-wrap .step-links a:hover { background:var(--surface-alt); border-color:var(--accent); color:var(--accent); }
+  .pagination-wrap .step-links .current { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .pagination-wrap .step-links .disabled { color:var(--muted); opacity:0.5; pointer-events:none; }
+
+  .empty-state { text-align:center; padding:2rem 1rem; color:var(--muted); }
+  .empty-state i { font-size:2.5rem; color:var(--border); margin-bottom:0.5rem; display:block; }
+
+  @media (max-width:992px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .charts-grid { grid-template-columns:1fr; } .filter-bar .form-group { flex:1 1 100%; } }
+  @media (max-width:768px) { .page-header { flex-direction:column; align-items:stretch; } .stats-grid { grid-template-columns:1fr 1fr; } }
+  @media (max-width:576px) { .stats-grid { grid-template-columns:1fr; } }
 </style>
 {% endblock %}
+
 {% block content %}
-<h2 class="mb-3"><i class="fas fa-chart-pie text-accent"></i> Reports Dashboard</h2>
+<div class="page-header">
+  <h2><i class="fas fa-chart-pie"></i> Reports Dashboard</h2>
+</div>
+
+<!-- ===== STATS ===== -->
 <div class="stats-grid">
-  <div class="stat-card"><span class="icon"><i class="fas fa-coins"></i></span><div class="number">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Total Revenue</div></div>
-  <div class="stat-card"><span class="icon"><i class="fas fa-hourglass-half"></i></span><div class="number">₹{{ total_pending|floatformat:0 }}</div><div class="label">Pending Amount</div></div>
-  <div class="stat-card"><span class="icon"><i class="fas fa-clipboard-list"></i></span><div class="number">{{ total_orders }}</div><div class="label">Total Orders</div></div>
-  <div class="stat-card"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number">{{ completed_count }}</div><div class="label">Completed</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-coins"></i></span><div class="number">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Revenue</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-shopping-cart"></i></span><div class="number">{{ total_orders }}</div><div class="label">Orders</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number">{{ total_completed }}</div><div class="label">Completed</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-users"></i></span><div class="number">{{ total_customers }}</div><div class="label">Customers</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-chart-line"></i></span><div class="number">₹{{ avg_order_value|floatformat:2 }}</div><div class="label">Avg Order</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-credit-card"></i></span><div class="number">₹{{ total_paid|floatformat:0 }}</div><div class="label">Paid</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-hourglass-half"></i></span><div class="number">₹{{ total_pending|floatformat:0 }}</div><div class="label">Pending</div></div>
+  <div class="stat-card"><span class="icon"><i class="fas fa-chart-pie"></i></span><div class="number">₹{{ total_profit|floatformat:0 }}</div><div class="label">Profit</div></div>
 </div>
 
-<div class="chart-grid">
-  <div class="chart-container"><canvas id="revenueChart" height="250"></canvas></div>
-  <div class="chart-container"><canvas id="statusChart" height="250"></canvas></div>
-</div>
+<!-- ===== FILTER BAR ===== -->
+<form method="get" class="filter-bar">
+  <div class="form-group">
+    <label>From</label>
+    <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>To</label>
+    <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+  </div>
+  <div class="form-group">
+    <label>Customer Type</label>
+    <select name="customer_type" class="form-select">
+      <option value="all" {% if customer_type == 'all' %}selected{% endif %}>All</option>
+      <option value="regular" {% if customer_type == 'regular' %}selected{% endif %}>Regular</option>
+      <option value="walkin" {% if customer_type == 'walkin' %}selected{% endif %}>Walk‑in</option>
+    </select>
+  </div>
+  <div class="form-group" style="flex:2;">
+    <label>Search</label>
+    <input type="text" name="search" class="form-control" placeholder="Customer, phone, order ID..." value="{{ search|default:'' }}">
+  </div>
+  <button type="submit" class="btn-apply"><i class="fas fa-filter"></i> Apply</button>
+  <a href="?" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
+</form>
 
-<div class="recent-table">
-  <h5 class="p-3 mb-0 fw-bold">Recent Orders</h5>
-  <div class="table-responsive">
-    <table>
-      <thead><tr><th>Order #</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>
-        {% for order in recent_orders %}
-        <tr>
-          <td>{{ order.id }}</td>
-          <td>{{ order.customer.name }}</td>
-          <td>₹{{ order.total_amount }}</td>
-          <td><span class="badge-status {% if order.status == 'ready' %}ready{% elif order.status == 'completed' %}completed{% elif order.status == 'pending' %}pending{% else %}partial{% endif %}">{{ order.status|title }}</span></td>
-          <td>{{ order.created_at|date:"d M Y H:i" }}</td>
-        </tr>
-        {% empty %}<tr><td colspan="5" class="text-center text-muted">No orders yet.</td></tr>{% endfor %}
-      </tbody>
-    </table>
+<!-- ===== CHARTS ===== -->
+<div class="charts-grid">
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-chart-line"></i> Revenue Trend</div>
+    <canvas id="revenueChart"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-chart-bar"></i> Orders Trend</div>
+    <canvas id="ordersChart"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-doughnut-chart"></i> Order Status</div>
+    <canvas id="statusChart"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title"><i class="fas fa-doughnut-chart"></i> Payment Status</div>
+    <canvas id="paymentChart"></canvas>
+  </div>
+  <div class="chart-box full-width">
+    <div class="chart-title"><i class="fas fa-tags"></i> Top Categories by Revenue</div>
+    <canvas id="categoryChart"></canvas>
+  </div>
+  <div class="chart-box full-width">
+    <div class="chart-title"><i class="fas fa-users"></i> Top Customers by Revenue</div>
+    <canvas id="customerChart"></canvas>
   </div>
 </div>
 
+<!-- ===== ORDERS TABLE ===== -->
+<div class="table-container">
+  <table class="table-premium">
+    <thead>
+      <tr>
+        <th><a href="?sort=id&order={% if sort == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">ID</a></th>
+        <th><a href="?sort=customer&order={% if sort == 'customer' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Customer</a></th>
+        <th>Phone</th>
+        <th><a href="?sort=total&order={% if sort == 'total' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Total</a></th>
+        <th><a href="?sort=paid&order={% if sort == 'paid' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Paid</a></th>
+        <th><a href="?sort=remaining&order={% if sort == 'remaining' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Remaining</a></th>
+        <th><a href="?sort=status&order={% if sort == 'status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Status</a></th>
+        <th><a href="?sort=payment_status&order={% if sort == 'payment_status' and order == 'asc' %}desc{% else %}asc{% endif %}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Payment</a></th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in page_obj %}
+      <tr>
+        <td class="order-id">#{{ order.id }}</td>
+        <td>{{ order.customer.name }}</td>
+        <td>{{ order.customer.phone|default:"—" }}</td>
+        <td class="amount">₹{{ order.total_amount|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.amount_paid|floatformat:2 }}</td>
+        <td class="amount">₹{{ order.remaining_amount|floatformat:2 }}</td>
+        <td>
+          <span class="badge-premium
+            {% if order.status == 'ready' %}badge-ready
+            {% elif order.status == 'completed' %}badge-completed
+            {% elif order.status == 'cancelled' %}badge-cancelled
+            {% else %}badge-pending{% endif %}">
+            {{ order.status|title }}
+          </span>
+        </td>
+        <td>
+          <span class="badge-premium
+            {% if order.payment_status == 'paid' %}badge-paid
+            {% elif order.payment_status == 'partial' %}badge-partial
+            {% else %}badge-unpaid{% endif %}">
+            {{ order.payment_status|title }}
+          </span>
+        </td>
+        <td>{{ order.created_at|date:"d M Y H:i" }}</td>
+        <td>
+          <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ order.id }}/" class="btn btn-sm btn-outline-primary">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10">
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No orders match your filters.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-wrap">
+  <div class="step-links">
+    {% if page_obj.has_previous %}
+      <a href="?page=1{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Prev</a>
+    {% else %}
+      <span class="disabled">&laquo; First</span>
+      <span class="disabled">Prev</span>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if customer_type %}&customer_type={{ customer_type }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if order %}&order={{ order }}{% endif %}">Last &raquo;</a>
+    {% else %}
+      <span class="disabled">Next</span>
+      <span class="disabled">Last &raquo;</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const ctxRev = document.getElementById('revenueChart').getContext('2d');
-    new Chart(ctxRev, {
+    // Revenue Chart
+    new Chart(document.getElementById('revenueChart'), {
       type: 'line',
       data: {
         labels: {{ revenue_labels|safe }},
-        datasets: [{ label: 'Daily Revenue (₹)', data: {{ revenue_data }}, borderColor: '#e67e22', tension: 0.2, fill: false }]
+        datasets: [{ label: 'Revenue (₹)', data: {{ revenue_data }}, borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.1)', tension: 0.2, fill: true }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
-    const ctxStat = document.getElementById('statusChart').getContext('2d');
-    new Chart(ctxStat, {
+
+    // Orders Chart
+    new Chart(document.getElementById('ordersChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ orders_labels|safe }},
+        datasets: [{ label: 'Orders', data: {{ orders_data }}, backgroundColor: 'rgba(26,42,58,0.6)', borderColor: 'var(--accent)', borderWidth: 1 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, stepSize: 1 } } }
+    });
+
+    // Status Chart
+    new Chart(document.getElementById('statusChart'), {
       type: 'doughnut',
       data: {
-        labels: {{ status_data.keys|safe }},
-        datasets: [{ data: {{ status_data.values }}, backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c'] }]
+        labels: {{ order_labels|safe }},
+        datasets: [{ data: {{ order_data }}, backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c'] }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Payment Chart
+    new Chart(document.getElementById('paymentChart'), {
+      type: 'doughnut',
+      data: {
+        labels: {{ payment_labels|safe }},
+        datasets: [{ data: {{ payment_data }}, backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71'] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Category Chart
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ cat_labels|safe }},
+        datasets: [{ label: 'Revenue (₹)', data: {{ cat_data }}, backgroundColor: ['#3498db','#e67e22','#2ecc71','#9b59b6','#f1c40f','#1abc9c','#e74c3c','#34495e','#95a5a6','#f39c12'], borderColor: '#fff', borderWidth: 2 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Customer Chart
+    new Chart(document.getElementById('customerChart'), {
+      type: 'bar',
+      data: {
+        labels: {{ cust_labels|safe }},
+        datasets: [{ label: 'Revenue (₹)', data: {{ cust_data }}, backgroundColor: 'rgba(26,42,58,0.7)', borderColor: 'var(--accent)', borderWidth: 2 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
   });
 </script>
