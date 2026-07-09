@@ -616,9 +616,9 @@
     new Chart(document.getElementById('statusChart'), {
       type: 'doughnut',
       data: {
-        labels: {{ status_dist_keys|safe }},
+        labels: {{ status_dist.keys|safe }},
         datasets: [{
-          data: {{ status_dist_values|safe }},
+          data: {{ status_dist.values|safe }},
           backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c']
         }]
       },
@@ -633,9 +633,9 @@
     new Chart(document.getElementById('paymentChart'), {
       type: 'doughnut',
       data: {
-        labels: {{ payment_dist_keys|safe }},
+        labels: {{ payment_dist.keys|safe }},
         datasets: [{
-          data: {{ payment_dist_values|safe }},
+          data: {{ payment_dist.values|safe }},
           backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
         }]
       },
