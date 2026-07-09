@@ -19,6 +19,8 @@
 <td>
     {% if o.status != 'completed' %}
         <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn btn-sm btn-primary">Complete</a>
+    {% elif o.status == 'completed' and o.payment_status == 'partial' %}
+        <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ o.id }}/" class="btn btn-sm btn-warning">Collect Pending</a>
     {% else %}
         <a href="/portal/{{ tenant.schema_name }}/chakki/order/{{ o.id }}/" class="btn btn-sm btn-secondary">View</a>
     {% endif %}

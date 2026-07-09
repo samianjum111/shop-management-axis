@@ -1,15 +1,76 @@
 {% extends "mobile/base.html" %}
 {% block title %}Confirm Complete Order #{{ order.id }} | {{ tenant.name }}{% endblock %}
+{% block extra_head %}
+<style>
+  .payment-option { cursor: pointer; padding: 0.8rem; border: 2px solid var(--border); border-radius: var(--radius); margin-bottom: 0.5rem; }
+  .payment-option.selected { border-color: var(--accent); background: var(--accent-light); }
+  .amount-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
+</style>
+{% endblock %}
 {% block body %}
-<div class="card p-4 text-center">
-    <h4>Complete Order #{{ order.id }}</h4>
-    <p>This order is fully paid. Are you sure you want to mark it as <strong>Completed</strong>?</p>
-    <div class="mt-3">
-        <form method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary-custom w-100">Yes, I'm sure</button>
-        </form>
-        <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn btn-secondary w-100 mt-2">Cancel</a>
-    </div>
+<div class="card p-4">
+  <h4>Complete Order #{{ order.id }}</h4>
+  <p><strong>Customer:</strong> {{ order.customer.name }}</p>
+  <div class="row">
+    <div class="col-6"><strong>Total:</strong> ₹{{ order.total_amount|floatformat:2 }}</div>
+    <div class="col-6"><strong>Paid:</strong> ₹{{ order.amount_paid|floatformat:2 }}</div>
+    <div class="col-6"><strong>Remaining:</strong> ₹{{ remaining|floatformat:2 }}</div>
+  </div>
+  <hr>
+  <form method="post" id="partialForm">
+    {% csrf_token %}
+    {% if partial %}
+      <div class="payment-option" data-value="full" onclick="selectPayment('full')">
+        <strong>Full Payment</strong>
+        <p class="text-muted small">Pay the remaining ₹{{ remaining|floatformat:2 }} now.</p>
+      </div>
+      <div class="payment-option" data-value="partial" onclick="selectPayment('partial')">
+        <strong>Partial Payment</strong>
+        <p class="text-muted small">Receive a part of the remaining amount now.</p>
+      </div>
+      <input type="hidden" name="payment_choice" id="payment_choice" value="full">
+
+      <div id="partial_amount_div" style="display:none; margin-top: 0.5rem;">
+        <label>Amount Receiving (₹)</label>
+        <div class="amount-row">
+          <input type="number" name="receive_amount" id="receive_amount" step="0.01" class="form-control" value="{{ remaining }}">
+          <span id="new_remaining_display" class="text-muted">Remaining: ₹0.00</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary-custom w-100 mt-3">Complete Order</button>
+    {% else %}
+      <p>This order is fully paid. Are you sure you want to mark it as <strong>Completed</strong>?</p>
+      <button type="submit" name="payment_choice" value="full" class="btn btn-primary-custom w-100">Yes, I'm sure</button>
+    {% endif %}
+    <a href="{% url 'chakki_home' schema_name=tenant.schema_name %}" class="btn btn-secondary w-100 mt-2">Cancel</a>
+  </form>
 </div>
+
+<script>
+  function selectPayment(val) {
+    document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`.payment-option[data-value="${val}"]`).classList.add('selected');
+    document.getElementById('payment_choice').value = val;
+    const div = document.getElementById('partial_amount_div');
+    if (val === 'partial') {
+      div.style.display = 'block';
+    } else {
+      div.style.display = 'none';
+    }
+    updateRemaining();
+  }
+
+  function updateRemaining() {
+    const rem = parseFloat("{{ remaining|escapejs }}");
+    const receive = parseFloat(document.getElementById('receive_amount')?.value) || 0;
+    const newRem = Math.max(0, rem - receive);
+    const display = document.getElementById('new_remaining_display');
+    if (display) display.textContent = 'Remaining: ₹' + newRem.toFixed(2);
+  }
+  document.getElementById('receive_amount')?.addEventListener('input', updateRemaining);
+  {% if partial %}
+    selectPayment('full');
+  {% endif %}
+</script>
 {% endblock %}
