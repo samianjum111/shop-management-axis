@@ -3,49 +3,199 @@
 
 {% block extra_head %}
 <style>
+    /* ===== Premium Selection Page ===== */
+    .page-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .page-title i {
+        color: var(--accent);
+    }
+    .page-sub {
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+    }
+
+    .selection-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
     .selection-card {
         background: var(--surface);
-        border: 1px solid var(--border);
+        border: 2px solid var(--border);
         border-radius: var(--radius);
-        padding: 1.5rem 1rem;
+        padding: 1.8rem 1.2rem;
         text-align: center;
         box-shadow: var(--shadow);
         cursor: pointer;
-        transition: 0.2s;
-        margin-bottom: 1rem;
+        transition: all 0.25s ease;
+        text-decoration: none;
+        color: var(--text);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .selection-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-accent);
+        opacity: 0;
+        transition: opacity 0.3s;
     }
     .selection-card:active {
         transform: scale(0.96);
     }
-    .selection-card .icon {
-        font-size: 3rem;
-        color: var(--accent);
-        margin-bottom: 0.5rem;
+    .selection-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
     }
+    .selection-card:hover::before {
+        opacity: 1;
+    }
+
+    .selection-card .icon-wrap {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.4rem;
+        margin-bottom: 0.3rem;
+        transition: 0.3s;
+    }
+    .selection-card .icon-wrap.walkin {
+        background: #fef3e2;
+        color: #e67e22;
+    }
+    .selection-card .icon-wrap.regular {
+        background: #e3f0fd;
+        color: #2980b9;
+    }
+    .selection-card:hover .icon-wrap.walkin {
+        background: #e67e22;
+        color: #fff;
+    }
+    .selection-card:hover .icon-wrap.regular {
+        background: #2980b9;
+        color: #fff;
+    }
+
     .selection-card .label {
         font-weight: 700;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+        color: var(--text);
+        margin: 0;
     }
     .selection-card .desc {
         color: var(--muted);
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+        margin: 0;
+        line-height: 1.3;
+    }
+    .selection-card .badge-feature {
+        display: inline-block;
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 0.15rem 0.8rem;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-top: 0.2rem;
+        border: 1px solid var(--accent);
+    }
+    .selection-card .arrow {
+        position: absolute;
+        bottom: 0.8rem;
+        right: 1rem;
+        font-size: 1.2rem;
+        color: var(--muted);
+        transition: transform 0.3s, color 0.3s;
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    .selection-card:hover .arrow {
+        opacity: 1;
+        transform: translateX(0);
+        color: var(--accent);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+    .back-link:hover {
+        color: var(--accent);
+    }
+
+    @media (max-width: 400px) {
+        .selection-card {
+            padding: 1.4rem 0.8rem;
+        }
+        .selection-card .icon-wrap {
+            width: 60px;
+            height: 60px;
+            font-size: 2rem;
+        }
+        .selection-card .label {
+            font-size: 1.1rem;
+        }
     }
 </style>
 {% endblock %}
 
 {% block body %}
-<h5 class="fw-bold mb-3">New Order</h5>
-<p class="text-muted">Select customer type</p>
-
-<a href="?walkin=1" class="selection-card text-decoration-none">
-    <div class="icon"><i class="fas fa-user-plus"></i></div>
-    <div class="label">Walk-in Customer</div>
-    <div class="desc">New customer, no profile</div>
+<a href="/portal/{{ tenant.schema_name }}/chakki/" class="back-link">
+    <i class="fas fa-arrow-left"></i> Back
 </a>
 
-<a href="?select=1" class="selection-card text-decoration-none">
-    <div class="icon"><i class="fas fa-users"></i></div>
-    <div class="label">Regular Customer</div>
-    <div class="desc">Select existing customer</div>
-</a>
+<div class="page-title">
+    <i class="fas fa-user-plus"></i> New Order
+</div>
+<div class="page-sub">Choose the customer type to proceed</div>
+
+<div class="selection-grid">
+    <!-- Walk-in -->
+    <a href="?walkin=1" class="selection-card">
+        <div class="icon-wrap walkin">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="label">Walk-in Customer</div>
+        <div class="desc">New customer with no saved profile</div>
+        <span class="badge-feature"><i class="fas fa-bolt"></i> Quick Entry</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+    </a>
+
+    <!-- Regular -->
+    <a href="?select=1" class="selection-card">
+        <div class="icon-wrap regular">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="label">Regular Customer</div>
+        <div class="desc">Select from saved customers</div>
+        <span class="badge-feature"><i class="fas fa-address-book"></i> Saved Profile</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+    </a>
+</div>
 {% endblock %}
