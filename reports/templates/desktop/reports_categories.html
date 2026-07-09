@@ -1,16 +1,4 @@
-#!/usr/bin/env python3
-"""
-Patcher to make category cards clickable, linking to their detailed view.
-"""
-
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parent
-REPORTS_APP = PROJECT_ROOT / 'reports'
-TEMPLATES_DIR = REPORTS_APP / 'templates'
-
-# ---------- Desktop Categories Template (with links) ----------
-DESKTOP_CATEGORIES = '''{% extends "desktop/base.html" %}
+{% extends "desktop/base.html" %}
 {% load static %}
 {% block title %}Category Performance | {{ tenant.name }}{% endblock %}
 {% block content %}
@@ -66,55 +54,3 @@ DESKTOP_CATEGORIES = '''{% extends "desktop/base.html" %}
   </div>
 </div>
 {% endblock %}
-'''
-
-# ---------- Mobile Categories Template (with links) ----------
-MOBILE_CATEGORIES = '''{% extends "mobile/base.html" %}
-{% block title %}Category Performance | {{ tenant.name }}{% endblock %}
-{% block body %}
-<style>
-  .cat-link { display:block; text-decoration:none; color:inherit; }
-  .list-group-item { transition:0.2s; }
-  .list-group-item:active { transform:scale(0.98); }
-</style>
-<h5 class="fw-bold">📦 Category Performance</h5>
-<h6>Grinding</h6>
-<div class="list-group mb-3">
-  {% for cat in grinding_categories %}
-  <a href="{% url 'grinding_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center cat-link">
-    <div><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.total_orders }} orders</small></div>
-    <div class="text-end"><span class="badge bg-secondary">{{ cat.total_kg|floatformat:1 }} KG</span><br>₹{{ cat.total_revenue|floatformat:2 }}</div>
-  </a>
-  {% empty %}<div class="list-group-item text-muted">No grinding categories.</div>{% endfor %}
-</div>
-<h6>Selling</h6>
-<div class="list-group">
-  {% for cat in selling_categories %}
-  <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center cat-link">
-    <div><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.total_orders }} orders</small></div>
-    <div class="text-end"><span class="badge bg-secondary">{{ cat.total_qty|floatformat:1 }} Qty</span><br>₹{{ cat.total_revenue|floatformat:2 }}</div>
-  </a>
-  {% empty %}<div class="list-group-item text-muted">No selling categories.</div>{% endfor %}
-</div>
-{% endblock %}
-'''
-
-def main():
-    print("🚀 Adding clickable links to category cards...")
-    # Desktop
-    desktop_path = TEMPLATES_DIR / 'desktop' / 'reports_categories.html'
-    desktop_path.parent.mkdir(parents=True, exist_ok=True)
-    desktop_path.write_text(DESKTOP_CATEGORIES)
-    print(f"✅ {desktop_path}")
-
-    # Mobile
-    mobile_path = TEMPLATES_DIR / 'mobile' / 'reports_categories.html'
-    mobile_path.parent.mkdir(parents=True, exist_ok=True)
-    mobile_path.write_text(MOBILE_CATEGORIES)
-    print(f"✅ {mobile_path}")
-
-    print("\n✅ All done! Now each category card is clickable and redirects to its detail page.")
-    print("📌 Restart your server if it's running.")
-
-if __name__ == "__main__":
-    main()

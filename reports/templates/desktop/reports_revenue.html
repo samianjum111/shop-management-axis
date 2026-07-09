@@ -1,0 +1,57 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Revenue Report | {{ tenant.name }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.2rem; margin-bottom:2rem; }
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; text-align:center; }
+  .stat-box .number { font-size:2rem; font-weight:700; }
+  .stat-box .label { font-size:0.7rem; text-transform:uppercase; color:var(--muted); }
+  .chart-container { background:var(--surface); border-radius:16px; padding:1rem; border:1px solid var(--border); margin-bottom:2rem; }
+  .table-wrap { background:var(--surface); border-radius:16px; border:1px solid var(--border); overflow:hidden; }
+  .table-wrap table { width:100%; border-collapse:collapse; }
+  .table-wrap th { background:var(--surface-alt); color:var(--text-secondary); font-weight:600; font-size:0.75rem; text-transform:uppercase; padding:0.8rem 1rem; text-align:left; }
+  .table-wrap td { padding:0.7rem 1rem; border-bottom:1px solid var(--border); }
+  .table-wrap tr:last-child td { border-bottom:none; }
+  @media (max-width:768px){ .stats-row { grid-template-columns:1fr 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<h2 class="mb-3"><i class="fas fa-coins text-accent"></i> Revenue Report</h2>
+<div class="stats-row">
+  <div class="stat-box"><div class="number">₹{{ total_revenue|floatformat:2 }}</div><div class="label">Total Revenue</div></div>
+  <div class="stat-box"><div class="number">{{ orders|length }}</div><div class="label">Completed Orders</div></div>
+  <div class="stat-box"><div class="number">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Average per Order</div></div>
+</div>
+
+<div class="chart-container"><canvas id="revenueChart" height="250"></canvas></div>
+
+<div class="table-wrap">
+  <h5 class="p-3 mb-0 fw-bold">Revenue Orders</h5>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Order #</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for order in orders %}
+        <tr><td>{{ order.id }}</td><td>{{ order.customer.name }}</td><td>₹{{ order.total_amount }}</td><td>{{ order.created_at|date:"d M Y H:i" }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted">No completed orders.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ revenue_by_day.keys|safe }},
+        datasets: [{ label: 'Daily Revenue (₹)', data: {{ revenue_by_day.values|safe }}, backgroundColor: '#e67e22', borderRadius: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "mobile/base.html" %}
+{% block title %}Top Customers | {{ tenant.name }}{% endblock %}
+{% block body %}
+<h5 class="fw-bold">👥 Top Customers</h5>
+<div class="list-group">
+  {% for entry in customer_data %}
+  <div class="list-group-item d-flex justify-content-between align-items-center">
+    <div><strong>{{ entry.customer.name }}</strong><br><small class="text-muted">{{ entry.order_count }} orders</small></div>
+    <div class="text-end">₹{{ entry.total_spent|floatformat:2 }}<br>{% if entry.total_pending > 0 %}<span class="badge bg-warning">Pending ₹{{ entry.total_pending|floatformat:2 }}</span>{% endif %}</div>
+  </div>
+  {% empty %}<div class="list-group-item text-muted">No customers.</div>{% endfor %}
+</div>
+{% endblock %}

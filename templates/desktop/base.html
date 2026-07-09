@@ -499,12 +499,15 @@
 
         <div class="nav-wrapper">
             <ul class="nav flex-column">
+                <!-- Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link" href="/portal/{{ tenant.schema_name }}/dashboard/">
                         <i class="fas fa-chart-pie"></i>
                         <span class="nav-label">Dashboard</span>
                     </a>
                 </li>
+
+                <!-- Chakki -->
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="collapse" href="#chakkiMenu" role="button" aria-expanded="true">
                         <svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -516,36 +519,40 @@
                         <span class="nav-label">Chakki</span>
                     </a>
                     <div class="collapse show" id="chakkiMenu">
-        <ul class="nav flex-column collapse-menu">
-            <li class="nav-item">
-                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=pending">
-                    <i class="fas fa-clock"></i> Pending <span class="badge bg-danger rounded-pill">{{ pending_count }}</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=ready">
-                    <i class="fas fa-hourglass-half"></i> Ready <span class="badge bg-warning rounded-pill">{{ ready_count }}</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=partial">
-                    <i class="fas fa-hand-holding-usd"></i> Partial <span class="badge bg-info rounded-pill">{{ partial_count }}</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=completed">
-                    <i class="fas fa-check-circle"></i> Completed <span class="badge bg-success rounded-pill">{{ completed_count }}</span>
-                </a>
-            </li>
-        </ul>
-    </div>
+                        <ul class="nav flex-column collapse-menu">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=pending">
+                                    <i class="fas fa-clock"></i> Pending <span class="badge bg-danger rounded-pill">{{ pending_count }}</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=ready">
+                                    <i class="fas fa-hourglass-half"></i> Ready <span class="badge bg-warning rounded-pill">{{ ready_count }}</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=partial">
+                                    <i class="fas fa-hand-holding-usd"></i> Partial <span class="badge bg-info rounded-pill">{{ partial_count }}</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/?status=completed">
+                                    <i class="fas fa-check-circle"></i> Completed <span class="badge bg-success rounded-pill">{{ completed_count }}</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
+
+                <!-- Expenses -->
                 <li class="nav-item">
                     <a class="nav-link" href="/portal/{{ tenant.schema_name }}/expenses/">
                         <i class="fas fa-money-bill-wave"></i>
                         <span class="nav-label">Expenses</span>
                     </a>
                 </li>
+
+                <!-- Customers -->
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="collapse" href="#customersMenu" role="button" aria-expanded="true">
                         <i class="fas fa-users"></i>
@@ -571,12 +578,32 @@
                         </ul>
                     </div>
                 </li>
+
+                <!-- Reports -->
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#reportsMenu" role="button" aria-expanded="true">
+                        <i class="fas fa-chart-pie"></i>
+                        <span class="nav-label">Reports</span>
+                    </a>
+                    <div class="collapse show" id="reportsMenu">
+                        <ul class="nav flex-column collapse-menu">
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/"><i class="fas fa-chart-simple"></i> Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/revenue/"><i class="fas fa-coins"></i> Revenue</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/categories/"><i class="fas fa-tags"></i> Categories</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/customers/"><i class="fas fa-users"></i> Customers</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/portal/{{ tenant.schema_name }}/reports/orders/"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Settings -->
                 <li class="nav-item">
                     <a class="nav-link" href="/portal/{{ tenant.schema_name }}/chakki/settings/">
                         <i class="fas fa-sliders-h"></i>
                         <span class="nav-label">Settings</span>
                     </a>
                 </li>
+
                 <div class="nav-divider"></div>
             </ul>
         </div>

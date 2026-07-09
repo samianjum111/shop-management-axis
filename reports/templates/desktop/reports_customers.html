@@ -1,0 +1,41 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+{% block title %}Top Customers | {{ tenant.name }}{% endblock %}
+{% block content %}
+<style>
+  .stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.2rem; margin-bottom:2rem; }
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; text-align:center; }
+  .stat-box .number { font-size:2rem; font-weight:700; }
+  .stat-box .label { font-size:0.7rem; text-transform:uppercase; color:var(--muted); }
+  .table-wrap { background:var(--surface); border-radius:16px; border:1px solid var(--border); overflow:hidden; }
+  .table-wrap table { width:100%; border-collapse:collapse; }
+  .table-wrap th { background:var(--surface-alt); color:var(--text-secondary); font-weight:600; font-size:0.75rem; text-transform:uppercase; padding:0.8rem 1rem; text-align:left; }
+  .table-wrap td { padding:0.7rem 1rem; border-bottom:1px solid var(--border); }
+  .table-wrap tr:last-child td { border-bottom:none; }
+  .badge-pending { background:#fef3e2; color:#d35400; padding:0.2rem 0.6rem; border-radius:30px; font-size:0.7rem; font-weight:600; }
+</style>
+<h2 class="mb-3"><i class="fas fa-users text-accent"></i> Top Customers</h2>
+<div class="stats-row">
+  <div class="stat-box"><div class="number">{{ customer_data|length }}</div><div class="label">Total Customers</div></div>
+  <div class="stat-box"><div class="number">{{ customer_data|length }}</div><div class="label">With Orders</div></div>
+  <div class="stat-box"><div class="number">₹{{ customer_data|slice:":1"|first|default:0 }}</div><div class="label">Top Spender</div></div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Customer</th><th>Orders</th><th>Total Spent</th><th>Pending</th></tr></thead>
+      <tbody>
+        {% for entry in customer_data %}
+        <tr>
+          <td><a href="/portal/{{ tenant.schema_name }}/chakki/customer/{{ entry.customer.id }}/" class="text-decoration-none fw-bold">{{ entry.customer.name }}</a></td>
+          <td>{{ entry.order_count }}</td>
+          <td>₹{{ entry.total_spent|floatformat:2 }}</td>
+          <td>{% if entry.total_pending > 0 %}<span class="badge-pending">₹{{ entry.total_pending|floatformat:2 }}</span>{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted">No customers.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

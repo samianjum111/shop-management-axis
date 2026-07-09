@@ -173,6 +173,38 @@
 <div class="more-grid">
   <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="more-card">
     <div class="icon"><i class="fas fa-sliders-h"></i></div>
+    <!-- Reports -->
+    <div class="section-title">
+        <span class="icon"><i class="fas fa-chart-pie"></i></span> Reports
+    </div>
+    <div class="more-grid">
+        <a href="/portal/{{ tenant.schema_name }}/reports/" class="more-card">
+            <div class="icon"><i class="fas fa-chart-simple"></i></div>
+            <span class="label">Dashboard</span>
+            <span class="desc">Overview</span>
+        </a>
+        <a href="/portal/{{ tenant.schema_name }}/reports/revenue/" class="more-card">
+            <div class="icon"><i class="fas fa-coins"></i></div>
+            <span class="label">Revenue</span>
+            <span class="desc">Income details</span>
+        </a>
+        <a href="/portal/{{ tenant.schema_name }}/reports/categories/" class="more-card">
+            <div class="icon"><i class="fas fa-tags"></i></div>
+            <span class="label">Categories</span>
+            <span class="desc">Performance</span>
+        </a>
+        <a href="/portal/{{ tenant.schema_name }}/reports/customers/" class="more-card">
+            <div class="icon"><i class="fas fa-users"></i></div>
+            <span class="label">Customers</span>
+            <span class="desc">Top spenders</span>
+        </a>
+        <a href="/portal/{{ tenant.schema_name }}/reports/orders/" class="more-card">
+            <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+            <span class="label">Orders</span>
+            <span class="desc">Status report</span>
+        </a>
+    </div>
+
     <span class="label">Settings</span>
     <span class="desc">Rates &amp; categories</span>
   </a>

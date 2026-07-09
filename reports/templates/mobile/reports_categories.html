@@ -1,0 +1,28 @@
+{% extends "mobile/base.html" %}
+{% block title %}Category Performance | {{ tenant.name }}{% endblock %}
+{% block body %}
+<style>
+  .cat-link { display:block; text-decoration:none; color:inherit; }
+  .list-group-item { transition:0.2s; }
+  .list-group-item:active { transform:scale(0.98); }
+</style>
+<h5 class="fw-bold">📦 Category Performance</h5>
+<h6>Grinding</h6>
+<div class="list-group mb-3">
+  {% for cat in grinding_categories %}
+  <a href="{% url 'grinding_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center cat-link">
+    <div><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.total_orders }} orders</small></div>
+    <div class="text-end"><span class="badge bg-secondary">{{ cat.total_kg|floatformat:1 }} KG</span><br>₹{{ cat.total_revenue|floatformat:2 }}</div>
+  </a>
+  {% empty %}<div class="list-group-item text-muted">No grinding categories.</div>{% endfor %}
+</div>
+<h6>Selling</h6>
+<div class="list-group">
+  {% for cat in selling_categories %}
+  <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center cat-link">
+    <div><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.total_orders }} orders</small></div>
+    <div class="text-end"><span class="badge bg-secondary">{{ cat.total_qty|floatformat:1 }} Qty</span><br>₹{{ cat.total_revenue|floatformat:2 }}</div>
+  </a>
+  {% empty %}<div class="list-group-item text-muted">No selling categories.</div>{% endfor %}
+</div>
+{% endblock %}
