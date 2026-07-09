@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Sum
 from decimal import Decimal
 from django.http import JsonResponse
 from django.template.loader import render_to_string
@@ -15,7 +15,7 @@ from expenses.models import Expense
 @login_required
 def chakki_home(request, **kwargs):
     from django.core.paginator import Paginator
-    from django.db.models import Q, Sum
+    from django.db.models import Q, Sum, Sum
     from django.utils import timezone
     from datetime import timedelta
     from decimal import Decimal
@@ -260,11 +260,47 @@ def generate_transcript(request, order_id, **kwargs):
 @login_required
 
 @login_required
+@login_required
 def settings_view(request, **kwargs):
-    # No global rates anymore; we use per-category rates.
+    # We no longer need global setting; use per-category rates.
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
     selling_categories = SellingCategory.objects.filter(tenant=request.tenant).prefetch_related('prices')
 
+    # ---------- ANALYTICS FOR GRINDING CATEGORIES ----------
+    grinding_analytics = {}
+    for cat in categories:
+        items = ChakkiOrderItem.objects.filter(category=cat, tenant=request.tenant)
+        # completed orders only for revenue
+        completed_items = items.filter(order__status='completed')
+        total_orders = items.values('order').distinct().count()
+        total_kg = items.aggregate(Sum('total_kg'))['total_kg__sum'] or Decimal('0')
+        total_revenue = completed_items.aggregate(Sum('item_total'))['item_total__sum'] or Decimal('0')
+        grinding_analytics[cat.id] = {
+            'total_orders': total_orders,
+            'total_kg': total_kg,
+            'total_revenue': total_revenue,
+        }
+
+    # ---------- ANALYTICS FOR SELLING CATEGORIES ----------
+    selling_analytics = {}
+    for cat in selling_categories:
+        items = SellingOrderItem.objects.filter(selling_price__category=cat, tenant=request.tenant)
+        completed_items = items.filter(order__status='completed')
+        total_orders = items.values('order').distinct().count()
+        total_qty = items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0')
+        total_revenue = completed_items.aggregate(Sum('total'))['total__sum'] or Decimal('0')
+        total_cost = Decimal('0')
+        for item in completed_items:
+            total_cost += item.quantity * item.selling_price.purchase_price
+        total_profit = total_revenue - total_cost
+        selling_analytics[cat.id] = {
+            'total_orders': total_orders,
+            'total_qty': total_qty,
+            'total_revenue': total_revenue,
+            'total_profit': total_profit,
+        }
+
+    # Handle POST actions (unchanged)
     if request.method == 'POST':
         action = request.POST.get('action')
         # ----- Grinding Categories -----
@@ -423,6 +459,7 @@ def settings_view(request, **kwargs):
             else:
                 messages.error(request, "All fields are required.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
+
         elif action == 'delete_selling_price':
             price_id = request.POST.get('selling_price_id')
             if price_id:
@@ -431,12 +468,16 @@ def settings_view(request, **kwargs):
                 messages.success(request, "Price deleted.")
             return redirect('chakki_settings', schema_name=request.tenant.schema_name)
 
-
-    template = 'mobile/settings.html' if request.mobile else 'desktop/settings.html'
-    return render(request, template, {
+    # Prepare context with analytics
+    context = {
         'categories': categories,
         'selling_categories': selling_categories,
-    })
+        'grinding_analytics': grinding_analytics,
+        'selling_analytics': selling_analytics,
+        'tenant': request.tenant,
+    }
+    template = 'mobile/settings.html' if request.mobile else 'desktop/settings.html'
+    return render(request, template, context)
 
 def search(request, **kwargs):
     tenant = request.tenant
