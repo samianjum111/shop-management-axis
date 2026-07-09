@@ -1,28 +1,366 @@
 {% extends "mobile/base.html" %}
+{% load static %}
 {% block title %}Category Performance | {{ tenant.name }}{% endblock %}
-{% block body %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  .cat-link { display:block; text-decoration:none; color:inherit; }
-  .list-group-item { transition:0.2s; }
-  .list-group-item:active { transform:scale(0.98); }
+  /* ===== Premium Mobile Design ===== */
+  :root {
+    --mobile-radius: 16px;
+    --mobile-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    --mobile-shadow-hover: 0 8px 28px rgba(0,0,0,0.08);
+    --gradient-accent: linear-gradient(135deg, #f59e0b, #d97706);
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+  }
+  .page-header h5 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+  }
+
+  /* ===== KPI Grid ===== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--mobile-radius);
+    padding: 0.8rem 0.4rem;
+    text-align: center;
+    box-shadow: var(--mobile-shadow);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .kpi-card:active {
+    transform: scale(0.96);
+  }
+  .kpi-card:active::before {
+    opacity: 1;
+  }
+  .kpi-card .number {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .kpi-card .label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+
+  /* ===== Filter Bar ===== */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--mobile-radius);
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--mobile-shadow);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .filter-bar .search-box {
+    flex: 2;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg);
+    border-radius: 30px;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .filter-bar .search-box:focus-within {
+    border-color: #f59e0b;
+  }
+  .filter-bar .search-box input {
+    border: none;
+    background: transparent;
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+    width: 100%;
+    outline: none;
+    color: var(--text);
+  }
+  .filter-bar .search-box i {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .filter-bar select {
+    padding: 0.3rem 0.6rem;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 0.75rem;
+    color: var(--text);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236b7280' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 1.8rem;
+    flex: 1;
+    min-width: 60px;
+  }
+  .filter-bar .btn-sort {
+    background: var(--gradient-accent);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+  }
+  .filter-bar .btn-sort:active {
+    transform: scale(0.94);
+  }
+  .filter-bar .btn-clear {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* ===== Chart ===== */
+  .chart-container {
+    background: var(--surface);
+    border-radius: var(--mobile-radius);
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+    box-shadow: var(--mobile-shadow);
+  }
+  .chart-container canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* ===== Category Cards ===== */
+  .category-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--mobile-radius);
+    padding: 0.8rem;
+    margin-bottom: 0.6rem;
+    box-shadow: var(--mobile-shadow);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .category-card:active {
+    transform: scale(0.98);
+  }
+  .category-card .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.3rem;
+  }
+  .category-card .name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+  .category-card .type-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 30px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .type-badge.grinding {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .type-badge.selling {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .category-card .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  .category-card .stats .label {
+    color: var(--muted);
+  }
+  .category-card .stats .value {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .category-card .action-link {
+    display: block;
+    text-align: right;
+    margin-top: 0.4rem;
+    color: #f59e0b;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .category-card .action-link i {
+    font-size: 0.6rem;
+    margin-left: 0.2rem;
+  }
+  .category-card .action-link:active {
+    color: #d97706;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+  }
+  .empty-state i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--border);
+  }
+
+  /* ===== Scrollable Filter on Small Screens ===== */
+  @media (max-width: 400px) {
+    .filter-bar .search-box { min-width: 100px; }
+    .filter-bar select { flex: 1; min-width: 50px; }
+    .kpi-card .number { font-size: 1.3rem; }
+    .category-card .stats { grid-template-columns: 1fr 1fr; font-size: 0.7rem; }
+  }
 </style>
-<h5 class="fw-bold">📦 Category Performance</h5>
-<h6>Grinding</h6>
-<div class="list-group mb-3">
-  {% for cat in grinding_categories %}
-  <a href="{% url 'grinding_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center cat-link">
-    <div><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.total_orders }} orders</small></div>
-    <div class="text-end"><span class="badge bg-secondary">{{ cat.total_kg|floatformat:1 }} KG</span><br>₹{{ cat.total_revenue|floatformat:2 }}</div>
-  </a>
-  {% empty %}<div class="list-group-item text-muted">No grinding categories.</div>{% endfor %}
+{% endblock %}
+{% block body %}
+<div class="page-header">
+  <h5>📊 Category Performance</h5>
 </div>
-<h6>Selling</h6>
-<div class="list-group">
-  {% for cat in selling_categories %}
-  <a href="{% url 'selling_category_detail' schema_name=tenant.schema_name category_id=cat.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center cat-link">
-    <div><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.total_orders }} orders</small></div>
-    <div class="text-end"><span class="badge bg-secondary">{{ cat.total_qty|floatformat:1 }} Qty</span><br>₹{{ cat.total_revenue|floatformat:2 }}</div>
-  </a>
-  {% empty %}<div class="list-group-item text-muted">No selling categories.</div>{% endfor %}
+
+<!-- KPI -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="number">{{ total_categories }}</div>
+    <div class="label">Categories</div>
+  </div>
+  <div class="kpi-card">
+    <div class="number">₹{{ total_revenue|floatformat:0 }}</div>
+    <div class="label">Revenue</div>
+  </div>
+  <div class="kpi-card">
+    <div class="number">{{ total_orders }}</div>
+    <div class="label">Orders</div>
+  </div>
+  <div class="kpi-card">
+    <div class="number">₹{{ total_profit|floatformat:0 }}</div>
+    <div class="label">Profit</div>
+  </div>
 </div>
+
+<!-- Filter -->
+<div class="filter-bar">
+  <form method="get" class="search-box" style="flex:2;">
+    <i class="fas fa-search"></i>
+    <input type="text" name="search" placeholder="Search category..." value="{{ search }}">
+  </form>
+  <select name="sort">
+    <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
+    <option value="revenue" {% if sort == 'revenue' %}selected{% endif %}>Revenue</option>
+    <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Orders</option>
+    <option value="profit" {% if sort == 'profit' %}selected{% endif %}>Profit</option>
+  </select>
+  <select name="order">
+    <option value="asc" {% if order == 'asc' %}selected{% endif %}>↑</option>
+    <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓</option>
+  </select>
+  <button type="submit" class="btn-sort">Go</button>
+  <a href="?" class="btn-clear">Clear</a>
+</div>
+
+<!-- Chart -->
+<div class="chart-container">
+  <canvas id="categoryChart" height="180"></canvas>
+</div>
+
+<!-- Category Cards -->
+{% for cat in categories %}
+<div class="category-card">
+  <div class="top">
+    <span class="name">{{ cat.name }}</span>
+    <span class="type-badge {{ cat.type }}">{{ cat.type }}</span>
+  </div>
+  <div class="stats">
+    <span class="label">Orders</span><span class="value">{{ cat.total_orders }}</span>
+    <span class="label">Qty</span><span class="value">{{ cat.total_quantity|floatformat:1 }} {{ cat.quantity_unit }}</span>
+    <span class="label">Revenue</span><span class="value">₹{{ cat.total_revenue|floatformat:2 }}</span>
+    <span class="label">Profit</span><span class="value">{% if cat.total_profit is not None %}₹{{ cat.total_profit|floatformat:2 }}{% else %}—{% endif %}</span>
+  </div>
+  <a href="{% url cat.url_name schema_name=tenant.schema_name category_id=cat.id %}" class="action-link">
+    View Details <i class="fas fa-chevron-right"></i>
+  </a>
+</div>
+{% empty %}
+<div class="empty-state"><i class="fas fa-inbox"></i>No categories found.</div>
+{% endfor %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: {{ chart_data }},
+          backgroundColor: 'rgba(245, 158, 11, 0.7)',
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  });
+</script>
 {% endblock %}
