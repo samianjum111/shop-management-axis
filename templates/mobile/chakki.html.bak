@@ -380,41 +380,6 @@
             padding: 0;
         }
     }
-
-
-    /* ----- Priority Card Colours & Blink for Ready ----- */
-    .order-card {
-        transition: all 0.2s ease;
-        border-left: 4px solid var(--border);
-    }
-    .order-card-ready {
-        border-left-color: #f59e0b;
-        background: #fffbeb;
-        animation: pulse-ready 1.5s ease-in-out infinite;
-    }
-    .order-card-partial {
-        border-left-color: #8b5cf6;
-        background: #f5f3ff;
-    }
-    .order-card-pending-unpaid {
-        border-left-color: #94a3b8;
-        background: #f8fafc;
-    }
-    .order-card-completed-paid {
-        border-left-color: #22c55e;
-        background: #f0fdf4;
-    }
-    .order-card-cancelled {
-        border-left-color: #ef4444;
-        background: #fef2f2;
-        opacity: 0.7;
-    }
-
-    @keyframes pulse-ready {
-        0% { background: #fffbeb; border-left-color: #f59e0b; }
-        50% { background: #fef3c7; border-left-color: #d97706; }
-        100% { background: #fffbeb; border-left-color: #f59e0b; }
-    }
 </style>
 {% endblock %}
 
@@ -449,7 +414,7 @@
 <!-- Order Cards -->
 <div class="orders-container">
     {% for order in page_obj %}
-    <div class="order-card {% if order.status == 'ready' %}order-card-ready{% elif order.payment_status == 'partial' and order.status != 'ready' and order.status != 'cancelled' %}order-card-partial{% elif order.status == 'pending' and order.payment_status == 'unpaid' %}order-card-pending-unpaid{% elif order.status == 'completed' and order.payment_status == 'paid' %}order-card-completed-paid{% elif order.status == 'cancelled' %}order-card-cancelled{% endif %}" data-order-id="{{ order.id }}">
+    <div class="order-card" data-order-id="{{ order.id }}">
         <div class="top-row">
             <span class="order-id">
                 #{{ order.id }}

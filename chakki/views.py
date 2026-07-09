@@ -13,21 +13,22 @@ from expenses.models import Expense
 
 @login_required
 @login_required
+
+@login_required
 def chakki_home(request, **kwargs):
     from django.core.paginator import Paginator
-    from django.db.models import Q, Sum, Sum
+    from django.db.models import Q, Sum, Case, When, Value, IntegerField
     from django.utils import timezone
     from datetime import timedelta
     from decimal import Decimal
 
     tenant = request.tenant
-    # Base queryset: all orders for tenant
     all_orders = ChakkiOrder.objects.filter(tenant=request.tenant)
 
     status_filter = request.GET.get('status', 'all')
     search_q = request.GET.get('search', '').strip()
 
-    # Apply search filter to base queryset if needed
+    # Apply search to base queryset
     if search_q:
         all_orders = all_orders.filter(
             Q(customer__name__icontains=search_q) |
@@ -35,31 +36,51 @@ def chakki_home(request, **kwargs):
             Q(id__icontains=search_q)
         )
 
-    # Compute counts from all_orders (including search)
-    all_count = all_orders.exclude(status='cancelled').count()
+    # Counts for status tabs (includes all orders)
+    all_count = all_orders.count()
     pending_count = all_orders.filter(status='pending').count()
     ready_count = all_orders.filter(status='ready').count()
     partial_count = all_orders.filter(payment_status='partial').count()
     completed_count = all_orders.filter(status='completed').count()
     cancelled_count = all_orders.filter(status='cancelled').count()
 
-    # Apply status filter for the list
-    orders = all_orders
+    # Apply status filter
     if status_filter == 'pending':
-        orders = orders.filter(status='pending')
+        orders = all_orders.filter(status='pending')
     elif status_filter == 'ready':
-        orders = orders.filter(status='ready')
+        orders = all_orders.filter(status='ready')
     elif status_filter == 'partial':
-        orders = orders.filter(payment_status='partial')
+        orders = all_orders.filter(payment_status='partial')
     elif status_filter == 'completed':
-        orders = orders.filter(status='completed')
+        orders = all_orders.filter(status='completed')
     elif status_filter == 'cancelled':
-        orders = orders.filter(status='cancelled')
+        orders = all_orders.filter(status='cancelled')
     else:
-        orders = orders.exclude(status='cancelled')
+        orders = all_orders  # "All" – includes everything
         status_filter = 'all'
 
-    # Pagination
+    # Custom ordering only for "All" tab
+    if status_filter == 'all':
+        orders = orders.annotate(
+            priority=Case(
+                # 1: ready (any payment)
+                When(status='ready', then=Value(1)),
+                # 2: partial payment (but not ready, not cancelled)
+                When(payment_status='partial', status__in=['pending', 'completed'], then=Value(2)),
+                # 3: pending unpaid
+                When(status='pending', payment_status='unpaid', then=Value(3)),
+                # 4: completed & paid
+                When(status='completed', payment_status='paid', then=Value(4)),
+                # 5: cancelled
+                When(status='cancelled', then=Value(5)),
+                default=Value(6),
+                output_field=IntegerField()
+            )
+        ).order_by('priority', '-created_at')
+    else:
+        orders = orders.order_by('-created_at')
+
+    # Pagination (30 per page)
     paginator = Paginator(orders, 30)
     page_number = request.GET.get('page', 1)
     try:
@@ -81,7 +102,7 @@ def chakki_home(request, **kwargs):
         daily_counts.append(count)
 
     context = {
-'page_obj': page_obj,
+        'page_obj': page_obj,
         'status_filter': status_filter,
         'search_q': search_q,
         'tenant': tenant,
@@ -98,6 +119,7 @@ def chakki_home(request, **kwargs):
 
     template = 'mobile/chakki.html' if request.mobile else 'desktop/chakki.html'
     return render(request, template, context)
+
 @login_required
 def dashboard(request, **kwargs):
     tenant = request.tenant
