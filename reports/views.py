@@ -86,31 +86,95 @@ def revenue(request, **kwargs):
 @login_required
 def categories(request, **kwargs):
     tenant = request.tenant
+
+    # Get search and sort parameters
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'name')  # name, revenue, orders, profit
+    order = request.GET.get('order', 'asc')  # asc or desc
+
     grinding_cats = ChakkiCategory.objects.filter(tenant=tenant)
     selling_cats = SellingCategory.objects.filter(tenant=tenant)
 
-    # Grinding categories
+    all_categories = []
+
+    # Process grinding categories
     for cat in grinding_cats:
         items = cat.chakkiorderitem_set.filter(tenant=tenant)
-        cat.total_kg = items.aggregate(Sum('total_kg'))['total_kg__sum'] or Decimal('0')
-        cat.total_revenue = items.aggregate(Sum('item_total'))['item_total__sum'] or Decimal('0')
-        cat.total_orders = items.values('order').distinct().count()
+        total_kg = items.aggregate(Sum('total_kg'))['total_kg__sum'] or Decimal('0')
+        total_revenue = items.aggregate(Sum('item_total'))['item_total__sum'] or Decimal('0')
+        total_orders = items.values('order').distinct().count()
+        all_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'type': 'grinding',
+            'url_name': 'grinding_category_detail',
+            'total_quantity': total_kg,
+            'quantity_unit': 'KG',
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'total_profit': None,
+        })
 
-    # Selling categories
+    # Process selling categories
     for cat in selling_cats:
         selling_items = SellingOrderItem.objects.filter(selling_price__category=cat, tenant=tenant)
-        cat.total_qty = selling_items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0')
-        cat.total_revenue = selling_items.aggregate(Sum('total'))['total__sum'] or Decimal('0')
-        cat.total_orders = selling_items.values('order').distinct().count()
-        # profit
+        total_qty = selling_items.aggregate(Sum('quantity'))['quantity__sum'] or Decimal('0')
+        total_revenue = selling_items.aggregate(Sum('total'))['total__sum'] or Decimal('0')
+        total_orders = selling_items.values('order').distinct().count()
         total_cost = Decimal('0')
         for item in selling_items:
             total_cost += item.quantity * item.selling_price.purchase_price
-        cat.total_profit = cat.total_revenue - total_cost
+        total_profit = total_revenue - total_cost
+        all_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'type': 'selling',
+            'url_name': 'selling_category_detail',
+            'total_quantity': total_qty,
+            'quantity_unit': 'Qty',
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'total_profit': total_profit,
+        })
+
+    # Apply search filter
+    if search:
+        all_categories = [c for c in all_categories if search.lower() in c['name'].lower()]
+
+    # Apply sorting
+    reverse = (order == 'desc')
+    if sort == 'name':
+        all_categories.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    elif sort == 'revenue':
+        all_categories.sort(key=lambda x: x['total_revenue'], reverse=reverse)
+    elif sort == 'orders':
+        all_categories.sort(key=lambda x: x['total_orders'], reverse=reverse)
+    elif sort == 'profit':
+        all_categories.sort(key=lambda x: x['total_profit'] or Decimal('0'), reverse=reverse)
+
+    # Aggregated KPIs
+    total_categories = len(all_categories)
+    total_revenue = sum(c['total_revenue'] for c in all_categories)
+    total_orders = sum(c['total_orders'] for c in all_categories)
+    total_profit = sum(c['total_profit'] or Decimal('0') for c in all_categories)
+    avg_revenue = total_revenue / total_categories if total_categories else 0
+
+    # For chart: category name vs revenue
+    chart_labels = [c['name'] for c in all_categories]
+    chart_data = [float(c['total_revenue']) for c in all_categories]
 
     context = {
-        'grinding_categories': grinding_cats,
-        'selling_categories': selling_cats,
+        'categories': all_categories,
+        'total_categories': total_categories,
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'total_profit': total_profit,
+        'avg_revenue': avg_revenue,
+        'search': search,
+        'sort': sort,
+        'order': order,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
         'tenant': tenant,
     }
     template = 'mobile/reports_categories.html' if request.mobile else 'desktop/reports_categories.html'
