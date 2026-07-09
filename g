@@ -1,7 +1,15 @@
-{% extends "mobile/base.html" %}
-{% block title %}Select Regular Customer | {{ tenant.name }}{% endblock %}
+#!/usr/bin/env python3
+"""
+Upgrade mobile/add_order_customer_list.html with professional UI/UX.
+Replaces extra_head and body blocks.
+"""
+import re
+from pathlib import Path
 
-{% block extra_head %}
+TEMPLATE_PATH = Path("templates/mobile/add_order_customer_list.html")
+BACKUP_PATH = TEMPLATE_PATH.with_suffix(".html.bak")
+
+NEW_EXTRA_HEAD = """
 <style>
     /* ---- Premium Customer Selection ---- */
     .back-link {
@@ -245,9 +253,9 @@
         }
     }
 </style>
-{% endblock %}
+"""
 
-{% block body %}
+NEW_BODY = """
 <a href="/portal/{{ tenant.schema_name }}/chakki/add/" class="back-link">
     <i class="fas fa-arrow-left"></i> Back
 </a>
@@ -293,4 +301,59 @@
     </a>
 </div>
 {% endfor %}
-{% endblock %}
+"""
+
+def replace_block(content, block_name, new_content):
+    start_tag = f"{{% block {block_name} %}}"
+    end_tag = "{% endblock %}"
+    start_idx = content.find(start_tag)
+    if start_idx == -1:
+        print(f"⚠️ Block '{block_name}' not found. Appending at end.")
+        body_end = content.rfind("</body>")
+        if body_end != -1:
+            return content[:body_end] + "\n" + new_content + "\n" + content[body_end:]
+        else:
+            return content + "\n" + new_content
+
+    # Find matching endblock
+    import re
+    pattern = re.compile(r"({% block \w+ %})|({% endblock %})")
+    matches = list(pattern.finditer(content, start_idx))
+    depth = 0
+    end_idx = None
+    for match in matches:
+        if match.group(1):
+            depth += 1
+        elif match.group(2):
+            depth -= 1
+            if depth == 0:
+                end_idx = match.end()
+                break
+    if end_idx is None:
+        print(f"⚠️ Could not find endblock for '{block_name}'. Skipping.")
+        return content
+
+    new_block = f"{start_tag}\n{new_content.strip()}\n{end_tag}"
+    return content[:start_idx] + new_block + content[end_idx:]
+
+def patch_file():
+    if not TEMPLATE_PATH.exists():
+        print(f"❌ File not found: {TEMPLATE_PATH}")
+        return
+
+    if not BACKUP_PATH.exists():
+        TEMPLATE_PATH.rename(BACKUP_PATH)
+        print(f"📁 Backup saved to {BACKUP_PATH}")
+        content = BACKUP_PATH.read_text(encoding='utf-8')
+    else:
+        content = BACKUP_PATH.read_text(encoding='utf-8')
+        print("ℹ️ Using existing backup.")
+
+    content = replace_block(content, "extra_head", NEW_EXTRA_HEAD.strip())
+    content = replace_block(content, "body", NEW_BODY.strip())
+
+    TEMPLATE_PATH.write_text(content, encoding='utf-8')
+    print(f"✅ Patched successfully! Updated {TEMPLATE_PATH}")
+
+if __name__ == "__main__":
+    patch_file()

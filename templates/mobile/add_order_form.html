@@ -1,70 +1,147 @@
 {% extends "mobile/base.html" %}
+{% load static %}
 {% block title %}{% if customer %}Order for {{ customer.name }}{% else %}New Order{% endif %} | {{ tenant.name }}{% endblock %}
 
 {% block extra_head %}
 <style>
+    /* ---- Professional enhancements (using theme variables) ---- */
     .customer-summary {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 0.8rem 1rem;
-        margin-bottom: 1rem;
-        box-shadow: var(--shadow);
+        padding: 1rem 1.2rem;
+        margin-bottom: 1.2rem;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .customer-summary .info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
     }
     .customer-summary .name {
         font-weight: 700;
-        font-size: 1.1rem;
+        font-size: 1.15rem;
+        color: var(--text);
     }
     .customer-summary .phone {
-        color: var(--muted);
+        color: var(--text-secondary);
         font-size: 0.9rem;
     }
-    .customer-summary .pending {
-        color: #d35400;
-        font-weight: 600;
+    .customer-summary .address {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
     }
+    .customer-summary .pending-badge {
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 0.3rem 0.8rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: 1px solid var(--accent);
+    }
+
+    .form-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem 1.2rem;
+        margin-bottom: 1.2rem;
+        box-shadow: var(--shadow);
+        transition: box-shadow 0.2s;
+    }
+    .form-section:focus-within {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+
+    .section-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .section-title i {
+        color: var(--accent);
+        font-size: 1rem;
+    }
+
+    .item-card {
+        background: var(--surface-alt);
+        border-radius: var(--radius);
+        padding: 0.8rem 0.8rem 0.4rem;
+        margin-bottom: 0.6rem;
+        border-left: 3px solid var(--accent);
+        transition: border-color 0.2s;
+    }
+    .item-card .row {
+        align-items: end;
+    }
+    .item-card .remove-item {
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        padding: 0.2rem 0.4rem;
+        font-size: 1.2rem;
+        transition: color 0.2s, transform 0.2s;
+        cursor: pointer;
+    }
+    .item-card .remove-item:hover {
+        color: #EF4444;
+        transform: scale(1.1);
+    }
+
     .payment-toggle {
         display: flex;
         gap: 0.5rem;
-        margin-bottom: 0.5rem;
+        margin: 0.5rem 0;
     }
     .payment-toggle .btn-option {
         flex: 1;
-        padding: 0.4rem;
+        padding: 0.5rem;
         border: 1px solid var(--border);
-        border-radius: var(--radius);
+        border-radius: 2rem;
         background: var(--surface);
         text-align: center;
         cursor: pointer;
         font-weight: 600;
-        transition: 0.2s;
+        transition: all 0.2s;
+        color: var(--text-secondary);
     }
     .payment-toggle .btn-option.active {
         border-color: var(--accent);
         background: var(--accent-light);
         color: var(--accent);
+        box-shadow: 0 2px 8px rgba(230,126,34,0.15);
     }
     .payment-toggle .btn-option:active {
         transform: scale(0.96);
     }
+
     .amount-input {
         display: none;
-        margin-top: 0.5rem;
+        margin-top: 0.6rem;
+        background: var(--surface-alt);
+        padding: 0.6rem 0.8rem;
+        border-radius: var(--radius);
     }
     .amount-input.show {
         display: block;
     }
-    .customer-field {
-        margin-bottom: 0.5rem;
-    }
-    .customer-field label {
+    .amount-input label {
         font-weight: 600;
         font-size: 0.85rem;
         color: var(--text-secondary);
-        display: block;
-        margin-bottom: 0.1rem;
     }
-    .customer-field input, .customer-field textarea {
+    .amount-input input {
         width: 100%;
         padding: 0.4rem 0.6rem;
         border: 1px solid var(--border);
@@ -72,172 +149,357 @@
         background: var(--surface);
         color: var(--text);
     }
-    .customer-field input:disabled {
-        background: var(--surface-alt);
+
+    .totals-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 0.6rem;
+        margin: 0.5rem 0;
+    }
+    .totals-grid .total-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.5rem 0.2rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+    }
+    .totals-grid .total-card h6 {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         color: var(--text-secondary);
+        margin: 0;
     }
-    .customer-field input[required] {
-        border-color: #e67e22;
+    .totals-grid .total-card h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0.1rem 0 0;
+        color: var(--text);
     }
+    .totals-grid .total-card.grand {
+        background: var(--accent-light);
+        border-color: var(--accent);
+    }
+    .totals-grid .total-card.grand h4 {
+        color: var(--accent);
+    }
+
     .total-pending-row {
         background: #fef3e2;
-        padding: 0.5rem;
+        padding: 0.6rem 1rem;
         border-radius: var(--radius);
-        margin-bottom: 1rem;
+        margin: 0.8rem 0;
         display: flex;
         justify-content: space-between;
         font-weight: 600;
+        border: 1px solid #f5cba7;
+    }
+
+    .btn-primary-custom {
+        background: var(--gradient-accent);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(230,126,34,0.25);
+    }
+    .btn-primary-custom:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(230,126,34,0.3);
+    }
+    .btn-primary-custom:active {
+        transform: scale(0.97);
+    }
+    .btn-primary-custom:disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: var(--radius);
+        box-shadow: 0 24px 48px rgba(0,0,0,0.12);
+    }
+    .modal-header {
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-alt);
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .modal-footer {
+        border-top: 1px solid var(--border);
+        background: var(--surface-alt);
+        border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    .field-icon {
+        color: var(--muted);
+        margin-right: 0.4rem;
+        width: 1.2rem;
+        text-align: center;
+    }
+    .form-control-sm-custom {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.9rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        width: 100%;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control-sm-custom:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(230,126,34,0.1);
+        outline: none;
+    }
+    .form-control-sm-custom:disabled {
+        background: var(--surface-alt);
+        color: var(--text-secondary);
+    }
+    .form-control-sm-custom[required] {
+        border-color: #e67e22;
+    }
+
+    .inline-help {
+        font-size: 0.7rem;
+        color: var(--muted);
+        margin-top: 0.1rem;
+    }
+
+    @media (max-width: 400px) {
+        .totals-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .item-card .row > div {
+            margin-bottom: 0.3rem;
+        }
+    }
+
+    /* subtle animation for new items */
+    .item-card-enter {
+        animation: fadeSlideIn 0.25s ease-out;
+    }
+    @keyframes fadeSlideIn {
+        0% { opacity: 0; transform: translateY(-8px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    /* loader spinner */
+    .spinner-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.3);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+    .spinner-overlay.active {
+        display: flex;
+    }
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: 0.25rem;
+        border-color: var(--accent);
+        border-right-color: transparent;
     }
 </style>
 {% endblock %}
 
 {% block body %}
-<h5 class="fw-bold mb-2">{% if customer %}Order for {{ customer.name }}{% else %}New Order (Walk-in){% endif %}</h5>
-
-{% if customer %}
-<div class="customer-summary">
-    <div class="name">{{ customer.name }}</div>
-    <div class="phone">{{ customer.phone|default:"No phone" }}</div>
-    <div class="address">{{ customer.address|default:"No address" }}</div>
-    <div class="pending">Pending: ₹{{ customer.total_pending|floatformat:2 }}</div>
+<!-- Spinner overlay -->
+<div class="spinner-overlay" id="submitSpinner">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Submitting...</span>
+    </div>
 </div>
-{% endif %}
 
-<form method="post" id="orderForm">
-    <div id="formErrors" class="alert alert-danger" style="display:none;"></div>
-    {% csrf_token %}
-    <input type="hidden" name="customer_id" value="{{ customer.id|default:'' }}">
-    <input type="hidden" name="walkin" value="{% if walkin %}1{% else %}0{% endif %}">
+<div class="container px-0">
+    <h5 class="fw-bold mb-3">
+        {% if customer %}
+            <i class="fas fa-user-circle text-accent"></i> Order for {{ customer.name }}
+        {% else %}
+            <i class="fas fa-user-plus text-accent"></i> New Order (Walk-in)
+        {% endif %}
+    </h5>
 
-    <!-- Customer Details (only for walk-in, or if customer not set, we show fields) -->
-    {% if not customer %}
-    <div class="customer-field">
-        <label>Name *</label>
-        <input type="text" name="name" id="walkin_name" required>
-    </div>
-    <div class="customer-field">
-        <label>Phone *</label>
-        <input type="text" name="phone" id="walkin_phone" required>
-    </div>
-    <div class="customer-field">
-        <label>Address</label>
-        <textarea name="address" id="walkin_address"></textarea>
+    {% if customer %}
+    <div class="customer-summary">
+        <div class="info">
+            <div class="name">{{ customer.name }}</div>
+            <div class="phone"><i class="fas fa-phone field-icon"></i> {{ customer.phone|default:"No phone" }}</div>
+            <div class="address"><i class="fas fa-map-pin field-icon"></i> {{ customer.address|default:"No address" }}</div>
+        </div>
+        <div class="pending-badge">
+            <i class="fas fa-rupee-sign"></i> Pending: {{ customer.total_pending|floatformat:2 }}
+        </div>
     </div>
     {% endif %}
 
-    <!-- Ready Time -->
-    <div class="row">
-        <div class="col-6">
-            <label>Ready in</label>
-            <input type="number" name="time_value" class="form-control" placeholder="e.g. 2" value="1">
-        </div>
-        <div class="col-6">
-            <label>&nbsp;</label>
-            <select name="time_type" class="form-control">
-                <option value="minutes">Minutes</option>
-                <option value="hours" selected>Hours</option>
-                <option value="days">Days</option>
-            </select>
-        </div>
-    </div>
+    <form method="post" id="orderForm" novalidate>
+        <div id="formErrors" class="alert alert-danger" style="display:none;"></div>
+        {% csrf_token %}
+        <input type="hidden" name="customer_id" value="{{ customer.id|default:'' }}">
+        <input type="hidden" name="walkin" value="{% if walkin %}1{% else %}0{% endif %}">
 
-    <!-- Items -->
-    <h5 class="mt-3">Items</h5>
-    <div id="itemsContainer">
-        <div class="row item-row mb-2">
-            <div class="col-2">
-                <select name="item_type_1" class="form-control item-type-select">
-                    <option value="grinding">Grinding</option>
-                    <option value="selling">Selling</option>
-                </select>
-            </div>
-            <div class="col-4 grinding-fields">
-                <select name="category_1" class="form-control category-select">
-                    <option value="">Select Grinding Category</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-3 grinding-fields">
-                <input type="number" name="total_kg_1" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
-            </div>
-            <div class="col-2 grinding-fields">
-                <input type="checkbox" name="cleaning_1" value="on"> Cleaning
-            </div>
-            <div class="col-5 selling-fields" style="display:none;">
-                <select name="selling_category_1" class="form-control selling-category-select">
-                    <option value="">Select Selling Category</option>
-                    {% for cat in selling_categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-3 selling-fields" style="display:none;">
-                <select name="selling_price_1" class="form-control selling-price-select">
-                    <option value="">Select Measurement</option>
-                </select>
-            </div>
-            <div class="col-2 selling-fields" style="display:none;">
-                <input type="number" name="quantity_1" class="form-control quantity" step="0.1" placeholder="Qty" value="0">
-            </div>
-            <div class="col-2">
-                <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+        <!-- Customer details (walk-in) -->
+        {% if not customer %}
+        <div class="form-section">
+            <div class="section-title"><i class="fas fa-user"></i> Customer Information</div>
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label fw-semibold small"><i class="fas fa-user field-icon"></i> Full Name *</label>
+                    <input type="text" name="name" id="walkin_name" class="form-control-sm-custom" placeholder="e.g. Ram Singh" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold small"><i class="fas fa-phone field-icon"></i> Phone *</label>
+                    <input type="text" name="phone" id="walkin_phone" class="form-control-sm-custom" placeholder="10-digit mobile" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold small"><i class="fas fa-map-marker-alt field-icon"></i> Address</label>
+                    <textarea name="address" id="walkin_address" class="form-control-sm-custom" rows="1" placeholder="Optional address"></textarea>
+                </div>
             </div>
         </div>
-    </div>
-    <button type="button" class="btn btn-secondary btn-sm mt-2" id="addItemBtn">+ Add Item</button>
+        {% endif %}
 
-    <!-- Payment Type -->
-    <div class="mt-3">
-        <label class="fw-bold">Payment Type</label>
-        <div class="payment-toggle">
-            <div class="btn-option active" data-value="full" onclick="setPayment('full')">Full Payment</div>
-            <div class="btn-option" data-value="partial" onclick="setPayment('partial')">Partial Payment</div>
+        <!-- Ready Time -->
+        <div class="form-section">
+            <div class="section-title"><i class="fas fa-clock"></i> Ready Time</div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label fw-semibold small">Value</label>
+                    <input type="number" name="time_value" class="form-control-sm-custom" placeholder="e.g. 2" value="1" min="0" step="1">
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-semibold small">Unit</label>
+                    <select name="time_type" class="form-control-sm-custom">
+                        <option value="minutes">Minutes</option>
+                        <option value="hours" selected>Hours</option>
+                        <option value="days">Days</option>
+                    </select>
+                </div>
+            </div>
         </div>
-        <input type="hidden" name="payment_type" id="payment_type" value="full">
-        <div class="amount-input" id="partial_amount_div">
-            <label>Amount Received (₹)</label>
-            <input type="number" name="payment_amount" id="payment_amount" step="0.01" value="0">
-            <div class="text-muted small" id="remaining_display">Remaining: ₹0.00</div>
+
+        <!-- Items -->
+        <div class="form-section">
+            <div class="section-title"><i class="fas fa-list-ul"></i> Order Items</div>
+            <div id="itemsContainer">
+                <div class="item-card item-card-enter" id="itemRow1">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-sm-2">
+                            <select name="item_type_1" class="form-control-sm-custom item-type-select">
+                                <option value="grinding">Grinding</option>
+                                <option value="selling">Selling</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-4 grinding-fields">
+                            <select name="category_1" class="form-control-sm-custom category-select">
+                                <option value="">Select Grinding Category</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6 col-sm-3 grinding-fields">
+                            <input type="number" name="total_kg_1" class="form-control-sm-custom total-kg" step="0.1" placeholder="KG" value="0" min="0">
+                        </div>
+                        <div class="col-4 col-sm-2 grinding-fields d-flex align-items-center">
+                            <input type="checkbox" name="cleaning_1" id="cleaning_1" value="on" class="form-check-input me-1">
+                            <label for="cleaning_1" class="form-label small mb-0">Cleaning</label>
+                        </div>
+                        <!-- Selling fields -->
+                        <div class="col-12 col-sm-5 selling-fields" style="display:none;">
+                            <select name="selling_category_1" class="form-control-sm-custom selling-category-select">
+                                <option value="">Select Selling Category</option>
+                                {% for cat in selling_categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6 col-sm-3 selling-fields" style="display:none;">
+                            <select name="selling_price_1" class="form-control-sm-custom selling-price-select">
+                                <option value="">Measurement</option>
+                            </select>
+                        </div>
+                        <div class="col-4 col-sm-2 selling-fields" style="display:none;">
+                            <input type="number" name="quantity_1" class="form-control-sm-custom quantity" step="0.1" placeholder="Qty" value="0" min="0">
+                        </div>
+                        <div class="col-2 text-end">
+                            <button type="button" class="remove-item" title="Remove item"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addItemBtn">
+                <i class="fas fa-plus-circle"></i> Add Item
+            </button>
         </div>
-    </div>
 
-    <!-- Totals -->
-    <div class="row mt-3">
-        <div class="col-3"><div class="card p-2"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div></div>
-        <div class="col-3"><div class="card p-2"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div></div>
-        <div class="col-3"><div class="card p-2"><h6>Selling</h6><h4 id="total_selling_display">₹0.00</h4></div></div>
-        <div class="col-3"><div class="card p-2 bg-info"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div></div>
-    </div>
-    <div class="total-pending-row" id="pending_row" style="display:{% if customer and customer.total_pending > 0 %}flex{% else %}none{% endif %};">
-        <span>Customer Pending</span>
-        <span>₹{{ customer.total_pending|floatformat:2|default:"0.00" }}</span>
-    </div>
+        <!-- Payment -->
+        <div class="form-section">
+            <div class="section-title"><i class="fas fa-credit-card"></i> Payment</div>
+            <div class="payment-toggle">
+                <div class="btn-option active" data-value="full" onclick="setPayment('full')"><i class="fas fa-check-circle"></i> Full</div>
+                <div class="btn-option" data-value="partial" onclick="setPayment('partial')"><i class="fas fa-hand-holding-usd"></i> Partial</div>
+            </div>
+            <input type="hidden" name="payment_type" id="payment_type" value="full">
+            <div class="amount-input" id="partial_amount_div">
+                <label><i class="fas fa-money-bill-wave field-icon"></i> Amount Received (₹)</label>
+                <input type="number" name="payment_amount" id="payment_amount" step="0.01" value="0" min="0">
+                <div class="inline-help" id="remaining_display">Remaining: ₹0.00</div>
+            </div>
+        </div>
 
-    <button type="button" class="btn btn-primary mt-3" id="previewBtn">Preview & Confirm</button>
-    <input type="hidden" name="item_count" id="item_count" value="1">
-</form>
+        <!-- Totals -->
+        <div class="form-section">
+            <div class="section-title"><i class="fas fa-calculator"></i> Order Summary</div>
+            <div class="totals-grid">
+                <div class="total-card"><h6>Grinding</h6><h4 id="total_grinding_display">₹0.00</h4></div>
+                <div class="total-card"><h6>Cleaning</h6><h4 id="total_cleaning_display">₹0.00</h4></div>
+                <div class="total-card"><h6>Selling</h6><h4 id="total_selling_display">₹0.00</h4></div>
+                <div class="total-card grand"><h6>Grand Total</h6><h4 id="grand_total_display">₹0.00</h4></div>
+            </div>
+            <div class="total-pending-row" id="pending_row" style="display:{% if customer and customer.total_pending > 0 %}flex{% else %}none{% endif %};">
+                <span><i class="fas fa-exclamation-triangle"></i> Customer Pending</span>
+                <span>₹{{ customer.total_pending|floatformat:2|default:"0.00" }}</span>
+            </div>
+        </div>
+
+        <button type="button" class="btn-primary-custom mt-3" id="previewBtn">
+            <i class="fas fa-eye"></i> Preview & Confirm
+        </button>
+        <input type="hidden" name="item_count" id="item_count" value="1">
+    </form>
+</div>
 
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Confirm Order</h5>
+        <h5 class="modal-title"><i class="fas fa-check-circle text-accent"></i> Confirm Order</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="modalBody"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
-        <button type="button" class="btn btn-primary" id="confirmSubmit">Confirm Order</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmit">
+            <i class="fas fa-check"></i> Confirm Order
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-
     function setPayment(val) {
         document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
         document.querySelector(`.payment-toggle .btn-option[data-value="${val}"]`).classList.add('active');
@@ -256,39 +518,36 @@
         }
     }
 
-    // Set initial state: Full Payment
     document.addEventListener('DOMContentLoaded', function() {
         setPayment('full');
-    });
-
-    // Also add listener for payment_amount to update remaining
-    document.addEventListener('DOMContentLoaded', function() {
+        // payment amount live update
         var amountInput = document.getElementById('payment_amount');
         if (amountInput) {
             amountInput.addEventListener('input', function() {
-                if (typeof updateRemaining === 'function') {
-                    updateRemaining();
-                }
+                if (typeof updateRemaining === 'function') updateRemaining();
             });
         }
+        // initialize totals
+        updateTotals();
     });
 
-
-document.addEventListener('DOMContentLoaded', function() {
+    // ---- Core logic ----
     let itemCount = 1;
     const container = document.getElementById('itemsContainer');
     const addBtn = document.getElementById('addItemBtn');
     const totalGrindingDisplay = document.getElementById('total_grinding_display');
     const totalCleaningDisplay = document.getElementById('total_cleaning_display');
+    const totalSellingDisplay = document.getElementById('total_selling_display');
     const grandTotalDisplay = document.getElementById('grand_total_display');
     const previewBtn = document.getElementById('previewBtn');
     const modalBody = document.getElementById('modalBody');
     const confirmSubmit = document.getElementById('confirmSubmit');
     const itemCountInput = document.getElementById('item_count');
+    const submitSpinner = document.getElementById('submitSpinner');
 
     function updateTotals() {
         let totalGrinding = 0, totalCleaning = 0, totalSelling = 0;
-        document.querySelectorAll('.item-row').forEach(row => {
+        document.querySelectorAll('.item-card').forEach(row => {
             const itemType = row.querySelector('.item-type-select').value;
             if (itemType === 'grinding') {
                 const kg = parseFloat(row.querySelector('.total-kg').value) || 0;
@@ -309,6 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const grandTotal = totalGrinding + totalCleaning + totalSelling;
         totalGrindingDisplay.textContent = '₹' + totalGrinding.toFixed(2);
         totalCleaningDisplay.textContent = '₹' + totalCleaning.toFixed(2);
+        totalSellingDisplay.textContent = '₹' + totalSelling.toFixed(2);
         grandTotalDisplay.textContent = '₹' + grandTotal.toFixed(2);
         window._totals = { grinding: totalGrinding, cleaning: totalCleaning, selling: totalSelling, grand: grandTotal };
         updateRemaining();
@@ -322,10 +582,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (display) display.textContent = 'Remaining: ₹' + remaining.toFixed(2);
     }
 
-    // Fetch selling prices when category changes
     function fetchPrices(selectEl) {
         const catId = selectEl.value;
-        const priceSelect = selectEl.closest('.item-row').querySelector('.selling-price-select');
+        const row = selectEl.closest('.item-card');
+        const priceSelect = row.querySelector('.selling-price-select');
         priceSelect.innerHTML = '<option value="">Select Measurement</option>';
         if (catId) {
             fetch(`/portal/{{ tenant.schema_name }}/chakki/api/selling-prices/?category=${catId}`)
@@ -345,7 +605,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Toggle fields based on item type
     function toggleFields(row) {
         const type = row.querySelector('.item-type-select').value;
         const grindingFields = row.querySelectorAll('.grinding-fields');
@@ -362,46 +621,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addItemRow() {
         itemCount++;
+        const rowId = 'itemRow' + itemCount;
         const template = `
-            <div class="row item-row mb-2">
-                <div class="col-2">
-                    <select name="item_type_${itemCount}" class="form-control item-type-select">
-                        <option value="grinding">Grinding</option>
-                        <option value="selling">Selling</option>
-                    </select>
-                </div>
-                <div class="col-4 grinding-fields">
-                    <select name="category_${itemCount}" class="form-control category-select">
-                        <option value="">Select Grinding Category</option>
-                        {% for cat in categories %}
-                        <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-3 grinding-fields">
-                    <input type="number" name="total_kg_${itemCount}" class="form-control total-kg" step="0.1" placeholder="KG" value="0">
-                </div>
-                <div class="col-2 grinding-fields">
-                    <input type="checkbox" name="cleaning_${itemCount}" value="on"> Cleaning
-                </div>
-                <div class="col-5 selling-fields" style="display:none;">
-                    <select name="selling_category_${itemCount}" class="form-control selling-category-select">
-                        <option value="">Select Selling Category</option>
-                        {% for cat in selling_categories %}
-                        <option value="{{ cat.id }}">{{ cat.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-3 selling-fields" style="display:none;">
-                    <select name="selling_price_${itemCount}" class="form-control selling-price-select">
-                        <option value="">Select Measurement</option>
-                    </select>
-                </div>
-                <div class="col-2 selling-fields" style="display:none;">
-                    <input type="number" name="quantity_${itemCount}" class="form-control quantity" step="0.1" placeholder="Qty" value="0">
-                </div>
-                <div class="col-2">
-                    <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+            <div class="item-card item-card-enter" id="${rowId}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-sm-2">
+                        <select name="item_type_${itemCount}" class="form-control-sm-custom item-type-select">
+                            <option value="grinding">Grinding</option>
+                            <option value="selling">Selling</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-4 grinding-fields">
+                        <select name="category_${itemCount}" class="form-control-sm-custom category-select">
+                            <option value="">Select Grinding Category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" data-grind-rate="{{ cat.grinding_rate }}" data-clean-rate="{{ cat.cleaning_rate|default:0 }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-3 grinding-fields">
+                        <input type="number" name="total_kg_${itemCount}" class="form-control-sm-custom total-kg" step="0.1" placeholder="KG" value="0" min="0">
+                    </div>
+                    <div class="col-4 col-sm-2 grinding-fields d-flex align-items-center">
+                        <input type="checkbox" name="cleaning_${itemCount}" id="cleaning_${itemCount}" value="on" class="form-check-input me-1">
+                        <label for="cleaning_${itemCount}" class="form-label small mb-0">Cleaning</label>
+                    </div>
+                    <div class="col-12 col-sm-5 selling-fields" style="display:none;">
+                        <select name="selling_category_${itemCount}" class="form-control-sm-custom selling-category-select">
+                            <option value="">Select Selling Category</option>
+                            {% for cat in selling_categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-3 selling-fields" style="display:none;">
+                        <select name="selling_price_${itemCount}" class="form-control-sm-custom selling-price-select">
+                            <option value="">Measurement</option>
+                        </select>
+                    </div>
+                    <div class="col-4 col-sm-2 selling-fields" style="display:none;">
+                        <input type="number" name="quantity_${itemCount}" class="form-control-sm-custom quantity" step="0.1" placeholder="Qty" value="0" min="0">
+                    </div>
+                    <div class="col-2 text-end">
+                        <button type="button" class="remove-item" title="Remove item"><i class="fas fa-trash-alt"></i></button>
+                    </div>
                 </div>
             </div>
         `;
@@ -410,62 +673,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const newRow = wrapper.firstElementChild;
         container.appendChild(newRow);
         itemCountInput.value = itemCount;
-        // Attach events
-        newRow.querySelector('.item-type-select').addEventListener('change', function() { toggleFields(newRow); });
-        newRow.querySelector('.selling-category-select').addEventListener('change', function() { fetchPrices(this); });
-        newRow.querySelectorAll('.total-kg, .quantity, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
-        newRow.querySelector('.remove-item').addEventListener('click', function() {
-            if (container.children.length > 1) {
-                newRow.remove();
-                itemCount--;
-                itemCountInput.value = itemCount;
-                updateTotals();
-            }
-        });
+        // bind events
+        attachEvents(newRow);
         toggleFields(newRow);
         updateTotals();
     }
 
-    // Initial event binding for existing rows
-    document.querySelectorAll('.item-row').forEach(row => {
+    function attachEvents(row) {
         row.querySelector('.item-type-select').addEventListener('change', function() { toggleFields(row); });
         row.querySelector('.selling-category-select').addEventListener('change', function() { fetchPrices(this); });
         row.querySelectorAll('.total-kg, .quantity, input[type="checkbox"]').forEach(el => el.addEventListener('input', updateTotals));
         row.querySelector('.remove-item').addEventListener('click', function() {
-            if (document.querySelectorAll('.item-row').length > 1) {
+            if (document.querySelectorAll('.item-card').length > 1) {
                 row.remove();
                 itemCount--;
                 itemCountInput.value = itemCount;
                 updateTotals();
             }
         });
-        toggleFields(row);
-    });
+    }
 
-    // Add item button
+    // Initial bind for existing rows
+    document.querySelectorAll('.item-card').forEach(row => attachEvents(row));
+
     addBtn.addEventListener('click', addItemRow);
 
-    // Payment amount input
-    document.getElementById('payment_amount')?.addEventListener('input', updateRemaining);
-
-    // Preview and confirm modal
+    // Preview & Confirm
     previewBtn.addEventListener('click', function() {
         if (!validateOrder()) return;
         const totals = window._totals || { grand: 0 };
         const customerName = document.querySelector('input[name="name"]')?.value || '{{ customer.name|default:"N/A" }}';
         let itemsHtml = '';
-        document.querySelectorAll('.item-row').forEach(row => {
+        document.querySelectorAll('.item-card').forEach(row => {
             const type = row.querySelector('.item-type-select').value;
             if (type === 'grinding') {
                 const cat = row.querySelector('.category-select').options[row.querySelector('.category-select').selectedIndex]?.text || 'N/A';
                 const kg = row.querySelector('.total-kg').value || 0;
                 const cleaning = row.querySelector('input[type="checkbox"]').checked ? 'Yes' : 'No';
-                itemsHtml += `<p><strong>${cat}</strong> (Grinding) - ${kg}kg, Cleaning: ${cleaning}</p>`;
+                itemsHtml += `<div class="d-flex justify-content-between border-bottom py-1"><span><strong>${cat}</strong> (Grinding)</span><span>${kg}kg, Cleaning: ${cleaning}</span></div>`;
             } else {
                 const cat = row.querySelector('.selling-category-select').options[row.querySelector('.selling-category-select').selectedIndex]?.text || 'N/A';
                 const meas = row.querySelector('.selling-price-select').options[row.querySelector('.selling-price-select').selectedIndex]?.text || 'N/A';
                 const qty = row.querySelector('.quantity').value || 0;
-                itemsHtml += `<p><strong>${cat}</strong> (Selling) - ${qty} ${meas}</p>`;
+                itemsHtml += `<div class="d-flex justify-content-between border-bottom py-1"><span><strong>${cat}</strong> (Selling)</span><span>${qty} ${meas}</span></div>`;
             }
         });
         const paymentType = document.getElementById('payment_type').value;
@@ -476,18 +726,18 @@ document.addEventListener('DOMContentLoaded', function() {
             paymentAmount = totals.grand;
         }
         modalBody.innerHTML = `
-            <p><strong>Customer:</strong> ${customerName}</p>
-            <hr>
-            <h6>Items:</h6>
+            <div class="mb-3"><i class="fas fa-user"></i> <strong>Customer:</strong> ${customerName}</div>
+            <h6 class="border-bottom pb-1">Items</h6>
             ${itemsHtml}
             <hr>
-            <p><strong>Grinding Total:</strong> ₹${totals.grinding.toFixed(2)}</p>
-            <p><strong>Cleaning Total:</strong> ₹${totals.cleaning.toFixed(2)}</p>
-            <p><strong>Selling Total:</strong> ₹${totals.selling.toFixed(2)}</p>
-            <h5><strong>Grand Total:</strong> ₹${totals.grand.toFixed(2)}</h5>
-            <p><strong>Payment Type:</strong> ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</p>
-            <p><strong>Amount Paid:</strong> ₹${paymentAmount.toFixed(2)}</p>
-            <p><strong>Remaining:</strong> ₹${(totals.grand - paymentAmount).toFixed(2)}</p>
+            <div class="d-flex justify-content-between"><span>Grinding Total</span><span>₹${totals.grinding.toFixed(2)}</span></div>
+            <div class="d-flex justify-content-between"><span>Cleaning Total</span><span>₹${totals.cleaning.toFixed(2)}</span></div>
+            <div class="d-flex justify-content-between"><span>Selling Total</span><span>₹${totals.selling.toFixed(2)}</span></div>
+            <div class="d-flex justify-content-between fw-bold fs-5 mt-2"><span>Grand Total</span><span>₹${totals.grand.toFixed(2)}</span></div>
+            <hr>
+            <div class="d-flex justify-content-between"><span>Payment Type</span><span class="badge bg-secondary">${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)}</span></div>
+            <div class="d-flex justify-content-between"><span>Amount Paid</span><span>₹${paymentAmount.toFixed(2)}</span></div>
+            <div class="d-flex justify-content-between"><span>Remaining</span><span class="fw-bold">₹${(totals.grand - paymentAmount).toFixed(2)}</span></div>
         `;
         var modalEl = document.getElementById('confirmModal');
         if (modalEl) {
@@ -495,6 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var modal = new bootstrap.Modal(modalEl);
                 modal.show();
             } else {
+                // fallback
                 modalEl.style.display = 'block';
                 modalEl.classList.add('show');
                 document.body.classList.add('modal-open');
@@ -508,13 +759,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     confirmSubmit.addEventListener('click', function() {
+        // show spinner
+        submitSpinner.classList.add('active');
         document.getElementById('orderForm').submit();
     });
 
-    // Validation function
     function validateOrder() {
         let errors = [];
-        // Walk-in name etc.
         const customerId = document.querySelector('input[name="customer_id"]')?.value;
         if (!customerId) {
             const name = document.querySelector('input[name="name"]')?.value.trim();
@@ -525,9 +776,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const phone = document.getElementById('walkin_phone')?.value.trim();
             if (!phone) errors.push('Phone is required for partial payment.');
         }
-        // Check at least one item with valid data
         let hasItem = false;
-        document.querySelectorAll('.item-row').forEach(row => {
+        document.querySelectorAll('.item-card').forEach(row => {
             const type = row.querySelector('.item-type-select').value;
             if (type === 'grinding') {
                 const cat = row.querySelector('.category-select').value;
@@ -539,9 +789,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (price && qty > 0) hasItem = true;
             }
         });
-        
-        // Check stock for selling items
-        document.querySelectorAll('.item-row').forEach(row => {
+        // stock check
+        document.querySelectorAll('.item-card').forEach(row => {
             const itemType = row.querySelector('.item-type-select').value;
             if (itemType === 'selling') {
                 const priceSelect = row.querySelector('.selling-price-select');
@@ -551,14 +800,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const qty = parseFloat(row.querySelector('.quantity').value) || 0;
                     if (qty > stock) {
                         const categorySelect = row.querySelector('.selling-category-select');
-                const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || 'Unknown';
-                const measurement = selectedOption.getAttribute('data-measurement') || '';
-                errors.push(`Insufficient stock for "${categoryName}". Available: ${stock} ${measurement}`);
+                        const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || 'Unknown';
+                        const measurement = selectedOption.getAttribute('data-measurement') || '';
+                        errors.push(`Insufficient stock for "${categoryName}". Available: ${stock} ${measurement}`);
                     }
                 }
             }
         });
-        
         if (!hasItem) errors.push('Please add at least one valid item.');
         const errorDiv = document.getElementById('formErrors');
         if (errors.length > 0) {
@@ -571,10 +819,5 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         }
     }
-
-    // Initial calculations
-    updateTotals();
-});
 </script>
-
 {% endblock %}
