@@ -183,33 +183,33 @@ def categories(request, **kwargs):
 @login_required
 
 @login_required
-
-@login_required
 def customers(request, **kwargs):
     tenant = request.tenant
-    customer_type = request.GET.get('type', 'regular')
-    search = request.GET.get('search', '').strip()
-    sort = request.GET.get('sort', 'spent')
-    order = request.GET.get('order', 'desc')
+    customers = ChakkiCustomer.objects.filter(tenant=tenant).prefetch_related('chakkiorder_set')
 
-    if customer_type == 'regular':
-        customers_qs = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=True)
-    else:
-        customers_qs = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=False)
+    # Search and sort parameters
+    search = request.GET.get('search', '').strip()
+    sort = request.GET.get('sort', 'spent')   # spent, orders, avg, pending, name
+    order = request.GET.get('order', 'desc')  # asc or desc
 
     customer_data = []
-    for c in customers_qs:
+    for c in customers:
         orders = ChakkiOrder.objects.filter(tenant=tenant, customer=c)
         completed = orders.filter(status='completed')
         total_spent = completed.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
         total_orders = orders.count()
         completed_orders = completed.count()
         avg_order = total_spent / completed_orders if completed_orders > 0 else Decimal('0')
+
+        # Pending amount (unpaid + partial)
         total_pending = Decimal('0')
         for o in orders.exclude(status='completed'):
             total_pending += o.remaining_amount
+
+        # First and last order dates
         first_order = orders.order_by('created_at').first()
         last_order = orders.order_by('-created_at').first()
+
         customer_data.append({
             'id': c.id,
             'name': c.name,
@@ -225,9 +225,11 @@ def customers(request, **kwargs):
             'last_order': last_order.created_at if last_order else None,
         })
 
+    # Apply search
     if search:
         customer_data = [c for c in customer_data if search.lower() in c['name'].lower() or search in c['phone']]
 
+    # Apply sorting
     reverse = (order == 'desc')
     if sort == 'name':
         customer_data.sort(key=lambda x: x['name'].lower(), reverse=reverse)
@@ -240,17 +242,19 @@ def customers(request, **kwargs):
     elif sort == 'pending':
         customer_data.sort(key=lambda x: x['total_pending'], reverse=reverse)
 
+    # Pagination (optional - 50 per page)
     from django.core.paginator import Paginator
-    paginator = Paginator(customer_data, 30)
+    paginator = Paginator(customer_data, 50)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
+    # KPIs
     total_customers = len(customer_data)
     total_revenue = sum(c['total_spent'] for c in customer_data)
     total_pending_all = sum(c['total_pending'] for c in customer_data)
     avg_customer_value = total_revenue / total_customers if total_customers else 0
-    total_orders_all = sum(c['total_orders'] for c in customer_data)
 
+    # Chart: top 10 customers by revenue
     top_10 = sorted(customer_data, key=lambda x: x['total_spent'], reverse=True)[:10]
     chart_labels = [c['name'] for c in top_10]
     chart_data = [float(c['total_spent']) for c in top_10]
@@ -262,8 +266,6 @@ def customers(request, **kwargs):
         'total_revenue': total_revenue,
         'total_pending_all': total_pending_all,
         'avg_customer_value': avg_customer_value,
-        'total_orders_all': total_orders_all,
-        'customer_type': customer_type,
         'search': search,
         'sort': sort,
         'order': order,
