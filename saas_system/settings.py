@@ -2,9 +2,9 @@ import os
 import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -15,24 +15,13 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
 ]
 
-# ---------- django-tenants settings ----------
+TENANT_MODEL = 'tenants.Tenant'
+PUBLIC_SCHEMA_NAME = 'public'
+PUBLIC_SCHEMA_URLCONF = 'saas_system.urls'
+DATABASE_ROUTERS = ['django_tenants.routers.TenantSyncRouter']
+
 SHARED_APPS = (
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'tenants',         # simple tenant model
-)
-
-TENANT_APPS = (
-    'core',
-    'chakki',
-    'expenses',
-)
-
-INSTALLED_APPS = [
+    'django_tenants',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,14 +29,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tenants',
+)
+
+TENANT_APPS = (
     'core',
     'chakki',
     'expenses',
     'reports',
-]
+)
+
+INSTALLED_APPS = list(SHARED_APPS) + list(TENANT_APPS)
 
 MIDDLEWARE = [
-    #   # disabled for single-tenant
+    'core.middleware.TenantFromPathMiddleware',
+    'core.middleware.DeviceMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -56,8 +51,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.DeviceMiddleware',
-    'core.middleware.TenantFromPathMiddleware',
 ]
 
 ROOT_URLCONF = 'saas_system.urls'
@@ -74,7 +67,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.tenant_processor',
-                'core.context_processors.chakki_counts',
                 'core.context_processors.today_context',
             ],
         },
@@ -83,25 +75,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'saas_system.wsgi.application'
 
-# Database – use django-tenants backend
-
 DATABASES = {
     'default': dj_database_url.config(default='postgresql://localhost:5432/dbname')
 }
-# Ensure the correct engine for django-tenants
 DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
 
-
-
-
-# TENANT_MODEL removed
-
-# Authentication – use default backend
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Password validation (unchanged)
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -131,3 +113,30 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+# Development overrides (disable secure cookies for HTTP)
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_TRUSTED_ORIGINS.append('http://149.56.80.98:8001')
