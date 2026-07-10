@@ -594,17 +594,25 @@
             <span class="meta"><i class="far fa-calendar-alt"></i> {{ order.created_at|date:"d M H:i" }}</span>
         </div>
         <div class="actions">
-            {% if order.status != 'completed' and order.payment_status != 'partial' %}
-                <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action primary"><i class="fas fa-check"></i> Complete</a>
+    {% if order.status != 'cancelled' and order.status != 'completed' and order.payment_status != 'partial' %}
+        <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action primary"><i class="fas fa-check"></i> Complete</a>
+    {% endif %}
+    {% if order.status != 'cancelled' and order.payment_status == 'partial' %}
+        <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action collect-pending"><i class="fas fa-hand-holding-usd"></i> Collect Pending</a>
+    {% endif %}
+    {% if order.can_cancel %}
+        <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn-action outline" onclick="return confirm('Cancel this order?')"><i class="fas fa-times"></i> Cancel</a>
+    {% endif %}
+    {% if order.status == 'cancelled' and order.cancelled_at %}
+        {% now "U" as current_timestamp %}
+        {% with cancel_time=order.cancelled_at|date:"U"|add:"0" %}
+            {% if current_timestamp|add:"-900" <= cancel_time|add:"0" %}
+                <a href="/portal/{{ tenant.schema_name }}/chakki/recover/{{ order.id }}/" class="btn-action success" onclick="return confirm('Recover this order? It will return to its previous state.')"><i class="fas fa-undo"></i> Recover</a>
             {% endif %}
-            {% if order.payment_status == 'partial' %}
-                <a href="/portal/{{ tenant.schema_name }}/chakki/complete-action/{{ order.id }}/" class="btn-action collect-pending"><i class="fas fa-hand-holding-usd"></i> Collect Pending</a>
-            {% endif %}
-            {% if order.can_cancel %}
-            <a href="/portal/{{ tenant.schema_name }}/chakki/cancel/{{ order.id }}/" class="btn-action outline" onclick="return confirm('Cancel this order?')"><i class="fas fa-times"></i> Cancel</a>
-            {% endif %}
-            <button class="btn-action secondary view-transcript" data-order-id="{{ order.id }}"><i class="fas fa-file-alt"></i> Transcript</button>
-        </div>
+        {% endwith %}
+    {% endif %}
+    <button class="btn-action secondary view-transcript" data-order-id="{{ order.id }}"><i class="fas fa-file-alt"></i> Transcript</button>
+</div>
     </div>
     {% empty %}
     <div class="empty-state">
@@ -615,7 +623,6 @@
 </div>
 
 <!-- Pagination -->
-{% if page_obj.has_other_pages %}
 <div class="pagination-wrap">
     <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
     <div class="step-links">
@@ -636,7 +643,6 @@
         {% endif %}
     </div>
 </div>
-{% endif %}
 
 <!-- Transcript Modal -->
 <div class="modal-overlay" id="transcriptModal">

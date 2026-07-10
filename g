@@ -1,62 +1,89 @@
 #!/usr/bin/env python3
-"""
-FIX: Restore the missing <div> and correct dynamic classes in mobile/chakki.html
-"""
+import os
 
-import re
-from pathlib import Path
+VIEWS_PATH = "core/views.py"
 
-def fix_template():
-    file_path = Path(__file__).parent / 'templates' / 'mobile' / 'chakki.html'
-    if not file_path.exists():
-        print(f"❌ File not found: {file_path}")
-        return False
+# Correct content (without the stray line)
+correct_content = '''from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
+from tenants.models import Tenant
 
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+def portal_login(request, schema_name):
+    tenant = Tenant.objects.filter(schema_name=schema_name).first()
+    if not tenant:
+        raise Http404("Tenant not found")
+    request.tenant = tenant
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            # Only owner or superuser can login to this tenant
+            if user == tenant.owner or user.is_superuser:
+                login(request, user)
+                return redirect('portal_dashboard', schema_name=schema_name)
+            else:
+                return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Access denied for this tenant'})
+        else:
+            return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Invalid credentials'})
+    return render(request, 'desktop/login.html', {'tenant': tenant})
 
-    # The broken line currently starts with "    class="order-card ..."
-    # We need to replace it with the full <div ...> tag.
-    # We'll find that exact line using a regex that matches the line starting with whitespace + "class="order-card"
-    # and ends with "data-order-id="{{ order.id }}">"
+def portal_logout(request, schema_name):
+    logout(request)
+    return redirect('portal_login', schema_name=schema_name)
 
-    # First, let's define the correct replacement:
-    correct_line = (
-        '    <div class="order-card {% if order.status == \'ready\' %}order-card-ready'
-        '{% elif order.payment_status == \'partial\' and order.status != \'ready\' and order.status != \'cancelled\' %}order-card-partial'
-        '{% elif order.status == \'pending\' and order.payment_status == \'unpaid\' %}order-card-pending-unpaid'
-        '{% elif order.status == \'completed\' and order.payment_status == \'paid\' %}order-card-completed-paid'
-        '{% elif order.status == \'cancelled\' %}order-card-cancelled{% endif %}" data-order-id="{{ order.id }}">'
-    )
+def redirect_to_portal_login(request):
+    next_url = request.GET.get('next', '')
+    schema = None
+    if next_url:
+        parts = next_url.split('/')
+        if len(parts) >= 3 and parts[1] == 'portal':
+            schema = parts[2]
+    if schema:
+        from django.shortcuts import redirect
+        return redirect(f'/portal/{schema}/?next={next_url}')
+    else:
+        from django.shortcuts import redirect
+        return redirect('/admin/')
 
-    # Pattern to find the broken line.
-    # It starts with whitespace, then "class="order-card" and includes the dynamic class logic.
-    # We'll match the entire line (including the data-order-id) using a non-greedy match.
-    # The line ends with "data-order-id="{{ order.id }}">" but it might have the closing > already.
-    # The broken line we see in the paste is:
-    #     class="order-card {% if order.status == 'ready' %}...{% endif %}" data-order-id="{{ order.id }}">
-    # So we can match from "class="order-card" to the end of the line that contains data-order-id.
+@login_required
+def portal_dashboard(request, schema_name):
+    tenant = Tenant.objects.filter(schema_name=schema_name).first()
+    if not tenant:
+        raise Http404("Tenant not found")
+    if request.user != tenant.owner and not request.user.is_superuser:
+        raise Http404("Access denied")
+    request.tenant = tenant
+    from chakki.views import dashboard as chakki_dashboard
+    return chakki_dashboard(request)
 
-    pattern = r'(\s*)class="order-card {% if order\.status == \'ready\' %}.*?data-order-id="{{ order\.id }}">'
+def root_redirect(request):
+    """Serve a simple HTML page that redirects via JavaScript."""
+    return render(request, 'root.html')
 
-    # We'll use re.DOTALL to match across lines? Actually it's one line, so we don't need DOTALL.
-    # We'll replace the entire matched group with the correct line, preserving indentation.
-    def replace_match(match):
-        indent = match.group(1)  # capture the leading whitespace
-        return indent + correct_line.lstrip()  # correct_line already has 4 spaces, but we use indent from match
+@login_required
+def more_view(request, schema_name):
+    from tenants.models import Tenant
+    tenant = get_object_or_404(Tenant, schema_name=schema_name)
+    request.tenant = tenant
+    context = {'tenant': tenant}
+    template = 'mobile/more.html' if request.mobile else 'desktop/more.html'
+    return render(request, template, context)
 
-    new_content = re.sub(pattern, replace_match, content, flags=re.MULTILINE)
+@login_required
+def customers_view(request, schema_name):
+    # Redirect to chakki customer list
+    return redirect('customer_list', schema_name=schema_name)
+'''
 
-    if new_content == content:
-        print("ℹ️  No changes needed (already fixed).")
-        return True
+# Write the correct content
+with open(VIEWS_PATH, 'w') as f:
+    f.write(correct_content)
 
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write(new_content)
-
-    print(f"✅ Fixed {file_path}")
-    return True
-
-if __name__ == "__main__":
-    fix_template()	
-
+print("✅ core/views.py fixed.")
+print("🔄 Restarting Gunicorn...")
+import subprocess
+subprocess.run(["sudo", "systemctl", "restart", "gunicorn"], check=False)
+print("✅ Done! Visit http://149.56.80.98")

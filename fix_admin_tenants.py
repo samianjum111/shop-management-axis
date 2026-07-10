@@ -1,4 +1,10 @@
-from django.db import models
+#!/usr/bin/env python3
+import os
+
+MODELS_PATH = "tenants/models.py"
+
+# Correct models.py with the post_save signal
+new_models_content = '''from django.db import models
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -42,3 +48,19 @@ def create_tenant_schema(sender, instance, created, **kwargs):
         # If something fails, reset to public and re‑raise
         connection.set_schema_to_public()
         raise e
+'''
+
+# Backup original
+if os.path.exists(MODELS_PATH):
+    os.rename(MODELS_PATH, MODELS_PATH + ".bak")
+    print(f"📦 Backed up original to {MODELS_PATH}.bak")
+
+# Write new content
+with open(MODELS_PATH, 'w') as f:
+    f.write(new_models_content)
+
+print("✅ tenants/models.py updated with auto‑schema creation signal.")
+print("🔄 Restart Gunicorn to apply changes...")
+import subprocess
+subprocess.run(["sudo", "systemctl", "restart", "gunicorn"], check=False)
+print("✅ Done! Now any tenant created via admin will automatically have its schema and tables.")

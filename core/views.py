@@ -66,9 +66,7 @@ def more_view(request, schema_name):
     template = 'mobile/more.html' if request.mobile else 'desktop/more.html'
     return render(request, template, context)
 
-
 @login_required
 def customers_view(request, schema_name):
     # Redirect to chakki customer list
     return redirect('customer_list', schema_name=schema_name)
-
