@@ -37,9 +37,13 @@ class TenantFromPathMiddleware:
                     request.tenant = None
             else:
                 # For admin and other non-portal paths, use public tenant
-                tenant = Tenant.objects.get(schema_name='public')
-                request.tenant = tenant
-                connection.set_tenant(tenant)      # <-- switch to public
+                try:
+                    tenant = Tenant.objects.get(schema_name='public')
+                    request.tenant = tenant
+                    connection.set_tenant(tenant)
+                except Tenant.DoesNotExist:
+                    request.tenant = None
+                    connection.set_schema_to_public()      # <-- switch to public
         except Tenant.DoesNotExist:
             request.tenant = None
         response = self.get_response(request)
