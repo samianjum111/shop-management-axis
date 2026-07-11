@@ -1,89 +1,57 @@
 #!/usr/bin/env python3
+"""
+Patcher: Remove PWA Install button from mobile and desktop base templates.
+Run: python3 patcher.py
+"""
+
 import os
+import re
+import shutil
 
-VIEWS_PATH = "core/views.py"
+FILES = [
+    "templates/mobile/base.html",
+    "templates/desktop/base.html",
+]
 
-# Correct content (without the stray line)
-correct_content = '''from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.http import Http404
-from tenants.models import Tenant
+def remove_pwa_block(content):
+    """Remove everything between <!-- ===== PWA INSTALL ... ===== --> and <!-- ===== END PWA ===== -->"""
+    start_marker = "<!-- ===== PWA INSTALL (Header Button) ===== -->"
+    end_marker = "<!-- ===== END PWA ===== -->"
+    pattern = re.escape(start_marker) + r".*?" + re.escape(end_marker)
+    new_content, n = re.subn(pattern, "", content, flags=re.DOTALL)
+    return new_content, n
 
-def portal_login(request, schema_name):
-    tenant = Tenant.objects.filter(schema_name=schema_name).first()
-    if not tenant:
-        raise Http404("Tenant not found")
-    request.tenant = tenant
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            # Only owner or superuser can login to this tenant
-            if user == tenant.owner or user.is_superuser:
-                login(request, user)
-                return redirect('portal_dashboard', schema_name=schema_name)
-            else:
-                return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Access denied for this tenant'})
-        else:
-            return render(request, 'desktop/login.html', {'tenant': tenant, 'error': 'Invalid credentials'})
-    return render(request, 'desktop/login.html', {'tenant': tenant})
+def process_file(filepath):
+    print(f"Processing {filepath} ...")
+    if not os.path.exists(filepath):
+        print(f"  File not found, skipping.")
+        return False
 
-def portal_logout(request, schema_name):
-    logout(request)
-    return redirect('portal_login', schema_name=schema_name)
+    # Backup
+    backup = filepath + ".bak"
+    shutil.copy2(filepath, backup)
+    print(f"  Backup created: {backup}")
 
-def redirect_to_portal_login(request):
-    next_url = request.GET.get('next', '')
-    schema = None
-    if next_url:
-        parts = next_url.split('/')
-        if len(parts) >= 3 and parts[1] == 'portal':
-            schema = parts[2]
-    if schema:
-        from django.shortcuts import redirect
-        return redirect(f'/portal/{schema}/?next={next_url}')
-    else:
-        from django.shortcuts import redirect
-        return redirect('/admin/')
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
 
-@login_required
-def portal_dashboard(request, schema_name):
-    tenant = Tenant.objects.filter(schema_name=schema_name).first()
-    if not tenant:
-        raise Http404("Tenant not found")
-    if request.user != tenant.owner and not request.user.is_superuser:
-        raise Http404("Access denied")
-    request.tenant = tenant
-    from chakki.views import dashboard as chakki_dashboard
-    return chakki_dashboard(request)
+    new_content, removed = remove_pwa_block(content)
 
-def root_redirect(request):
-    """Serve a simple HTML page that redirects via JavaScript."""
-    return render(request, 'root.html')
+    if removed == 0:
+        print("  No PWA block found, nothing changed.")
+        return False
 
-@login_required
-def more_view(request, schema_name):
-    from tenants.models import Tenant
-    tenant = get_object_or_404(Tenant, schema_name=schema_name)
-    request.tenant = tenant
-    context = {'tenant': tenant}
-    template = 'mobile/more.html' if request.mobile else 'desktop/more.html'
-    return render(request, template, context)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(new_content)
 
-@login_required
-def customers_view(request, schema_name):
-    # Redirect to chakki customer list
-    return redirect('customer_list', schema_name=schema_name)
-'''
+    print(f"  Removed {removed} block(s). File updated.")
+    return True
 
-# Write the correct content
-with open(VIEWS_PATH, 'w') as f:
-    f.write(correct_content)
+def main():
+    print("=== PWA Install Button Remover ===")
+    for f in FILES:
+        process_file(f)
+    print("Done.")
 
-print("✅ core/views.py fixed.")
-print("🔄 Restarting Gunicorn...")
-import subprocess
-subprocess.run(["sudo", "systemctl", "restart", "gunicorn"], check=False)
-print("✅ Done! Visit http://149.56.80.98")
+if __name__ == "__main__":
+    main()

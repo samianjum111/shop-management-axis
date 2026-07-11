@@ -76,17 +76,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'saas_system.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': 'defaultdb',
-        'USER': 'avnadmin',
-        'PASSWORD': 'AVNS_P4gAA2Mtmv-JW5JOlB9',
-        'HOST': 'axis-saas-axis-system-saas.h.aivencloud.com',
-        'PORT': '23808',
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
-    }
+    'default': dj_database_url.config(default='postgresql://localhost:5432/dbname')
 }
 DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
 
