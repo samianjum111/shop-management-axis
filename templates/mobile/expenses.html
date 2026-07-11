@@ -19,6 +19,8 @@
         text-decoration: none;
         color: var(--text);
         transition: 0.2s;
+        position: relative;
+        cursor: pointer;
     }
     .card-item:active { transform: scale(0.96); }
     .card-item .icon {
@@ -34,6 +36,33 @@
         font-size: 0.7rem;
         color: var(--muted);
     }
+
+    /* ----- "Coming Soon" badges on cards ----- */
+    .badge-soon {
+        background: var(--accent-light);
+        color: var(--accent);
+        font-size: 0.5rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.1rem 0.5rem;
+        border-radius: 30px;
+        letter-spacing: 0.04em;
+        border: 1px solid rgba(26,42,58,0.15);
+        display: inline-block;
+        margin-top: 0.1rem;
+    }
+    .card-item.disabled-card {
+        opacity: 0.85;
+        cursor: default;
+    }
+    .card-item.disabled-card:active {
+        transform: none;
+    }
+    .card-item.disabled-card .icon {
+        color: var(--muted);
+    }
+
+    /* Summary Strip */
     .summary-strip {
         display: flex;
         gap: 0.6rem;
@@ -64,37 +93,111 @@
     .summary-card.taken .value { color: #3498db; }
     .summary-card.balance .value { color: #2ecc71; }
     .summary-card.total .value { color: #1a1a2e; }
+
+    /* ----- Coming Soon Modal ----- */
+    .modal-coming-soon {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1050;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
+        backdrop-filter: blur(4px);
+    }
+    .modal-coming-soon.show {
+        display: flex;
+    }
+    .modal-coming-soon .modal-content {
+        border-radius: 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        text-align: center;
+        padding: 1.5rem 1.2rem;
+        max-width: 340px;
+        width: 100%;
+    }
+    .modal-coming-soon .modal-icon {
+        font-size: 3.5rem;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .modal-coming-soon .modal-title {
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: var(--text);
+        margin-bottom: 0.3rem;
+    }
+    .modal-coming-soon .modal-message {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin-bottom: 1.2rem;
+        line-height: 1.4;
+    }
+    .modal-coming-soon .btn-close-premium {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 40px;
+        padding: 0.5rem 2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: 0.2s;
+        cursor: pointer;
+    }
+    .modal-coming-soon .btn-close-premium:active {
+        transform: scale(0.94);
+    }
 </style>
 {% endblock %}
 
 {% block body %}
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="fw-bold mb-0">💰 Expenses</h5>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="btn btn-primary-custom btn-sm">+ Add</a>
+    <!-- Add Button - now triggers Coming Soon -->
+    <button class="btn btn-primary-custom btn-sm" onclick="showComingSoon()">+ Add</button>
 </div>
 
 <!-- Cards Grid -->
 <div class="cards-grid">
+    <!-- Daily Expenses (active) -->
     <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="card-item">
         <div class="icon"><i class="fas fa-receipt"></i></div>
         <div class="label">Daily Expenses</div>
         <div class="count">{{ daily_expenses_count }}</div>
     </a>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="card-item">
+
+    <!-- Loans Given (coming soon) -->
+    <div class="card-item disabled-card" onclick="showComingSoon()">
         <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
         <div class="label">Loans Given</div>
         <div class="count">{{ loans_given_count }}</div>
-    </a>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="card-item">
+        <span class="badge-soon">Soon</span>
+    </div>
+
+    <!-- Loans Taken (coming soon) -->
+    <div class="card-item disabled-card" onclick="showComingSoon()">
         <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
         <div class="label">Loans Taken</div>
         <div class="count">{{ loans_taken_count }}</div>
-    </a>
-    <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="card-item">
+        <span class="badge-soon">Soon</span>
+    </div>
+
+    <!-- Reminders (coming soon) -->
+    <div class="card-item disabled-card" onclick="showComingSoon()">
         <div class="icon"><i class="fas fa-bell"></i></div>
         <div class="label">Reminders</div>
         <div class="count">{{ reminders_count }}</div>
-    </a>
+        <span class="badge-soon">Soon</span>
+    </div>
+
+    <!-- Workers (active) -->
     <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="card-item" style="grid-column: span 2;">
         <div class="icon"><i class="fas fa-users"></i></div>
         <div class="label">Workers</div>
@@ -121,4 +224,34 @@
         <div class="value">₹{{ net_balance|floatformat:2 }}</div>
     </div>
 </div>
+
+<!-- ===== COMING SOON MODAL ===== -->
+<div class="modal-coming-soon" id="comingSoonModal">
+    <div class="modal-content">
+        <span class="modal-icon"><i class="fas fa-rocket"></i></span>
+        <div class="modal-title">Coming Soon!</div>
+        <div class="modal-message">
+            This feature is under development.<br>
+            We're working hard to bring it to you. Stay tuned!
+        </div>
+        <button class="btn-close-premium" onclick="closeComingSoon()">Got it</button>
+    </div>
+</div>
+
+<script>
+    function showComingSoon() {
+        document.getElementById('comingSoonModal').classList.add('show');
+    }
+
+    function closeComingSoon() {
+        document.getElementById('comingSoonModal').classList.remove('show');
+    }
+
+    // Close modal when clicking outside the content
+    document.getElementById('comingSoonModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeComingSoon();
+        }
+    });
+</script>
 {% endblock %}

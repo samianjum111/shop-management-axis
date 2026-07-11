@@ -343,6 +343,30 @@
         <strong>Settings</strong>
     </a>
 </div>
+        <strong>New Order</strong>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/customer/create/" class="action-tile">
+        <div class="icon"><i class="fas fa-user-plus"></i></div>
+        <strong>Create Customer</strong>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="action-tile">
+        <div class="icon"><i class="fas fa-clock"></i></div>
+        <strong>Pending</strong>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="action-tile">
+        <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+        <strong>Ready</strong>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/" class="action-tile">
+        <div class="icon"><i class="fas fa-money-bill-wave"></i></div>
+        <strong>Expenses</strong>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/chakki/settings/" class="action-tile">
+        <div class="icon"><i class="fas fa-cog"></i></div>
+        <strong>Settings</strong>
+    </a>
+</div>
+
 
 <!-- Recent Orders -->
 <div class="section-heading">

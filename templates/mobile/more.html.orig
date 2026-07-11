@@ -251,17 +251,17 @@
     <span class="label">New Order</span>
     <span class="desc">Create a new order</span>
   </a>
-  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=pending" class="more-card">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/orders/pending/" class="more-card">
     <div class="icon"><i class="fas fa-clock"></i></div>
     <span class="label">Pending</span>
     <span class="desc">{{ pending_count }} pending</span>
   </a>
-  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=ready" class="more-card">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/orders/ready/" class="more-card">
     <div class="icon"><i class="fas fa-hourglass-half"></i></div>
     <span class="label">Ready</span>
     <span class="desc">{{ ready_count }} ready</span>
   </a>
-  <a href="/portal/{{ tenant.schema_name }}/chakki/?status=completed" class="more-card">
+  <a href="/portal/{{ tenant.schema_name }}/chakki/orders/completed/" class="more-card">
     <div class="icon"><i class="fas fa-check-circle"></i></div>
     <span class="label">Completed</span>
     <span class="desc">{{ completed_count }} done</span>

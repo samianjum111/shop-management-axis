@@ -4,199 +4,297 @@
 
 {% block extra_head %}
 <style>
-  /* ===== PREMIUM MOBILE DAILY EXPENSES ===== */
+  /* ===== Premium Daily Expenses – Mobile ===== */
   :root {
-    --expense-radius: 16px;
+    --expense-card-radius: 16px;
     --expense-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    --expense-hover-shadow: 0 8px 28px rgba(0,0,0,0.10);
+    --expense-hover-shadow: 0 8px 28px rgba(0,0,0,0.12);
   }
 
+  /* Header */
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.2rem;
-    gap: 0.6rem;
   }
   .page-header h2 {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    margin: 0;
-    letter-spacing: -0.02em;
     color: var(--text);
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 0.4rem;
   }
   .page-header h2 i {
     color: var(--accent);
+    font-size: 1.3rem;
   }
   .btn-add-premium {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
     color: #fff;
     border: none;
     border-radius: 40px;
-    padding: 0.5rem 1.2rem;
+    padding: 0.4rem 1.4rem;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 16px rgba(230,126,34,0.3);
     transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(26,42,58,0.15);
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    white-space: nowrap;
+    gap: 0.3rem;
   }
   .btn-add-premium:active {
     transform: scale(0.94);
+    box-shadow: 0 2px 8px rgba(230,126,34,0.2);
   }
 
-  /* Analytics Horizontal Scroll */
+  /* Analytics – horizontal scroll */
   .analytics-scroll {
     display: flex;
-    gap: 0.6rem;
+    gap: 0.8rem;
     overflow-x: auto;
     padding: 0.2rem 0 1rem;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.5rem;
+    scrollbar-width: none;
   }
-  .analytics-scroll .analytics-card {
-    flex: 0 0 120px;
+  .analytics-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .analytics-card {
+    flex: 0 0 140px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--expense-radius);
+    border-radius: var(--expense-card-radius);
     padding: 0.8rem 0.4rem;
-    text-align: center;
-    box-shadow: var(--expense-shadow);
     scroll-snap-align: start;
-    transition: 0.25s;
+    box-shadow: var(--expense-shadow);
+    text-align: center;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
   }
-  .analytics-scroll .analytics-card:active {
-    transform: scale(0.94);
+  .analytics-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .analytics-card:active {
+    transform: scale(0.96);
+    border-color: var(--accent);
+  }
+  .analytics-card:active::after {
+    opacity: 1;
   }
   .analytics-card .icon {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--accent);
-    margin-bottom: 0.1rem;
     display: block;
+    margin-bottom: 0.1rem;
   }
   .analytics-card .number {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text);
     line-height: 1.2;
   }
   .analytics-card .label {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
     color: var(--muted);
     letter-spacing: 0.04em;
     font-weight: 600;
   }
 
-  /* Filter Bar – search + dropdown */
+  /* Filter Bar – compact with toggle */
   .filter-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 40px;
-    padding: 0.3rem 0.8rem 0.3rem 1rem;
-    margin-bottom: 1.2rem;
+    border-radius: var(--expense-card-radius);
+    padding: 0.4rem 0.8rem;
+    margin-bottom: 1rem;
     box-shadow: var(--expense-shadow);
   }
-  .filter-bar .search-icon {
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-  .filter-bar input[type="text"] {
-    flex: 1;
-    border: none;
-    background: transparent;
-    padding: 0.5rem 0;
-    font-size: 0.9rem;
-    color: var(--text);
-    outline: none;
-    min-width: 80px;
-  }
-  .filter-bar input[type="text"]::placeholder {
-    color: var(--muted);
-  }
-  .filter-bar .filter-dropdown {
-    position: relative;
-  }
-  .filter-bar .filter-dropdown .btn-filter {
-    background: var(--surface-alt);
-    border: none;
-    border-radius: 30px;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    transition: 0.2s;
-    cursor: pointer;
-  }
-  .filter-bar .filter-dropdown .btn-filter:active {
-    transform: scale(0.94);
-  }
-  .filter-dropdown .dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--expense-radius);
-    min-width: 160px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    z-index: 100;
-    padding: 0.4rem 0;
-    margin-top: 0.2rem;
-  }
-  .filter-dropdown .dropdown-menu.show {
-    display: block;
-  }
-  .filter-dropdown .dropdown-item {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-    color: var(--text);
+  .filter-bar .filter-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background 0.15s;
   }
-  .filter-dropdown .dropdown-item:last-child {
-    border-bottom: none;
+  .filter-bar .search-wrap {
+    flex: 1;
+    position: relative;
   }
-  .filter-dropdown .dropdown-item:active {
+  .filter-bar .search-wrap i {
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  .filter-bar .search-wrap input {
+    width: 100%;
+    padding: 0.35rem 0.6rem 0.35rem 2rem;
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+    transition: 0.2s;
+  }
+  .filter-bar .search-wrap input:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(230,126,34,0.1);
+  }
+  .filter-bar .filter-toggle-wrap {
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .filter-bar .btn-filter-toggle {
     background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 0.3rem 0.9rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
   }
-  .filter-dropdown .dropdown-item i {
-    color: var(--accent);
-    width: 1.1rem;
-    text-align: center;
+  .filter-bar .btn-filter-toggle:active {
+    transform: scale(0.94);
+  }
+  .filter-bar .filter-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0.8rem 1rem;
+    min-width: 260px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    z-index: 20;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .filter-bar .filter-panel.open {
+    display: flex;
+  }
+  .filter-bar .filter-panel .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .filter-bar .filter-panel .filter-group label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .filter-bar .filter-panel .filter-group input {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+  .filter-bar .filter-panel .filter-group input:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+  .filter-bar .filter-panel .quick-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 0.2rem 0;
+  }
+  .filter-bar .filter-panel .btn-quick {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 0.15rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .filter-bar .filter-panel .btn-quick:active {
+    transform: scale(0.94);
+  }
+  .filter-bar .filter-panel .filter-actions {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: flex-end;
+    margin-top: 0.2rem;
+  }
+  .filter-bar .filter-panel .btn-clear {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 0.25rem 1rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .filter-bar .filter-panel .btn-clear:active {
+    transform: scale(0.94);
   }
 
   /* Expense Cards */
   .expense-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--expense-radius);
+    border-radius: var(--expense-card-radius);
     padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.7rem;
     box-shadow: var(--expense-shadow);
-    transition: 0.25s;
     cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .expense-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
   }
   .expense-card:active {
     transform: scale(0.98);
+    box-shadow: var(--expense-hover-shadow);
     border-color: var(--accent);
+  }
+  .expense-card:active::before {
+    opacity: 1;
   }
   .expense-card .top {
     display: flex;
@@ -213,183 +311,222 @@
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.4rem;
   }
   .expense-card .title i {
     color: var(--accent);
     font-size: 0.9rem;
+    flex-shrink: 0;
   }
   .expense-card .amount {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--accent);
+    flex-shrink: 0;
   }
   .expense-card .meta {
     font-size: 0.7rem;
-    color: var(--text-secondary);
-    margin-top: 0.15rem;
+    color: var(--muted);
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
   }
   .expense-card .meta i {
-    color: var(--muted);
-    margin-right: 0.2rem;
+    margin-right: 0.1rem;
+    font-size: 0.6rem;
   }
   .expense-card .desc {
     font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-top: 0.1rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 95%;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    display: block;
+    margin-bottom: 0.5rem;
   }
 
   /* Pagination */
-  .pagination-wrap {
+  .pagination {
     display: flex;
     justify-content: center;
     margin-top: 1.5rem;
     gap: 0.3rem;
     flex-wrap: wrap;
   }
-  .pagination-wrap .step-links a,
-  .pagination-wrap .step-links .current,
-  .pagination-wrap .step-links .disabled {
+  .pagination .step-links a, .pagination .step-links .current, .pagination .step-links .disabled {
     display: inline-block;
-    padding: 0.3rem 0.8rem;
+    padding: 0.3rem 0.7rem;
     border: 1px solid var(--border);
     border-radius: 30px;
     text-decoration: none;
     color: var(--text);
     font-weight: 500;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     transition: 0.2s;
   }
-  .pagination-wrap .step-links a:active {
-    transform: scale(0.94);
+  .pagination .step-links a:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
   }
-  .pagination-wrap .step-links .current {
+  .pagination .step-links .current {
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);
   }
-  .pagination-wrap .step-links .disabled {
-    color: var(--muted);
+  .pagination .step-links .disabled {
     opacity: 0.4;
     pointer-events: none;
   }
 
-  /* Modal Premium */
+  /* Premium Modal */
   .modal-content {
-    border-radius: 20px;
-    border: 1px solid var(--border);
+    border-radius: 24px;
+    border: none;
     background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
   }
   .modal-header {
     border-bottom: 1px solid var(--border);
-    padding: 1rem 1.2rem;
+    padding: 1.2rem 1.5rem;
   }
   .modal-header .modal-title {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   .modal-header .modal-title i {
     color: var(--accent);
-    margin-right: 0.4rem;
   }
   .modal-header .btn-close {
     background: none;
     border: none;
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  .modal-header .btn-close:hover {
+    opacity: 1;
   }
   .modal-body {
-    padding: 1.2rem;
+    padding: 1.5rem;
   }
   .modal-footer {
     border-top: 1px solid var(--border);
-    padding: 0.8rem 1.2rem;
+    padding: 1rem 1.5rem;
+    gap: 0.5rem;
   }
   .modal-footer .btn {
     border-radius: 40px;
-    padding: 0.4rem 1.2rem;
+    padding: 0.4rem 1.4rem;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    transition: 0.2s;
+  }
+  .modal-footer .btn-primary {
+    background: var(--accent);
+    border: none;
+    box-shadow: 0 4px 12px rgba(230,126,34,0.25);
+  }
+  .modal-footer .btn-primary:active {
+    transform: scale(0.94);
   }
   .modal-footer .btn-secondary {
     background: var(--surface-alt);
     border: 1px solid var(--border);
     color: var(--text-secondary);
   }
-  .modal-footer .btn-primary {
-    background: var(--accent);
-    border: none;
-    color: #fff;
-  }
-  .modal-footer .btn-primary:active {
+  .modal-footer .btn-secondary:active {
     transform: scale(0.94);
   }
-
   .form-group {
-    margin-bottom: 0.9rem;
+    margin-bottom: 1rem;
   }
   .form-group label {
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
     display: block;
-    margin-bottom: 0.2rem;
-  }
-  .form-group label .required {
-    color: #dc3545;
-    margin-left: 0.2rem;
+    margin-bottom: 0.3rem;
   }
   .form-group .form-control {
-    border-radius: 12px;
+    border-radius: 14px;
     border: 1.5px solid var(--border);
-    padding: 0.5rem 0.7rem;
+    padding: 0.6rem 0.8rem;
     background: var(--bg);
     color: var(--text);
-    font-size: 0.9rem;
-    transition: 0.2s;
+    font-size: 0.95rem;
     width: 100%;
+    transition: 0.2s;
   }
   .form-group .form-control:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(26,42,58,0.08);
+    box-shadow: 0 0 0 4px rgba(230,126,34,0.08);
     outline: none;
   }
-
-  .empty-state {
-    text-align: center;
-    padding: 2.5rem 1rem;
-    color: var(--muted);
-    background: var(--surface);
-    border-radius: var(--expense-radius);
-    border: 1px solid var(--border);
+  .form-group textarea.form-control {
+    resize: vertical;
+    min-height: 60px;
   }
-  .empty-state i {
-    font-size: 2.5rem;
-    color: var(--border);
-    margin-bottom: 0.5rem;
+  .required-star {
+    color: #e74c3c;
+    margin-left: 0.2rem;
+  }
+
+  /* Modal backdrop fix */
+  .modal-backdrop {
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    z-index: 1050;
+  }
+  .modal.show {
     display: block;
   }
-  .empty-state p {
-    font-size: 0.9rem;
-    margin: 0;
+  .modal-dialog {
+    margin: 1.75rem auto;
+    max-width: 400px;
+    pointer-events: none;
+  }
+  .modal-content {
+    pointer-events: auto;
   }
 
-  /* Bottom spacer for mobile nav */
-  .bottom-spacer { height: 80px; }
+  .bottom-spacer { height: 20px; }
 </style>
 {% endblock %}
 
 {% block body %}
 
-<!-- ===== PAGE HEADER ===== -->
+<!-- Page Header -->
 <div class="page-header">
   <h2><i class="fas fa-receipt"></i> Daily Expenses</h2>
   <button class="btn-add-premium" onclick="openAddModal()">
@@ -397,7 +534,7 @@
   </button>
 </div>
 
-<!-- ===== ANALYTICS (Horizontal Scroll) ===== -->
+<!-- Analytics (horizontal scroll) -->
 <div class="analytics-scroll">
   <div class="analytics-card">
     <span class="icon"><i class="fas fa-calendar-day"></i></span>
@@ -421,44 +558,58 @@
   </div>
 </div>
 
-<!-- ===== FILTER BAR (Search + Dropdown) ===== -->
+<!-- Filter Bar – compact with toggle -->
 <div class="filter-bar">
-  <span class="search-icon"><i class="fas fa-search"></i></span>
-  <form method="get" id="filterForm" style="display:flex;flex:1;align-items:center;gap:0.4rem;">
-    <input type="text" name="q" placeholder="Search expenses..." value="{{ search_q }}" id="searchInput">
-    <!-- Hidden date fields to be set by dropdown -->
-    <input type="hidden" name="start_date" id="startDate" value="{{ start_date }}">
-    <input type="hidden" name="end_date" id="endDate" value="{{ end_date }}">
-  </form>
-  <div class="filter-dropdown">
-    <button class="btn-filter" id="filterToggle" onclick="toggleDropdown()">
-      <i class="fas fa-sliders-h"></i> Filter
-    </button>
-    <div class="dropdown-menu" id="filterMenu">
-      <div class="dropdown-item" data-filter="today"><i class="fas fa-calendar-day"></i> Today</div>
-      <div class="dropdown-item" data-filter="week"><i class="fas fa-calendar-week"></i> This Week</div>
-      <div class="dropdown-item" data-filter="month"><i class="fas fa-calendar-alt"></i> This Month</div>
-      <div class="dropdown-item" data-filter="6months"><i class="fas fa-history"></i> Last 6 Months</div>
-      <div class="dropdown-item" data-filter="all"><i class="fas fa-undo-alt"></i> All</div>
+  <form method="get" id="filterForm" class="filter-form">
+    <div class="filter-row">
+      <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" id="searchInput" placeholder="Search..." value="{{ search_q }}" autocomplete="off">
+      </div>
+      <div class="filter-toggle-wrap">
+        <button type="button" class="btn-filter-toggle" onclick="toggleFilterPanel()">
+          <i class="fas fa-sliders-h"></i> Filters
+        </button>
+        <div class="filter-panel" id="filterPanel">
+          <div class="filter-group">
+            <label>From</label>
+            <input type="date" name="start_date" id="startDate" value="{{ start_date }}">
+          </div>
+          <div class="filter-group">
+            <label>To</label>
+            <input type="date" name="end_date" id="endDate" value="{{ end_date }}">
+          </div>
+          <div class="quick-filters">
+            <button type="button" class="btn-quick" onclick="setQuickFilter('today')">Today</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('week')">This Week</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('month')">This Month</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('6months')">6 Months</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('all')">All</button>
+          </div>
+          <div class="filter-actions">
+            <button type="button" class="btn-clear" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </form>
 </div>
 
-<!-- ===== EXPENSES LIST ===== -->
+<!-- Expenses List -->
 <div id="expensesList">
   {% for expense in page_obj %}
   <div class="expense-card" onclick="openDetailModal({{ expense.id }})">
     <div class="top">
-      <span class="title"><i class="fas fa-tag"></i> {{ expense.title|upper|truncatechars:30 }}</span>
+      <span class="title"><i class="fas fa-tag"></i> {{ expense.title|upper|truncatechars:25 }}</span>
       <span class="amount">₹{{ expense.amount|floatformat:2 }}</span>
     </div>
     <div class="meta">
       <span><i class="far fa-calendar-alt"></i> {{ expense.expense_date|date:"d M Y" }}</span>
       {% if expense.notes %}
-      <span><i class="far fa-sticky-note"></i> {{ expense.notes|truncatechars:20 }}</span>
+      <span><i class="far fa-sticky-note"></i> {{ expense.notes|truncatechars:15 }}</span>
       {% endif %}
     </div>
-    <div class="desc">{{ expense.description|truncatechars:60 }}</div>
+    <div class="desc">{{ expense.description|truncatechars:50 }}</div>
   </div>
   {% empty %}
   <div class="empty-state">
@@ -468,9 +619,9 @@
   {% endfor %}
 </div>
 
-<!-- ===== PAGINATION ===== -->
+<!-- Pagination -->
 {% if page_obj.has_other_pages %}
-<div class="pagination-wrap">
+<div class="pagination">
   <div class="step-links">
     {% if page_obj.has_previous %}
       <a href="?page=1{% if search_q %}&q={{ search_q }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">&laquo; First</a>
@@ -493,50 +644,50 @@
 </div>
 {% endif %}
 
-<!-- ===== ADD EXPENSE MODAL ===== -->
+<!-- Add Expense Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog">
     <div class="modal-content">
       <form id="addExpenseForm">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Daily Expense</h5>
+          <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Expense</h5>
           <button type="button" class="btn-close" onclick="closeModal('addExpenseModal')">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label>Title <span class="required">*</span></label>
-            <input type="text" name="title" class="form-control" required maxlength="30" placeholder="e.g., Grocery, Medicine">
+            <label>Title <span class="required-star">*</span></label>
+            <input type="text" name="title" class="form-control" required maxlength="30" placeholder="e.g., Grocery">
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea name="description" class="form-control" rows="2" placeholder="Optional description"></textarea>
+            <textarea name="description" class="form-control" rows="2" placeholder="Optional"></textarea>
           </div>
           <div class="form-group">
-            <label>Amount (₹) <span class="required">*</span></label>
+            <label>Amount (₹) <span class="required-star">*</span></label>
             <input type="number" name="amount" step="0.01" class="form-control" required placeholder="0.00">
           </div>
           <div class="form-group">
-            <label>Date of Expense <span class="required">*</span></label>
+            <label>Date <span class="required-star">*</span></label>
             <input type="date" name="expense_date" class="form-control" required>
           </div>
           <div class="form-group">
-            <label>Additional Note</label>
-            <input type="text" name="notes" class="form-control" placeholder="Any extra info">
+            <label>Note</label>
+            <input type="text" name="notes" class="form-control" placeholder="Extra info">
           </div>
           <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('addExpenseModal')">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Expense</button>
+          <button type="submit" class="btn btn-primary">Save</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- ===== DETAIL/EDIT MODAL ===== -->
+<!-- Detail/Edit Modal -->
 <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Expense Details</h5>
@@ -548,7 +699,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button>
         <button type="button" class="btn btn-primary" id="editExpenseBtn" onclick="enableEditMode()">Edit</button>
-        <button type="button" class="btn btn-primary" id="saveEditBtn" style="display:none;background:#28a745;" onclick="saveEdit()">Save Changes</button>
+        <button type="button" class="btn btn-success" id="saveEditBtn" style="display:none;" onclick="saveEdit()">Save</button>
       </div>
     </div>
   </div>
@@ -556,9 +707,8 @@
 
 <div class="bottom-spacer"></div>
 
-<!-- ===== SCRIPTS ===== -->
 <script>
-  // ======== CSRF Token ========
+  // Helper to get CSRF token
   function getCSRFToken() {
     var token = document.querySelector('input[name="csrfmiddlewaretoken"]');
     if (token) return token.value;
@@ -566,15 +716,16 @@
     return cookie ? cookie[1] : '';
   }
 
-  // ======== Modal Helpers ========
+  // Modal functions
   function openModal(modalId) {
     var modal = document.getElementById(modalId);
     if (!modal) return;
     modal.style.display = 'block';
     modal.classList.add('show');
     document.body.classList.add('modal-open');
-    if (!document.querySelector('.modal-backdrop')) {
-      var backdrop = document.createElement('div');
+    var backdrop = document.querySelector('.modal-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop fade show';
       document.body.appendChild(backdrop);
     }
@@ -599,7 +750,7 @@
     openModal('addExpenseModal');
   }
 
-  // ======== Add Expense ========
+  // Add Expense Form submission
   document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var formData = new FormData(this);
@@ -624,7 +775,7 @@
     .catch(error => alert('Network error: ' + error));
   });
 
-  // ======== Detail / Edit ========
+  // Detail/Edit
   var currentExpenseId = null;
   var isEditing = false;
 
@@ -658,11 +809,11 @@
                 <input type="number" name="amount" step="0.01" class="form-control" value="${data.amount}">
               </div>
               <div class="form-group">
-                <label>Date of Expense</label>
+                <label>Date</label>
                 <input type="date" name="expense_date" class="form-control" value="${data.expense_date}">
               </div>
               <div class="form-group">
-                <label>Additional Note</label>
+                <label>Note</label>
                 <input type="text" name="notes" class="form-control" value="${data.notes || ''}">
               </div>
               <input type="hidden" name="id" value="${data.id}">
@@ -714,93 +865,128 @@
     .catch(error => alert('Network error: ' + error));
   }
 
-  // ======== Filter Dropdown ========
-  function toggleDropdown() {
-    var menu = document.getElementById('filterMenu');
-    menu.classList.toggle('show');
+  // ------ Auto-search and filter logic ------
+  function debounce(func, wait) {
+    var timeout;
+    return function() {
+      var context = this, args = arguments;
+      clearTimeout(timeout);
+      timeout = setTimeout(function() {
+        func.apply(context, args);
+      }, wait);
+    };
   }
 
-  // Close dropdown when clicking outside
-  document.addEventListener('click', function(e) {
-    var dropdown = document.querySelector('.filter-dropdown');
-    if (dropdown && !dropdown.contains(e.target)) {
-      document.getElementById('filterMenu').classList.remove('show');
+  function autoSubmit() {
+    document.getElementById('filterForm').submit();
+  }
+
+  // Attach events
+  document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('searchInput');
+    var startDate = document.getElementById('startDate');
+    var endDate = document.getElementById('endDate');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', debounce(autoSubmit, 300));
+    }
+    if (startDate) {
+      startDate.addEventListener('change', autoSubmit);
+    }
+    if (endDate) {
+      endDate.addEventListener('change', autoSubmit);
     }
   });
 
-  // Set filter and submit form
-  document.querySelectorAll('.dropdown-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      var filter = this.dataset.filter;
-      var startDate = document.getElementById('startDate');
-      var endDate = document.getElementById('endDate');
-      var today = new Date();
-      var y = today.getFullYear();
-      var m = String(today.getMonth() + 1).padStart(2, '0');
-      var d = String(today.getDate()).padStart(2, '0');
-      var todayStr = y + '-' + m + '-' + d;
-      var start, end;
+  // Clear filters
+  window.clearFilters = function() {
+    var searchInput = document.getElementById('searchInput');
+    var startDate = document.getElementById('startDate');
+    var endDate = document.getElementById('endDate');
+    if (searchInput) searchInput.value = '';
+    if (startDate) startDate.value = '';
+    if (endDate) endDate.value = '';
+    var panel = document.getElementById('filterPanel');
+    if (panel) panel.classList.remove('open');
+    autoSubmit();
+  };
 
-      switch(filter) {
-        case 'today':
-          start = end = todayStr;
-          break;
-        case 'week':
-          var day = today.getDay();
-          var diff = today.getDate() - day + (day === 0 ? -6 : 1);
-          var monday = new Date(today.setDate(diff));
-          var y2 = monday.getFullYear();
-          var m2 = String(monday.getMonth() + 1).padStart(2, '0');
-          var d2 = String(monday.getDate()).padStart(2, '0');
-          start = y2 + '-' + m2 + '-' + d2;
-          end = todayStr;
-          break;
-        case 'month':
-          var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-          var y3 = firstDay.getFullYear();
-          var m3 = String(firstDay.getMonth() + 1).padStart(2, '0');
-          var d3 = String(firstDay.getDate()).padStart(2, '0');
-          start = y3 + '-' + m3 + '-' + d3;
-          end = todayStr;
-          break;
-        case '6months':
-          var sixMonthsAgo = new Date(today);
-          sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-          var y4 = sixMonthsAgo.getFullYear();
-          var m4 = String(sixMonthsAgo.getMonth() + 1).padStart(2, '0');
-          var d4 = String(sixMonthsAgo.getDate()).padStart(2, '0');
-          start = y4 + '-' + m4 + '-' + d4;
-          end = todayStr;
-          break;
-        case 'all':
-          start = '';
-          end = '';
-          break;
-        default: return;
-      }
-      startDate.value = start;
-      endDate.value = end;
-      document.getElementById('filterForm').submit();
-    });
+  // Toggle filter panel
+  window.toggleFilterPanel = function() {
+    var panel = document.getElementById('filterPanel');
+    if (panel) {
+      panel.classList.toggle('open');
+    }
+  };
+
+  // Close panel on outside click
+  document.addEventListener('click', function(e) {
+    var wrap = document.querySelector('.filter-toggle-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      var panel = document.getElementById('filterPanel');
+      if (panel) panel.classList.remove('open');
+    }
   });
 
-  // Search input auto-submit on typing (with delay) – optional
-  var searchInput = document.getElementById('searchInput');
-  var timeoutId = null;
-  searchInput.addEventListener('input', function() {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(function() {
-      document.getElementById('filterForm').submit();
-    }, 500);
-  });
+  // Quick filter
+  window.setQuickFilter = function(type) {
+    var startDate = document.querySelector('input[name="start_date"]');
+    var endDate = document.querySelector('input[name="end_date"]');
+    var today = new Date();
+    var y = today.getFullYear();
+    var m = String(today.getMonth() + 1).padStart(2, '0');
+    var d = String(today.getDate()).padStart(2, '0');
+    var todayStr = y + '-' + m + '-' + d;
+    var start, end;
 
-  // Make functions global for inline onclick
+    switch(type) {
+      case 'today':
+        start = end = todayStr;
+        break;
+      case 'week':
+        var day = today.getDay();
+        var diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        var monday = new Date(today.setDate(diff));
+        var y2 = monday.getFullYear();
+        var m2 = String(monday.getMonth() + 1).padStart(2, '0');
+        var d2 = String(monday.getDate()).padStart(2, '0');
+        start = y2 + '-' + m2 + '-' + d2;
+        end = todayStr;
+        break;
+      case 'month':
+        var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        var y3 = firstDay.getFullYear();
+        var m3 = String(firstDay.getMonth() + 1).padStart(2, '0');
+        var d3 = String(firstDay.getDate()).padStart(2, '0');
+        start = y3 + '-' + m3 + '-' + d3;
+        end = todayStr;
+        break;
+      case '6months':
+        var sixMonthsAgo = new Date(today);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        var y4 = sixMonthsAgo.getFullYear();
+        var m4 = String(sixMonthsAgo.getMonth() + 1).padStart(2, '0');
+        var d4 = String(sixMonthsAgo.getDate()).padStart(2, '0');
+        start = y4 + '-' + m4 + '-' + d4;
+        end = todayStr;
+        break;
+      case 'all':
+        start = '';
+        end = '';
+        break;
+      default: return;
+    }
+    if (startDate) startDate.value = start;
+    if (endDate) endDate.value = end;
+    autoSubmit();
+  };
+
+  // Expose functions globally
   window.openAddModal = openAddModal;
   window.openDetailModal = openDetailModal;
   window.enableEditMode = enableEditMode;
   window.saveEdit = saveEdit;
   window.closeModal = closeModal;
-  window.toggleDropdown = toggleDropdown;
 </script>
 
 {% endblock %}
