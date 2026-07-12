@@ -1,0 +1,6 @@
+tree 0bfa759b551f4c774d2c94b97a93e26f2712223a
+parent 3f48379da7c9013866bbfc90ff5be6ba3c6ba342
+author Sami <sami@example.com> 1783322946 +0500
+committer Sami <sami@example.com> 1783322946 +0500
+
+Remove admin_username/password fields from tenant admin (single-tenant mode)

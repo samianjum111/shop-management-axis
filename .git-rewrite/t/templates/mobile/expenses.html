@@ -1,0 +1,124 @@
+{% extends "mobile/base.html" %}
+{% block title %}Expenses & Udhaar | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+        margin-bottom: 1.2rem;
+    }
+    .card-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem 0.5rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        text-decoration: none;
+        color: var(--text);
+        transition: 0.2s;
+    }
+    .card-item:active { transform: scale(0.96); }
+    .card-item .icon {
+        font-size: 2rem;
+        margin-bottom: 0.3rem;
+        color: var(--accent);
+    }
+    .card-item .label {
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .card-item .count {
+        font-size: 0.7rem;
+        color: var(--muted);
+    }
+    .summary-strip {
+        display: flex;
+        gap: 0.6rem;
+        overflow-x: auto;
+        padding: 0.2rem 0 0.8rem;
+        margin-bottom: 1rem;
+    }
+    .summary-card {
+        flex: 0 0 110px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.6rem 0.4rem;
+        text-align: center;
+    }
+    .summary-card .label {
+        font-size: 0.55rem;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+    }
+    .summary-card .value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .summary-card.given .value { color: #e67e22; }
+    .summary-card.taken .value { color: #3498db; }
+    .summary-card.balance .value { color: #2ecc71; }
+    .summary-card.total .value { color: #1a1a2e; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="fw-bold mb-0">💰 Expenses</h5>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/add/" class="btn btn-primary-custom btn-sm">+ Add</a>
+</div>
+
+<!-- Cards Grid -->
+<div class="cards-grid">
+    <a href="/portal/{{ tenant.schema_name }}/expenses/daily/" class="card-item">
+        <div class="icon"><i class="fas fa-receipt"></i></div>
+        <div class="label">Daily Expenses</div>
+        <div class="count">{{ daily_expenses_count }}</div>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/given/" class="card-item">
+        <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
+        <div class="label">Loans Given</div>
+        <div class="count">{{ loans_given_count }}</div>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/loans/taken/" class="card-item">
+        <div class="icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <div class="label">Loans Taken</div>
+        <div class="count">{{ loans_taken_count }}</div>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/reminders/" class="card-item">
+        <div class="icon"><i class="fas fa-bell"></i></div>
+        <div class="label">Reminders</div>
+        <div class="count">{{ reminders_count }}</div>
+    </a>
+    <a href="/portal/{{ tenant.schema_name }}/expenses/workers/" class="card-item" style="grid-column: span 2;">
+        <div class="icon"><i class="fas fa-users"></i></div>
+        <div class="label">Workers</div>
+        <div class="count">{{ workers_count }} active</div>
+    </a>
+</div>
+
+<!-- Summary Strip -->
+<div class="summary-strip">
+    <div class="summary-card total">
+        <div class="label">Total</div>
+        <div class="value">₹{{ total_expenses|floatformat:2 }}</div>
+    </div>
+    <div class="summary-card given">
+        <div class="label">Given</div>
+        <div class="value">₹{{ total_given|floatformat:2 }}</div>
+    </div>
+    <div class="summary-card taken">
+        <div class="label">Taken</div>
+        <div class="value">₹{{ total_taken|floatformat:2 }}</div>
+    </div>
+    <div class="summary-card balance">
+        <div class="label">Balance</div>
+        <div class="value">₹{{ net_balance|floatformat:2 }}</div>
+    </div>
+</div>
+{% endblock %}
