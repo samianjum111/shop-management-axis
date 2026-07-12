@@ -1,0 +1,123 @@
+{% extends "mobile/base.html" %}
+{% load static %}
+
+{% block title %}Processing | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .processing-screen {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .processing-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    box-shadow: var(--card-shadow);
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+  .spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border);
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 1rem 0;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .processing-card h4 {
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .processing-card .sub {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .status-badge.pending { background: #fff3cd; color: #856404; }
+  .status-badge.approved { background: #d4edda; color: #155724; }
+  .status-badge.rejected { background: #f8d7da; color: #b02a37; }
+  .btn-secondary-custom {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    padding: 0.7rem 1.5rem;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 0.5rem;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+  }
+  .btn-primary-custom {
+    background: var(--gradient-accent);
+    color: #fff;
+    border: none;
+    border-radius: 2rem;
+    padding: 0.7rem 1.5rem;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 0.5rem;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="processing-screen">
+  <div class="processing-card">
+    {% if latest_request.status == 'pending' %}
+      <div class="spinner"></div>
+      <h4>Processing</h4>
+      <div class="sub">Your payment screenshot is being reviewed by our team. This usually takes a few hours.</div>
+      <div><span class="status-badge pending">Pending Review</span></div>
+      <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--muted);">Requested on {{ latest_request.request_date|date:"d M Y H:i" }}</div>
+    {% elif latest_request.status == 'approved' %}
+      <i class="fas fa-check-circle" style="font-size:3rem; color:#28a745;"></i>
+      <h4>Approved!</h4>
+      <div class="sub">Your subscription has been approved. You can now access your portal.</div>
+      <a href="{% url 'portal_dashboard' schema_name=tenant.schema_name %}" class="btn-primary-custom">
+        <i class="fas fa-arrow-right"></i> Go to Dashboard
+      </a>
+    {% elif latest_request.status == 'rejected' %}
+      <i class="fas fa-times-circle" style="font-size:3rem; color:#dc3545;"></i>
+      <h4>Rejected</h4>
+      <div class="sub">Your payment screenshot was rejected. Please upload a valid screenshot.</div>
+      <a href="{% url 'subscriptions:subscription_payment' schema_name=tenant.schema_name %}" class="btn-primary-custom">
+        <i class="fas fa-redo"></i> Re-upload
+      </a>
+    {% else %}
+      <i class="fas fa-info-circle" style="font-size:3rem; color:var(--accent);"></i>
+      <h4>No Request</h4>
+      <div class="sub">You haven't submitted any payment request yet.</div>
+      <a href="{% url 'subscriptions:subscription_payment' schema_name=tenant.schema_name %}" class="btn-primary-custom">
+        <i class="fas fa-upload"></i> Submit Payment
+      </a>
+    {% endif %}
+    <a href="{% url 'portal_logout' schema_name=tenant.schema_name %}" class="btn-secondary-custom">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+  </div>
+</div>
+{% endblock %}

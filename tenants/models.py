@@ -12,6 +12,21 @@ class Tenant(models.Model):
     category = models.CharField(max_length=20, default='chakki')
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
+
+    # Subscription fields
+    subscription_duration_days = models.IntegerField(default=30, help_text="Number of days per subscription period")
+    subscription_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Amount to pay for one period")
+    jazzcash_number = models.CharField(max_length=20, blank=True, help_text="JazzCash number for payment")
+    jazzcash_name = models.CharField(max_length=100, blank=True, help_text="Account holder name for JazzCash")
+    subscription_end_date = models.DateTimeField(null=True, blank=True, help_text="When the current subscription expires")
+
+    def is_subscription_active(self):
+        """Returns True if subscription is active (end_date is in the future or None)."""
+        if self.subscription_end_date is None:
+            return True
+        from django.utils import timezone
+        return timezone.now() < self.subscription_end_date
+
     def __str__(self):
         return self.name
 

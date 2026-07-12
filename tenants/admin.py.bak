@@ -46,9 +46,6 @@ class TenantAdminForm(forms.ModelForm):
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
     form = TenantAdminForm
-    list_display = ('name', 'schema_name', 'category', 'owner', 'subscription_end_date', 'is_subscription_active', 'created_at')
+    list_display = ('name', 'schema_name', 'category', 'owner', 'created_at')
     readonly_fields = ('created_at',)
-    fields = ('name', 'schema_name', 'category', 'admin_username', 'admin_password',
-                  'subscription_duration_days', 'subscription_amount',
-                  'jazzcash_number', 'jazzcash_name',
-                  'subscription_end_date', 'created_at')
+    fields = ('name', 'schema_name', 'category', 'admin_username', 'admin_password', 'created_at')

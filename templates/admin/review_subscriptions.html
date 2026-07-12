@@ -1,0 +1,275 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Review Subscription Requests | Axis Admin{% endblock %}
+
+{% block extrahead %}
+<style>
+  .review-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  .review-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .review-header .stats {
+    display: flex;
+    gap: 1.5rem;
+  }
+  .review-header .stats .badge {
+    font-size: 0.9rem;
+    padding: 0.3rem 1rem;
+  }
+  .request-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .request-table th {
+    background: #f8f9fa;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+  }
+  .request-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  .request-table tr:hover td {
+    background: #fafbfc;
+  }
+  .screenshot-preview {
+    max-width: 120px;
+    max-height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .screenshot-preview:hover {
+    transform: scale(1.05);
+  }
+  .btn-action {
+    padding: 0.3rem 1rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+    margin: 0 0.2rem;
+  }
+  .btn-approve {
+    background: #28a745;
+    color: #fff;
+  }
+  .btn-approve:hover {
+    background: #1e7e34;
+  }
+  .btn-reject {
+    background: #dc3545;
+    color: #fff;
+  }
+  .btn-reject:hover {
+    background: #c82333;
+  }
+  .btn-approve:disabled, .btn-reject:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+  }
+  .empty-state i {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 2rem 0 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #dee2e6;
+  }
+  .status-badge {
+    padding: 0.2rem 0.8rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .status-pending { background: #fff3cd; color: #856404; }
+  .status-approved { background: #d4edda; color: #155724; }
+  .status-rejected { background: #f8d7da; color: #b02a37; }
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+  .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal-box img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 8px;
+  }
+  .modal-close {
+    float: right;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #6c757d;
+  }
+  .modal-close:hover {
+    color: #000;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-container">
+  <div class="review-header">
+    <h1><i class="fas fa-clipboard-list"></i> Subscription Review</h1>
+    <div class="stats">
+      <span class="badge bg-warning text-dark">Pending: {{ pending_requests|length }}</span>
+      <span class="badge bg-success">Approved: {{ approved_requests|length }}</span>
+      <span class="badge bg-danger">Rejected: {{ rejected_requests|length }}</span>
+    </div>
+  </div>
+
+  <!-- Pending Requests -->
+  <div class="section-title">Pending Requests</div>
+  {% if pending_requests %}
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th>Requested</th>
+          <th>Screenshot</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in pending_requests %}
+        <tr>
+          <td><strong>{{ req.tenant.name }}</strong> ({{ req.tenant.schema_name }})</td>
+          <td>{{ req.request_date|date:"d M Y H:i" }}</td>
+          <td>
+            <img src="{{ req.screenshot.url }}" class="screenshot-preview" onclick="openModal('{{ req.screenshot.url }}')" alt="Screenshot">
+          </td>
+          <td>
+            <form method="post" action="{% url 'admin_approve_request' tenant_id=req.tenant.id request_id=req.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn-action btn-approve" onclick="return confirm('Approve this subscription?')">
+                <i class="fas fa-check"></i> Approve
+              </button>
+            </form>
+            <form method="post" action="{% url 'admin_reject_request' tenant_id=req.tenant.id request_id=req.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn-action btn-reject" onclick="return confirm('Reject this subscription?')">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <i class="fas fa-inbox"></i>
+      <p>No pending requests.</p>
+    </div>
+  {% endif %}
+
+  <!-- Recently Processed -->
+  <div class="section-title">Recently Processed</div>
+  {% if approved_requests or rejected_requests %}
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th>Requested</th>
+          <th>Status</th>
+          <th>Processed At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in approved_requests %}
+        <tr>
+          <td>{{ req.tenant.name }}</td>
+          <td>{{ req.request_date|date:"d M Y H:i" }}</td>
+          <td><span class="status-badge status-approved">Approved</span></td>
+          <td>{{ req.processed_at|date:"d M Y H:i"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+        {% for req in rejected_requests %}
+        <tr>
+          <td>{{ req.tenant.name }}</td>
+          <td>{{ req.request_date|date:"d M Y H:i" }}</td>
+          <td><span class="status-badge status-rejected">Rejected</span></td>
+          <td>{{ req.processed_at|date:"d M Y H:i"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <i class="fas fa-history"></i>
+      <p>No processed requests yet.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal for full screenshot -->
+<div class="modal-overlay" id="screenshotModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <img id="modalImage" src="" alt="Screenshot">
+  </div>
+</div>
+
+<script>
+  function openModal(src) {
+    document.getElementById('modalImage').src = src;
+    document.getElementById('screenshotModal').classList.add('open');
+  }
+  function closeModal(e) {
+    if (!e || e.target === e.currentTarget) {
+      document.getElementById('screenshotModal').classList.remove('open');
+    }
+  }
+</script>
+{% endblock %}
