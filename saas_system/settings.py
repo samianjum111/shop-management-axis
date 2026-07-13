@@ -43,6 +43,7 @@ MIDDLEWARE = [
     'core.middleware.TenantFromPathMiddleware',
     'subscriptions.middleware.SubscriptionMiddleware',
     'core.middleware.DeviceMiddleware',
+    'core.middleware.LastTenantMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -139,4 +140,4 @@ LOGGING = {
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
-CSRF_TRUSTED_ORIGINS.append('http://149.56.80.98:8001')
+# CSRF_TRUSTED_ORIGINS.append('http://149.56.80.98:8001')

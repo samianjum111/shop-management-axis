@@ -3,7 +3,6 @@
 
 {% block extra_head %}
 <style>
-  /* ===== Premium Customer List Styles ===== */
   .page-header {
     display: flex;
     justify-content: space-between;
@@ -50,7 +49,6 @@
     color: #fff;
   }
 
-  /* Stats bar */
   .stats-bar {
     display: flex;
     gap: 1.5rem;
@@ -77,7 +75,6 @@
     font-size: 1.2rem;
   }
 
-  /* Tabs */
   .tabs-wrapper {
     display: flex;
     gap: 0.4rem;
@@ -121,56 +118,81 @@
     color: #fff;
   }
 
-  /* Search bar */
-  .search-bar {
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    align-items: center;
     margin-bottom: 1.5rem;
-  }
-  .search-bar .input-group {
-    max-width: 420px;
-  }
-  .search-bar .input-group input {
-    border-radius: 40px 0 0 40px;
-    border: 1.5px solid var(--border);
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
     background: var(--surface);
-    color: var(--text);
+    border-radius: 40px;
+    padding: 0.3rem 1rem;
+    border: 1px solid var(--border);
+  }
+  .filter-bar .input-group {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border-radius: 40px;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--border);
     transition: 0.2s;
   }
-  .search-bar .input-group input:focus {
+  .filter-bar .input-group:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(26,42,58,0.06);
   }
-  .search-bar .input-group .btn-search {
-    border-radius: 0 40px 40px 0;
-    background: var(--accent);
-    color: #fff;
-    border: 1.5px solid var(--accent);
-    padding: 0.5rem 1.2rem;
-    font-weight: 600;
-  }
-  .search-bar .input-group .btn-search:hover {
-    background: var(--accent-hover);
-  }
-  .search-bar .input-group .btn-clear {
-    border-radius: 40px;
-    margin-left: 0.3rem;
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-  .search-bar .input-group .btn-clear:hover {
-    background: var(--border);
+  .filter-bar .input-group input {
+    border: none;
+    background: transparent;
+    padding: 0.4rem 0.2rem;
+    font-size: 0.9rem;
+    width: 100%;
+    outline: none;
     color: var(--text);
   }
+  .filter-bar .input-group button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+  }
+  .filter-bar select {
+    padding: 0.3rem 0.8rem;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+  }
+  .filter-bar select:focus {
+    border-color: var(--accent);
+  }
+  .filter-bar .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  .filter-bar .btn-clear:hover {
+    background: var(--surface-alt);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 
-  /* Table */
   .table-wrap {
     background: var(--surface);
     border-radius: 16px;
@@ -230,7 +252,6 @@
     font-weight: 600;
   }
 
-  /* Empty state */
   .empty-state {
     text-align: center;
     padding: 3rem 1rem;
@@ -258,7 +279,6 @@
     text-decoration: underline;
   }
 
-  /* Pagination */
   .pagination-wrap {
     display: flex;
     justify-content: center;
@@ -295,12 +315,18 @@
     pointer-events: none;
   }
 
-  /* Responsive */
+  /* Highlight pending rows */
+  .table-warning {
+    background-color: #fff8f0 !important;
+    border-left: 4px solid #e67e22;
+  }
+
   @media (max-width: 768px) {
     .page-header { flex-direction: column; align-items: stretch; gap: 0.6rem; }
     .page-header h2 { font-size: 1.6rem; }
     .stats-bar { gap: 0.8rem; font-size: 0.8rem; }
-    .search-bar .input-group { max-width: 100%; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-bar .input-group { max-width: 100%; }
     .table-wrap { border-radius: 12px; }
     .table-wrap .table thead th { font-size: 0.65rem; padding: 0.5rem; }
     .table-wrap .table td { font-size: 0.8rem; padding: 0.5rem; }
@@ -334,39 +360,53 @@
   </div>
   <div class="stat">
     <i class="fas fa-user-clock" style="color:#e65100;"></i>
-    Walk‑in Pending: <strong>{{ walk_count }}</strong>
+    Walk‑in: <strong>{{ walk_count }}</strong>
   </div>
   <div class="stat">
     <i class="fas fa-users" style="color:var(--accent);"></i>
-    Showing: <strong>{{ page_obj|length }}</strong> of <strong>{{ total_count }}</strong>
+    Showing: <strong>{{ page_obj|length }}</strong> of <strong>{{ total_customers }}</strong>
+  </div>
+  <div class="stat">
+    <a href="?filter=pending{% if search_q %}&q={{ search_q }}{% endif %}{% if tab %}&tab={{ tab }}{% endif %}" style="color:var(--accent); text-decoration:none;">
+      <i class="fas fa-clock" style="color:#e67e22;"></i>
+      Pending: <strong>₹{{ total_pending_all|floatformat:2 }}</strong>
+    </a>
   </div>
   {% if search_q %}
   <div class="stat">
     <i class="fas fa-filter" style="color:var(--accent);"></i>
     Filtered by "{{ search_q }}"
-    <a href="?tab={{ tab }}" class="btn btn-sm btn-outline-secondary ms-1" style="border-radius:30px; padding:0.1rem 0.6rem; font-size:0.7rem;">Clear</a>
+    <a href="?tab={{ tab }}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}" class="btn btn-sm btn-outline-secondary ms-1" style="border-radius:30px; padding:0.1rem 0.6rem; font-size:0.7rem;">Clear</a>
   </div>
   {% endif %}
 </div>
 
 <!-- ===== TABS ===== -->
 <div class="tabs-wrapper">
-  <a href="?tab=regular{% if search_q %}&q={{ search_q }}{% endif %}" class="tab-link {% if tab == 'regular' %}active{% endif %}">
+  <a href="?tab=regular{% if search_q %}&q={{ search_q }}{% endif %}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}" class="tab-link {% if tab == 'regular' %}active{% endif %}">
     Regular <span class="badge">{{ regular_count }}</span>
   </a>
-  <a href="?tab=walk{% if search_q %}&q={{ search_q }}{% endif %}" class="tab-link {% if tab == 'walk' %}active{% endif %}">
-    Walk‑in Pending <span class="badge">{{ walk_count }}</span>
+  <a href="?tab=walk{% if search_q %}&q={{ search_q }}{% endif %}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}" class="tab-link {% if tab == 'walk' %}active{% endif %}">
+    Walk‑in <span class="badge">{{ walk_count }}</span>
   </a>
 </div>
 
-<!-- ===== SEARCH BAR ===== -->
-<div class="search-bar">
-  <form method="get" class="input-group">
-    <input type="text" name="q" class="form-control" placeholder="Search by name or phone number..." value="{{ search_q|default:'' }}">
-    <input type="hidden" name="tab" value="{{ tab }}">
-    <button class="btn btn-search" type="submit"><i class="fas fa-search"></i></button>
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <form method="get" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;width:100%;">
+    <div class="input-group">
+      <input type="text" name="q" placeholder="Search by name or phone..." value="{{ search_q|default:'' }}">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <input type="hidden" name="filter" value="{{ filter|default:'all' }}">
+      <button type="submit"><i class="fas fa-search"></i></button>
+    </div>
+    <select name="filter" onchange="this.form.submit()">
+      <option value="all" {% if filter == 'all' %}selected{% endif %}>All</option>
+      <option value="pending" {% if filter == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="paid" {% if filter == 'paid' %}selected{% endif %}>Paid</option>
+    </select>
     {% if search_q %}
-      <a href="?tab={{ tab }}" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
+      <a href="?tab={{ tab }}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
     {% endif %}
   </form>
 </div>
@@ -387,7 +427,7 @@
       </thead>
       <tbody>
         {% for customer in page_obj %}
-        <tr>
+        <tr class="{% if customer.total_pending > 0 %}table-warning{% endif %}">
           <td>
             <strong>{{ customer.name }}</strong>
             {% if not customer.is_regular and customer.total_pending > 0 %}
@@ -424,7 +464,7 @@
                 {% if tab == 'regular' %}
                   No regular customers found.
                 {% else %}
-                  No walk‑in customers with pending balance.
+                  No walk‑in customers found.
                 {% endif %}
               </p>
               <p style="font-size:0.85rem; margin-top:0.3rem;">
@@ -444,8 +484,8 @@
 <div class="pagination-wrap">
   <div class="step-links">
     {% if page_obj.has_previous %}
-      <a href="?page=1{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}">&laquo; First</a>
-      <a href="?page={{ page_obj.previous_page_number }}{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}">Prev</a>
+      <a href="?page=1{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}">Prev</a>
     {% else %}
       <span class="disabled">&laquo; First</span>
       <span class="disabled">Prev</span>
@@ -454,8 +494,8 @@
     <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}">Next</a>
-      <a href="?page={{ page_obj.paginator.num_pages }}{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}">Last &raquo;</a>
+      <a href="?page={{ page_obj.next_page_number }}{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if tab %}&tab={{ tab }}{% endif %}{% if search_q %}&q={{ search_q }}{% endif %}{% if filter and filter != 'all' %}&filter={{ filter }}{% endif %}">Last &raquo;</a>
     {% else %}
       <span class="disabled">Next</span>
       <span class="disabled">Last &raquo;</span>

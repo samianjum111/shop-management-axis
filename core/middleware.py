@@ -53,3 +53,18 @@ class TenantFromPathMiddleware:
         # Reset schema to public after each request
         connection.set_schema_to_public()
         return response
+
+class LastTenantMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        # Store the tenant schema in session when accessing a portal page
+        if hasattr(request, 'tenant') and request.tenant:
+            if request.path_info.startswith('/portal/'):
+                request.session['last_tenant_schema'] = request.tenant.schema_name
+        return None
