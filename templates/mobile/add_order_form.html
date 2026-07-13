@@ -499,6 +499,7 @@
   </div>
 </div>
 
+
 <script>
     function setPayment(val) {
         document.querySelectorAll('.payment-toggle .btn-option').forEach(el => el.classList.remove('active'));
@@ -772,9 +773,9 @@
             if (!name) errors.push('Name is required for walk-in customer.');
         }
         const paymentType = document.getElementById('payment_type').value;
-        if (paymentType === 'partial') {
+        if (paymentType === 'partial' && !customerId) {
             const phone = document.getElementById('walkin_phone')?.value.trim();
-            if (!phone) errors.push('Phone is required for partial payment.');
+            if (!phone) errors.push('Phone is required for partial payment for walk-in customers.');
         }
         let hasItem = false;
         document.querySelectorAll('.item-card').forEach(row => {
@@ -820,4 +821,5 @@
         }
     }
 </script>
+
 {% endblock %}

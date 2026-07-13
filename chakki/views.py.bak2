@@ -687,12 +687,12 @@ def add_order(request, **kwargs):
     walkin = request.GET.get('walkin') == '1'
     select = request.GET.get('select') == '1'
 
-    if not customer_id and not walkin and not select:
+    if request.method == 'GET' and not customer_id and not walkin and not select:
         context = {'tenant': tenant}
         template = 'mobile/add_order_select.html' if request.mobile else 'desktop/add_order_select.html'
         return render(request, template, context)
 
-    if select:
+    if request.method == 'GET' and select:
         q = request.GET.get('q', '').strip()
         customers = ChakkiCustomer.objects.filter(tenant=request.tenant, is_regular=True).order_by('name')
         if q:
@@ -725,12 +725,7 @@ def add_order(request, **kwargs):
                 return redirect('add_order', schema_name=tenant.schema_name)
             if payment_type == 'partial' and not phone:
                 messages.error(request, "Phone is required for partial payment.")
-                
-            # Preserve customer_id in redirect
-            redirect_url = reverse('add_order', kwargs={'schema_name': tenant.schema_name})
-            if customer_id:
-                redirect_url += f'?customer_id={customer_id}'
-            return redirect(redirect_url)
+                return redirect('add_order', schema_name=tenant.schema_name)
             if phone:
                 existing = ChakkiCustomer.objects.filter(tenant=request.tenant, phone=phone).first()
                 if existing:
