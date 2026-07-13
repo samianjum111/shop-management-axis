@@ -1,189 +1,777 @@
 {% load static %}
 <div class="transcript-modal-content">
     <style>
-        /* Same as transcript.html but without page-level margins & shadows */
-        .transcript-container {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: white;
-            padding: 20px 16px;
-            position: relative;
-            border-radius: 0;
+        /* ============================================================
+           RESET & BASE (modal-friendly)
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        .transcript-modal-content {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: transparent;
+            color: #1e1e2a;
+            line-height: 1.5;
+            width: 100%;
+        }
+
+        /* ============================================================
+           MAIN CARD (no outer shadow, fits modal)
+           ============================================================ */
+        .transcript-container {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 28px 24px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            max-width: 540px;
+            margin: 0 auto;
+            transition: box-shadow 0.2s ease;
+        }
+
+        @media (min-width: 600px) {
+            .transcript-container {
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+                border-radius: 24px;
+            }
+        }
+
+        /* ============================================================
+           WATERMARK
+           ============================================================ */
         .watermark-text {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 3rem;
+            transform: translate(-50%, -50%) rotate(-28deg);
+            font-size: 4rem;
             font-weight: 800;
-            color: rgba(0,0,0,0.04);
+            letter-spacing: 0.08em;
             pointer-events: none;
             white-space: nowrap;
+            z-index: 0;
+            opacity: 0.035;
+            color: #1e1e2a;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            user-select: none;
         }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
         .transcript-header {
             text-align: center;
-            border-bottom: 2px solid #1a1a2e;
-            padding-bottom: 10px;
-            margin-bottom: 14px;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0ebe5;
+            position: relative;
+            z-index: 1;
         }
-        .transcript-header h1 {
+
+        .transcript-header .brand-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: #1e2a3a;
+            border-radius: 14px;
+            color: #f5d9b3;
             font-size: 1.3rem;
+            margin-bottom: 6px;
+        }
+
+        .transcript-header h1 {
+            font-size: 1.4rem;
             font-weight: 700;
-            color: #1a1a2e;
+            color: #1e2a3a;
+            letter-spacing: -0.02em;
             margin: 0;
+            line-height: 1.2;
         }
-        .transcript-header p {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin: 2px 0 0;
+
+        .transcript-header .sub-brand {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #8a7a6a;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-top: 2px;
         }
-        .transcript-body .order-title {
+
+        .transcript-header .order-badge {
+            display: inline-block;
+            margin-top: 8px;
+            background: #f0ebe5;
+            color: #4a3f35;
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 3px 14px;
+            border-radius: 100px;
+            letter-spacing: 0.04em;
+        }
+
+        .transcript-header .order-badge i {
+            margin-right: 4px;
+        }
+
+        /* ============================================================
+           BODY
+           ============================================================ */
+        .transcript-body {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* -- Customer Info -- */
+        .customer-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            background: #f8f5f1;
+            border-radius: 14px;
+            border-left: 4px solid #c9b29b;
+        }
+
+        .customer-section .customer-name {
             font-size: 1rem;
             font-weight: 600;
-            color: #1a1a2e;
-            margin: 0 0 2px;
+            color: #1e2a3a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .customer-details {
+
+        .customer-section .customer-name i {
+            color: #c9b29b;
             font-size: 0.85rem;
-            color: #495057;
+        }
+
+        .customer-section .customer-meta {
+            font-size: 0.8rem;
+            color: #5a4f44;
+            margin-top: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px 14px;
+        }
+
+        .customer-section .customer-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .customer-section .customer-meta i {
+            color: #b09a86;
+            font-size: 0.65rem;
+            width: 14px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            background: #e8e0d8;
+            color: #4a3f35;
+            white-space: nowrap;
+            align-self: center;
+        }
+
+        .status-pill i {
+            font-size: 0.5rem;
+        }
+
+        .status-pill.paid {
+            background: #e3f0e8;
+            color: #1a6e4a;
+        }
+        .status-pill.partial {
+            background: #fef3e0;
+            color: #b87a2a;
+        }
+        .status-pill.unpaid {
+            background: #fde8e8;
+            color: #b13e3e;
+        }
+
+        /* -- Order Title -- */
+        .order-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #5a4f44;
             margin-bottom: 10px;
-            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.02em;
         }
-        .customer-details strong {
-            color: #1a1a2e;
+
+        .order-title i {
+            color: #b09a86;
+            font-size: 0.75rem;
         }
+
+        /* -- Table -- */
+        .table-wrap {
+            border-radius: 12px;
+            border: 1px solid #ece6df;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
         .transcript-body table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.75rem;
+            font-size: 0.74rem;
         }
-        .transcript-body table th,
-        .transcript-body table td {
-            padding: 4px 3px;
-            border: 1px solid #dee2e6;
-            text-align: left;
-            vertical-align: top;
-        }
-        .transcript-body table th {
-            background: #f8f9fa;
+
+        .transcript-body table thead th {
+            background: #f5f1ec;
+            color: #3d342b;
             font-weight: 600;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 8px 8px;
+            border-bottom: 2px solid #e3dad2;
+            text-align: left;
         }
+
+        .transcript-body table thead th:last-child,
+        .transcript-body table tbody td:last-child {
+            text-align: right;
+        }
+
+        .transcript-body table tbody td {
+            padding: 7px 8px;
+            border-bottom: 1px solid #eee8e2;
+            color: #2d2a26;
+            vertical-align: middle;
+        }
+
+        .transcript-body table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .transcript-body table tbody tr:hover {
+            background: #faf8f6;
+        }
+
+        .transcript-body table tbody td .clean-badge {
+            display: inline-block;
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 100px;
+            background: #eef2f0;
+            color: #3a5a4a;
+        }
+
+        .transcript-body table tbody td .clean-badge.no {
+            background: #f5eeec;
+            color: #8a6a5a;
+        }
+
         .text-right {
             text-align: right;
         }
-        .totals {
-            margin-top: 10px;
-            font-size: 0.85rem;
-            border-top: 1px solid #dee2e6;
-            padding-top: 6px;
+
+        /* -- Selling Items Sub-table -- */
+        .selling-section {
+            margin-top: 16px;
         }
+
+        .selling-section .selling-title {
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: #5a4f44;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .selling-section .selling-title i {
+            color: #b09a86;
+            font-size: 0.7rem;
+        }
+
+        .selling-table-wrap {
+            border-radius: 12px;
+            border: 1px solid #ece6df;
+            overflow: hidden;
+        }
+
+        .selling-table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.74rem;
+        }
+
+        .selling-table-wrap table thead th {
+            background: #f5f1ec;
+            color: #3d342b;
+            font-weight: 600;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 7px 8px;
+            border-bottom: 2px solid #e3dad2;
+            text-align: left;
+        }
+
+        .selling-table-wrap table thead th:last-child,
+        .selling-table-wrap table tbody td:last-child {
+            text-align: right;
+        }
+
+        .selling-table-wrap table tbody td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #eee8e2;
+            color: #2d2a26;
+        }
+
+        .selling-table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .selling-table-wrap table tbody tr:hover {
+            background: #faf8f6;
+        }
+
+        .selling-table-wrap .empty-row td {
+            color: #a09080;
+            font-style: italic;
+            text-align: center !important;
+            padding: 10px 8px !important;
+        }
+
+        /* -- Totals -- */
+        .totals {
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: #f8f5f1;
+            border-radius: 14px;
+            border-left: 4px solid #c9b29b;
+        }
+
         .totals .row {
             display: flex;
             justify-content: space-between;
             padding: 2px 0;
+            font-size: 0.82rem;
+            color: #2d2a26;
         }
-        .totals .row.total {
-            font-weight: 700;
-            font-size: 0.95rem;
-            border-top: 2px solid #1a1a2e;
+
+        .totals .row .label {
+            color: #5a4f44;
+        }
+
+        .totals .row .value {
+            font-weight: 500;
+        }
+
+        .totals .row.divider {
+            border-top: 1px solid #e3dad2;
             margin-top: 4px;
-            padding-top: 4px;
+            padding-top: 5px;
         }
-        .totals .row.remaining {
-            color: #e67e22;
+
+        .totals .row.total-row {
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-top: 2px solid #c9b29b;
+            margin-top: 4px;
+            padding-top: 6px;
         }
+
+        .totals .row.total-row .value {
+            color: #1e2a3a;
+        }
+
+        .totals .row.remaining-row .value {
+            color: #b87a2a;
+            font-weight: 600;
+        }
+
+        .totals .row.status-row {
+            border-top: 1px solid #e3dad2;
+            margin-top: 4px;
+            padding-top: 6px;
+            font-weight: 600;
+        }
+
+        .totals .row.status-row .value {
+            text-transform: capitalize;
+        }
+
+        /* -- Footer -- */
         .transcript-footer {
             text-align: center;
-            font-size: 0.7rem;
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
-            padding-top: 8px;
-            margin-top: 12px;
+            font-size: 0.68rem;
+            color: #a09080;
+            border-top: 1px solid #eee8e2;
+            padding-top: 12px;
+            margin-top: 18px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
         }
-        /* Ensure it fits modal */
-        @media (max-width: 400px) {
-            .transcript-container { padding: 16px 12px; }
-            .transcript-body table { font-size: 0.65rem; }
-            .transcript-body table th,
-            .transcript-body table td { padding: 3px 2px; }
-            .watermark-text { font-size: 2.2rem; }
+
+        .transcript-footer .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
-        /* Print overrides - since modal will be printed, we need to adjust */
+
+        .transcript-footer .footer-left i {
+            font-size: 0.55rem;
+            color: #c9b29b;
+        }
+
+        .transcript-footer .footer-right {
+            font-weight: 500;
+            color: #5a4f44;
+        }
+
+        /* ============================================================
+           RESPONSIVE (modal-friendly)
+           ============================================================ */
+        @media (max-width: 480px) {
+            .transcript-container {
+                padding: 18px 14px;
+                border-radius: 16px;
+            }
+
+            .transcript-header h1 {
+                font-size: 1.2rem;
+            }
+
+            .customer-section {
+                flex-direction: column;
+                gap: 8px;
+                padding: 12px 14px;
+            }
+
+            .customer-section .customer-meta {
+                font-size: 0.72rem;
+                gap: 2px 10px;
+            }
+
+            .status-pill {
+                align-self: flex-start;
+                font-size: 0.6rem;
+                padding: 3px 10px;
+            }
+
+            .transcript-body table {
+                font-size: 0.65rem;
+            }
+
+            .transcript-body table thead th {
+                font-size: 0.58rem;
+                padding: 5px 4px;
+            }
+
+            .transcript-body table tbody td {
+                padding: 4px 4px;
+            }
+
+            .selling-table-wrap table {
+                font-size: 0.65rem;
+            }
+
+            .selling-table-wrap table thead th {
+                font-size: 0.58rem;
+                padding: 5px 4px;
+            }
+
+            .selling-table-wrap table tbody td {
+                padding: 4px 4px;
+            }
+
+            .totals {
+                padding: 10px 12px;
+            }
+
+            .totals .row {
+                font-size: 0.75rem;
+            }
+
+            .totals .row.total-row {
+                font-size: 0.82rem;
+            }
+
+            .watermark-text {
+                font-size: 2.8rem !important;
+            }
+
+            .transcript-footer {
+                font-size: 0.6rem;
+                flex-direction: column;
+                gap: 2px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .transcript-container {
+                padding: 14px 10px;
+            }
+
+            .transcript-body table {
+                font-size: 0.58rem;
+            }
+
+            .transcript-body table thead th,
+            .transcript-body table tbody td {
+                padding: 3px 3px;
+            }
+
+            .selling-table-wrap table {
+                font-size: 0.58rem;
+            }
+
+            .selling-table-wrap table thead th,
+            .selling-table-wrap table tbody td {
+                padding: 3px 3px;
+            }
+
+            .customer-section .customer-name {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* ============================================================
+           PRINT STYLES (when modal content is printed)
+           ============================================================ */
         @media print {
             .transcript-container {
-                padding: 0;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                border-radius: 0 !important;
+                max-width: 100% !important;
+                background: white !important;
             }
+
+            .transcript-header {
+                border-bottom-color: #1e2a3a !important;
+                padding-bottom: 12px !important;
+                margin-bottom: 14px !important;
+            }
+
+            .transcript-header .brand-icon {
+                background: #1e2a3a !important;
+                color: #f5d9b3 !important;
+            }
+
+            .customer-section {
+                background: #f8f5f1 !important;
+                border-left-color: #c9b29b !important;
+            }
+
+            .totals {
+                background: #f8f5f1 !important;
+                border-left-color: #c9b29b !important;
+            }
+
+            .table-wrap,
+            .selling-table-wrap {
+                border-color: #d6cdc4 !important;
+            }
+
+            .transcript-body table thead th {
+                background: #f0ebe5 !important;
+            }
+
+            .selling-table-wrap table thead th {
+                background: #f0ebe5 !important;
+            }
+
+            .transcript-footer {
+                border-top-color: #d6cdc4 !important;
+            }
+
             .watermark-text {
-                font-size: 4rem;
-                color: rgba(0,0,0,0.06);
+                font-size: 4.5rem !important;
+                opacity: 0.045 !important;
             }
-            .transcript-body table { font-size: 0.7rem; }
+
+            .status-pill {
+                border: 1px solid #d6cdc4 !important;
+            }
+
+            table {
+                page-break-inside: avoid !important;
+            }
+            .transcript-body {
+                page-break-after: avoid !important;
+            }
         }
     </style>
+
+    <!-- ===== ACTUAL CONTENT ===== -->
     <div class="transcript-container">
         <div class="watermark-text">
-            {% if order.payment_status == 'paid' %}PAID{% elif order.payment_status == 'partial' %}PARTIAL{% else %}UNPAID{% endif %}
+            {% if order.payment_status == 'paid' %}PAID
+            {% elif order.payment_status == 'partial' %}PARTIAL
+            {% else %}UNPAID{% endif %}
         </div>
+
         <div class="transcript-header">
+            <div class="brand-icon">
+                <i class="fas fa-seedling"></i>
+            </div>
             <h1>{{ tenant.name }}</h1>
-            <p>Flour Mill Invoice</p>
+            <div class="sub-brand">Flour Mill · Invoice</div>
+            <div class="order-badge">
+                <i class="far fa-file-alt"></i> Order #{{ order.id }}
+            </div>
         </div>
+
         <div class="transcript-body">
-            <div class="order-title">Order #{{ order.id }}</div>
-            <div class="customer-details">
-                <strong>Customer:</strong> {{ order.customer.name }}<br>
-                <strong>Phone:</strong> {{ order.customer.phone|default:"N/A" }}<br>
-                <strong>Address:</strong> {{ order.customer.address|default:"N/A" }}
+            <!-- Customer -->
+            <div class="customer-section">
+                <div>
+                    <div class="customer-name">
+                        <i class="fas fa-user-circle"></i>
+                        {{ order.customer.name }}
+                    </div>
+                    <div class="customer-meta">
+                        <span><i class="fas fa-phone-alt"></i> {{ order.customer.phone|default:"N/A" }}</span>
+                        <span><i class="fas fa-map-pin"></i> {{ order.customer.address|default:"N/A" }}</span>
+                    </div>
+                </div>
+                <div class="status-pill
+                    {% if order.payment_status == 'paid' %}paid
+                    {% elif order.payment_status == 'partial' %}partial
+                    {% else %}unpaid{% endif %}">
+                    <i class="fas fa-circle"></i>
+                    {{ order.payment_status|default:"unpaid" }}
+                </div>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>KG</th>
-                        <th>Clean</th>
-                        <th class="text-right">Grind</th>
-                        <th class="text-right">Clean Chg</th>
-                        <th class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in order.items.all %}
-                    <tr>
-                        <td>{{ item.category.name }}</td>
-                        <td>{{ item.total_kg }}</td>
-                        <td>{{ item.is_cleaning_done|yesno:"Yes,No" }}</td>
-                        <td class="text-right">₹{{ item.grinding_charges|floatformat:2 }}</td>
-                        <td class="text-right">₹{{ item.cleaning_charges|floatformat:2 }}</td>
-                        <td class="text-right">₹{{ item.item_total|floatformat:2 }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-<h5>Selling Items</h5>
-<table class="table table-bordered">
-    <tr><th>Item</th><th>Measurement</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
-    {% for item in order.selling_items.all %}
-    <tr>
-        <td>{{ item.selling_price.category.name }}</td>
-        <td>{{ item.selling_price.get_measurement_display }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>₹{{ item.selling_price.price }}</td>
-        <td>₹{{ item.total }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="5">No selling items</td></tr>
-    {% endfor %}
-</table>
-<div class="totals">
-                <div class="row"><span>Grand Total</span><span>₹{{ order.total_amount|floatformat:2 }}</span></div>
-                <div class="row"><span>Amount Paid</span><span>₹{{ order.amount_paid|floatformat:2 }}</span></div>
-                <div class="row remaining"><span>Remaining</span><span>₹{{ order.remaining_amount|floatformat:2 }}</span></div>
-                <div class="row total"><span>Payment Status</span><span>{{ order.payment_status|title }}</span></div>
+
+            <!-- Order Items -->
+            <div class="order-title">
+                <i class="fas fa-list-ul"></i> Order Items
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>KG</th>
+                            <th>Clean</th>
+                            <th class="text-right">Grind</th>
+                            <th class="text-right">Clean Chg</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.category.name }}</td>
+                            <td>{{ item.total_kg }}</td>
+                            <td>
+                                <span class="clean-badge {% if not item.is_cleaning_done %}no{% endif %}">
+                                    {{ item.is_cleaning_done|yesno:"Yes,No" }}
+                                </span>
+                            </td>
+                            <td class="text-right">₹{{ item.grinding_charges|floatformat:2 }}</td>
+                            <td class="text-right">₹{{ item.cleaning_charges|floatformat:2 }}</td>
+                            <td class="text-right">₹{{ item.item_total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Selling Items -->
+            <div class="selling-section">
+                <div class="selling-title">
+                    <i class="fas fa-tags"></i> Selling Items
+                </div>
+                <div class="selling-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Measurement</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.selling_items.all %}
+                            <tr>
+                                <td>{{ item.selling_price.category.name }}</td>
+                                <td>{{ item.selling_price.get_measurement_display }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.selling_price.price }}</td>
+                                <td class="text-right">₹{{ item.total }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr class="empty-row">
+                                <td colspan="5">— No selling items —</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Totals -->
+            <div class="totals">
+                <div class="row">
+                    <span class="label">Grand Total</span>
+                    <span class="value">₹{{ order.total_amount|floatformat:2 }}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Amount Paid</span>
+                    <span class="value">₹{{ order.amount_paid|floatformat:2 }}</span>
+                </div>
+                <div class="row remaining-row">
+                    <span class="label">Remaining</span>
+                    <span class="value">₹{{ order.remaining_amount|floatformat:2 }}</span>
+                </div>
+                <div class="row divider status-row">
+                    <span class="label">Payment Status</span>
+                    <span class="value">{{ order.payment_status|title }}</span>
+                </div>
             </div>
         </div>
+
         <div class="transcript-footer">
-            Generated on {% now "d M Y H:i" %} · Thank you!
+            <span class="footer-left">
+                <i class="far fa-calendar-alt"></i>
+                {% now "d M Y, h:i A" %}
+            </span>
+            <span class="footer-right">
+                <i class="fas fa-heart" style="color:#c9b29b;font-size:0.5rem;"></i>
+                Thank you!
+            </span>
         </div>
     </div>
 </div>
