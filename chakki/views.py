@@ -7,6 +7,7 @@ from decimal import Decimal
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from .models import ChakkiCustomer, ChakkiOrder, ChakkiSetting, ChakkiCategory, ChakkiOrderItem, SellingCategory, SellingPrice, SellingOrderItem
+from django.urls import reverse
 
 from expenses.models import Expense
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -823,12 +824,10 @@ def add_order(request, **kwargs):
                 return redirect('add_order', schema_name=tenant.schema_name)
             if payment_type == 'partial' and not phone:
                 messages.error(request, "Phone is required for partial payment.")
-                
-            # Preserve customer_id in redirect
-            redirect_url = reverse('add_order', kwargs={'schema_name': tenant.schema_name})
-            if customer_id:
-                redirect_url += f'?customer_id={customer_id}'
-            return redirect(redirect_url)
+                redirect_url = reverse('add_order', kwargs={'schema_name': tenant.schema_name})
+                if customer_id:
+                    redirect_url += f'?customer_id={customer_id}'
+                return redirect(redirect_url)
             if phone:
                 existing = ChakkiCustomer.objects.filter(tenant=request.tenant, phone=phone).first()
                 if existing:
