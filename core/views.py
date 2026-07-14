@@ -42,6 +42,8 @@ def redirect_to_portal_login(request):
         from django.shortcuts import redirect
         return redirect('/admin/')
 
+
+
 @login_required
 def portal_dashboard(request, schema_name):
     tenant = Tenant.objects.filter(schema_name=schema_name).first()
@@ -54,9 +56,24 @@ def portal_dashboard(request, schema_name):
     return chakki_dashboard(request)
 
 def root_redirect(request):
-    """Serve a simple HTML page that redirects via JavaScript."""
-    return render(request, 'root.html')
-
+    if request.user.is_authenticated:
+        from tenants.models import Tenant
+        # Try to get the last visited tenant from session
+        last_schema = request.session.get('last_tenant_schema')
+        tenant = None
+        if last_schema:
+            tenant = Tenant.objects.filter(schema_name=last_schema).first()
+        if not tenant:
+            # Fallback to first owned tenant
+            tenant = Tenant.objects.filter(owner=request.user).first()
+        if tenant:
+            return redirect('portal_dashboard', schema_name=tenant.schema_name)
+        elif request.user.is_superuser:
+            return redirect('/admin/')
+        else:
+            return redirect('login')
+    else:
+        return render(request, 'root_home.html')
 @login_required
 def more_view(request, schema_name):
     from tenants.models import Tenant
@@ -68,5 +85,4 @@ def more_view(request, schema_name):
 
 @login_required
 def customers_view(request, schema_name):
-    # Redirect to chakki customer list
     return redirect('customer_list', schema_name=schema_name)
