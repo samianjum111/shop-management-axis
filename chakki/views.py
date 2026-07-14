@@ -671,31 +671,55 @@ def customer_list(request, **kwargs):
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
 
+
+
 def customer_profile(request, customer_id, **kwargs):
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
-    
-    # ---- Filters & Pagination for orders ----
+
+    # ---- Get all orders for this customer (unfiltered for stats) ----
+    all_orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer)
+
+    # ---- Overall stats (unfiltered) ----
+    total_orders_all = all_orders.count()
+    total_spent_all = sum(o.total_amount for o in all_orders if o.status == 'completed')
+    avg_order_value_all = total_spent_all / total_orders_all if total_orders_all > 0 else Decimal('0')
+    first_order_all = all_orders.order_by('created_at').first()
+    last_order_all = all_orders.order_by('-created_at').first()
+    first_order_date_all = first_order_all.created_at if first_order_all else None
+    last_order_date_all = last_order_all.created_at if last_order_all else None
+
+    # ---- Pending calculation (unfiltered) ----
+    total_pending_orders_all = sum(o.remaining_amount for o in all_orders if o.status != 'completed')
+    loan_expenses = Expense.objects.filter(
+        tenant=request.tenant,
+        category='given_loan',
+        is_credit=True,
+        is_repaid=False,
+        person_name=customer.name,
+        phone=customer.phone
+    )
+    total_pending_loans_all = loan_expenses.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+    total_pending_all = total_pending_orders_all + total_pending_loans_all
+
+    # ---- Filters for the order list ----
     search_q = request.GET.get('search', '').strip()
     sort_by = request.GET.get('sort', 'created_at')
     order_dir = request.GET.get('order', 'desc')
     status_filter = request.GET.get('status', 'all')
     page = request.GET.get('page', 1)
 
-    orders = ChakkiOrder.objects.filter(tenant=request.tenant, customer=customer)
+    # Start with all orders
+    orders = all_orders
 
-    # Search
+    # Apply search (only order ID, since customer is fixed)
     if search_q:
-        orders = orders.filter(
-            Q(id__icontains=search_q) |
-            Q(customer__name__icontains=search_q) |
-            Q(customer__phone__icontains=search_q)
-        )
+        orders = orders.filter(id__icontains=search_q)
 
-    # Status filter
+    # Apply status filter
     if status_filter != 'all':
         orders = orders.filter(status=status_filter)
 
-    # Sorting
+    # Apply sorting
     if sort_by == 'created_at':
         sort_field = 'created_at'
     elif sort_by == 'total':
@@ -710,44 +734,47 @@ def customer_profile(request, customer_id, **kwargs):
         sort_field = '-' + sort_field
     orders = orders.order_by(sort_field)
 
-    # Paginate
-    paginator = Paginator(orders, 20)  # 20 per page
+    # Paginate (20 per page)
+    paginator = Paginator(orders, 20)
     try:
         page_obj = paginator.page(page)
     except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
 
-    # ---- Pending calculation: orders + unrepaid loans ----
-    total_pending_orders = sum(o.remaining_amount for o in orders if o.status != 'completed')
-    # Unrepaid given_loan expenses for this customer (match by name/phone)
-    loan_expenses = Expense.objects.filter(
-        tenant=request.tenant,
-        category='given_loan',
-        is_credit=True,
-        is_repaid=False,
-        person_name=customer.name,
-        phone=customer.phone
-    )
-    total_pending_loans = loan_expenses.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
-    total_pending = total_pending_orders + total_pending_loans
-
-    total_spent = sum(o.total_amount for o in orders if o.status == 'completed')
-
+    # Prepare context
     context = {
         'customer': customer,
         'page_obj': page_obj,
-        'total_pending': total_pending,
-        'total_spent': total_spent,
-        'total_orders': orders.count(),
+        # Stats (unfiltered)
+        'total_orders': total_orders_all,
+        'total_spent': total_spent_all,
+        'total_pending': total_pending_all,
+        'avg_order_value': avg_order_value_all,
+        'first_order_date': first_order_date_all,
+        'last_order_date': last_order_date_all,
+        # Filter parameters (to keep in template)
         'search_q': search_q,
         'sort_by': sort_by,
         'order_dir': order_dir,
         'status_filter': status_filter,
         'tenant': request.tenant,
+        # Additional breakdowns (optional)
+        'status_counts': {
+            'pending': all_orders.filter(status='pending').count(),
+            'ready': all_orders.filter(status='ready').count(),
+            'completed': all_orders.filter(status='completed').count(),
+            'cancelled': all_orders.filter(status='cancelled').count(),
+        },
+        'payment_status_counts': {
+            'paid': all_orders.filter(payment_status='paid').count(),
+            'partial': all_orders.filter(payment_status='partial').count(),
+            'unpaid': all_orders.filter(payment_status='unpaid').count(),
+        },
+        'order_pending': total_pending_orders_all,
+        'loan_pending': total_pending_loans_all,
     }
     template = 'mobile/customer_profile.html' if request.mobile else 'desktop/customer_profile.html'
     return render(request, template, context)
-
 def add_order(request, **kwargs):
     # We no longer need global setting for rates; use category rates.
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
