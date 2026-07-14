@@ -647,7 +647,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="form-group"><label>Amount (₹)</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" required></div>
+          <div class="form-group"><label>Amount (₹)</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" max="{{ total_pending|floatformat:2 }}" required oninput="if(parseFloat(this.value) > parseFloat(this.max)) this.value = this.max; this.setCustomValidity('')" oninvalid="this.setCustomValidity('Amount cannot exceed total pending.')" /></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -670,7 +670,7 @@
         </div>
         <div class="modal-body">
           <div class="form-group"><label>Total Pending</label><input type="text" class="form-control" value="₹{{ total_pending|floatformat:2 }}" disabled></div>
-          <div class="form-group"><label>Amount to Collect (₹)</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" required></div>
+          <div class="form-group"><label>Amount to Collect (₹)</label><input type="number" name="amount" class="form-control" step="0.01" min="0.01" max="{{ total_pending|floatformat:2 }}" required oninput="if(parseFloat(this.value) > parseFloat(this.max)) this.value = this.max; this.setCustomValidity('')" oninvalid="this.setCustomValidity('Amount cannot exceed total pending.')" /></div>
           <p class="text-muted small">Payment applied to pending orders first, then loans.</p>
         </div>
         <div class="modal-footer">

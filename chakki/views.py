@@ -1302,6 +1302,10 @@ def edit_customer(request, customer_id, **kwargs):
     return render(request, template, context)
 
 @login_required
+
+@login_required
+
+@login_required
 def collect_pending(request, customer_id, **kwargs):
     """Collect payment from a customer's pending orders and loans."""
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
@@ -1312,6 +1316,11 @@ def collect_pending(request, customer_id, **kwargs):
     amount = Decimal(request.POST.get('amount', '0'))
     if amount <= 0:
         messages.error(request, "Please enter a valid amount.")
+        return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
+
+    total_pending = get_customer_total_pending(customer)
+    if amount > total_pending:
+        messages.error(request, f"Amount cannot exceed total pending (₹{total_pending:.2f}).")
         return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
 
     # Get pending orders (oldest first)
@@ -1361,17 +1370,6 @@ def collect_pending(request, customer_id, **kwargs):
                 expense.save()
                 remaining -= exp_rem
             else:
-                # For partial repayment, we could split the expense, but simpler: mark as repaid and create a new expense for remaining?
-                # Alternatively, we can reduce the amount of the expense? That would change historical data.
-                # We'll mark as repaid and create a new expense for the remaining amount (unpaid).
-                # But for simplicity, we'll just mark it as repaid and reduce amount? Not recommended.
-                # Better: we can create a new expense with the remaining amount.
-                # We'll implement: if partial, mark current as repaid and create a new expense for the remaining.
-                # However, to keep it simple, we'll just mark the expense as partially repaid? That's not supported.
-                # We'll instead allow partial repayment by creating a new expense for the remaining amount.
-                # But the user expects the loan to be reduced. We'll just mark the expense as repaid and create a new expense for the remaining amount.
-                # This is a bit complex, but we'll do it.
-                # We'll create a new expense for the remaining balance.
                 new_expense = Expense.objects.create(
                     tenant=request.tenant,
                     title=f"Remaining Udhaar for {customer.name}",
@@ -1391,3 +1389,4 @@ def collect_pending(request, customer_id, **kwargs):
 
     messages.success(request, f"Successfully collected ₹{amount}. Remaining pending: ₹{get_customer_total_pending(customer)}")
     return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
+

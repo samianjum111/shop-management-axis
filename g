@@ -1,167 +1,153 @@
 #!/usr/bin/env python3
 """
-Patcher to update customer_list view:
-- Add filter (all/pending/paid)
-- Sort pending customers first
-- Remove unused sort/order
+Patcher to prevent collecting more than the pending amount.
+- Adds max attribute to input field.
+- Adds oninput to cap value.
+- Updates view with server-side validation.
 """
 
 import re
 import os
 
 VIEWS_FILE = 'chakki/views.py'
+MOBILE_TEMPLATE = 'templates/mobile/customer_profile.html'
+DESKTOP_TEMPLATE = 'templates/desktop/customer_profile.html'
 
-NEW_FUNC = '''
+NEW_COLLECT_VIEW = '''
 @login_required
-def customer_list(request, **kwargs):
-    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-    from django.db.models import Sum, Count, Q
-    from decimal import Decimal
+def collect_pending(request, customer_id, **kwargs):
+    """Collect payment from a customer's pending orders and loans."""
+    customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
+    if request.method != 'POST':
+        messages.error(request, "Invalid request.")
+        return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
 
-    tenant = request.tenant
-    tab = request.GET.get('tab', 'regular')
-    q = request.GET.get('q', '').strip()
-    page = request.GET.get('page', 1)
-    status_filter = request.GET.get('filter', 'all')  # all, pending, paid
+    amount = Decimal(request.POST.get('amount', '0'))
+    if amount <= 0:
+        messages.error(request, "Please enter a valid amount.")
+        return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
 
-    all_customers = ChakkiCustomer.objects.filter(tenant=tenant)
-    regular_customers = all_customers.filter(is_regular=True)
-    walkin_customers = all_customers.filter(is_regular=False)
+    total_pending = get_customer_total_pending(customer)
+    if amount > total_pending:
+        messages.error(request, f"Amount cannot exceed total pending (₹{total_pending:.2f}).")
+        return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
 
-    if q:
-        all_customers = all_customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
-        regular_customers = regular_customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
-        walkin_customers = walkin_customers.filter(Q(name__icontains=q) | Q(phone__icontains=q))
+    # Get pending orders (oldest first)
+    pending_orders = ChakkiOrder.objects.filter(
+        tenant=request.tenant,
+        customer=customer
+    ).exclude(status='completed').order_by('created_at')
 
-    if tab == 'walk':
-        customers_qs = walkin_customers
-    else:
-        customers_qs = regular_customers
-        tab = 'regular'
+    remaining = amount
 
-    customer_data = []
-    total_revenue = Decimal('0')
-    total_pending_all = Decimal('0')
-    total_orders_all = 0
+    # Apply to orders
+    for order in pending_orders:
+        if remaining <= 0:
+            break
+        order_rem = order.remaining_amount
+        if order_rem > 0:
+            if remaining >= order_rem:
+                # Pay full order
+                order.amount_paid = order.total_amount
+                order.status = 'completed'
+                order.completed_at = timezone.now()
+                order.save()
+                remaining -= order_rem
+            else:
+                # Partial payment
+                order.amount_paid += remaining
+                order.save()
+                remaining = 0
+                break
 
-    for c in customers_qs:
-        orders = ChakkiOrder.objects.filter(tenant=tenant, customer=c)
-        completed = orders.filter(status='completed')
-        total_spent = completed.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0')
-        total_orders = orders.count()
-        completed_orders = completed.count()
-        avg_order = total_spent / completed_orders if completed_orders > 0 else Decimal('0')
-        total_pending = get_customer_total_pending(c)
-        first_order = orders.order_by('created_at').first()
-        last_order = orders.order_by('-created_at').first()
+    # Apply to loans if any remaining
+    if remaining > 0:
+        loan_expenses = Expense.objects.filter(
+            tenant=request.tenant,
+            category='given_loan',
+            is_credit=True,
+            is_repaid=False,
+            person_name=customer.name,
+            phone=customer.phone
+        ).order_by('date')
+        for expense in loan_expenses:
+            if remaining <= 0:
+                break
+            exp_rem = expense.amount
+            if remaining >= exp_rem:
+                expense.is_repaid = True
+                expense.save()
+                remaining -= exp_rem
+            else:
+                new_expense = Expense.objects.create(
+                    tenant=request.tenant,
+                    title=f"Remaining Udhaar for {customer.name}",
+                    amount=expense.amount - remaining,
+                    category='given_loan',
+                    person_name=customer.name,
+                    phone=customer.phone,
+                    address=customer.address,
+                    is_credit=True,
+                    is_repaid=False,
+                    notes=f"Remaining from original expense #{expense.id} after partial repayment"
+                )
+                expense.is_repaid = True
+                expense.save()
+                remaining = 0
+                break
 
-        customer_data.append({
-            'id': c.id,
-            'name': c.name,
-            'phone': c.phone or '—',
-            'address': c.address or '—',
-            'is_regular': c.is_regular,
-            'total_spent': total_spent,
-            'total_pending': total_pending,
-            'total_orders': total_orders,
-            'completed_orders': completed_orders,
-            'avg_order': avg_order,
-            'first_order': first_order.created_at if first_order else None,
-            'last_order': last_order.created_at if last_order else None,
-        })
-        total_revenue += total_spent
-        total_pending_all += total_pending
-        total_orders_all += total_orders
-
-    # Apply filter
-    if status_filter == 'pending':
-        customer_data = [c for c in customer_data if c['total_pending'] > 0]
-    elif status_filter == 'paid':
-        customer_data = [c for c in customer_data if c['total_pending'] == 0]
-
-    if q:
-        customer_data = [c for c in customer_data if q.lower() in c['name'].lower() or q in c['phone']]
-
-    # Sorting: pending customers first, then alphabetically by name
-    customer_data.sort(key=lambda x: (0 if x['total_pending'] > 0 else 1, x['name'].lower()))
-
-    paginator = Paginator(customer_data, 30)
-    try:
-        page_obj = paginator.page(page)
-    except (EmptyPage, PageNotAnInteger):
-        page_obj = paginator.page(1)
-
-    total_customers = len(customer_data)
-    avg_customer_value = total_revenue / total_customers if total_customers else 0
-
-    regular_count = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=True).count()
-    walk_count = ChakkiCustomer.objects.filter(tenant=tenant, is_regular=False).count()
-
-    context = {
-        'page_obj': page_obj,
-        'customer_data': page_obj.object_list,
-        'total_customers': total_customers,
-        'total_revenue': total_revenue,
-        'total_pending_all': total_pending_all,
-        'avg_customer_value': avg_customer_value,
-        'total_orders_all': total_orders_all,
-        'regular_count': regular_count,
-        'walk_count': walk_count,
-        'tab': tab,
-        'search_q': q,
-        'filter': status_filter,
-        'tenant': tenant,
-    }
-    template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
-    return render(request, template, context)
+    messages.success(request, f"Successfully collected ₹{amount}. Remaining pending: ₹{get_customer_total_pending(customer)}")
+    return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
 '''
 
-def patch():
+def patch_view():
     if not os.path.exists(VIEWS_FILE):
-        print(f"Error: {VIEWS_FILE} not found. Run from project root.")
+        print("⚠️  views.py not found")
         return
-
     with open(VIEWS_FILE, 'r') as f:
         content = f.read()
-
     lines = content.splitlines(keepends=True)
     start_idx = None
     for i, line in enumerate(lines):
-        if line.strip().startswith('def customer_list(request, **kwargs):'):
+        if line.strip().startswith('def collect_pending(request, customer_id, **kwargs):'):
             start_idx = i
             break
-
     if start_idx is None:
-        print("Could not find customer_list function. Aborting.")
+        print("⚠️  collect_pending function not found")
         return
-
-    # Find decorators above
-    decor_start = start_idx
-    for i in range(start_idx - 1, -1, -1):
-        if lines[i].strip().startswith('@') or lines[i].strip() == '':
-            decor_start = i
-        else:
-            break
-
-    # Find next top-level def
     end_idx = len(lines)
     for i in range(start_idx + 1, len(lines)):
         if lines[i].strip().startswith('def ') and not lines[i].startswith(' '):
             end_idx = i
             break
-
-    new_block = NEW_FUNC.splitlines(keepends=True)
+    new_block = NEW_COLLECT_VIEW.splitlines(keepends=True)
     if new_block[-1] != '\n':
         new_block[-1] += '\n'
-    lines[decor_start:end_idx] = new_block
-
+    lines[start_idx:end_idx] = new_block
     with open(VIEWS_FILE, 'w') as f:
         f.writelines(lines)
+    print("✅ Updated collect_pending view")
 
-    print("✅ customer_list view updated successfully.")
-    print("   - Added 'filter' parameter (all/pending/paid).")
-    print("   - Pending customers appear first.")
-    print("   - Removed unused 'sort' and 'order' parameters.")
+def patch_template(filepath, is_mobile=False):
+    if not os.path.exists(filepath):
+        print(f"⚠️  {filepath} not found")
+        return
+    with open(filepath, 'r') as f:
+        content = f.read()
+    # Find the input field in collect modal
+    # Pattern: <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
+    # We'll replace it with the full version.
+    new_input = '<input type="number" name="amount" class="form-control" step="0.01" min="0.01" max="{{ total_pending|floatformat:2 }}" required oninput="if(parseFloat(this.value) > parseFloat(this.max)) this.value = this.max; this.setCustomValidity(\'\')" oninvalid="this.setCustomValidity(\'Amount cannot exceed total pending.\')" />'
+    pattern = r'<input type="number" name="amount" class="form-control" step="0.01" min="0.01" required[^>]*>'
+    new_content = re.sub(pattern, new_input, content)
+    if new_content != content:
+        with open(filepath, 'w') as f:
+            f.write(new_content)
+        print(f"✅ Updated {filepath}")
+    else:
+        print(f"ℹ️  No change in {filepath}")
 
 if __name__ == '__main__':
-    patch()
+    patch_view()
+    patch_template(MOBILE_TEMPLATE)
+    patch_template(DESKTOP_TEMPLATE)
