@@ -559,11 +559,6 @@ def get_transcript_modal(request, order_id, **kwargs):
     context = {'order': order, 'tenant': request.tenant}
     return render(request, 'mobile/transcript_modal_content.html', context)
 
-
-
-
-@login_required
-
 @login_required
 def customer_list(request, **kwargs):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -573,9 +568,8 @@ def customer_list(request, **kwargs):
     tenant = request.tenant
     tab = request.GET.get('tab', 'regular')
     q = request.GET.get('q', '').strip()
-    sort = request.GET.get('sort', 'spent')
-    order = request.GET.get('order', 'desc')
     page = request.GET.get('page', 1)
+    status_filter = request.GET.get('filter', 'all')  # all, pending, paid
 
     all_customers = ChakkiCustomer.objects.filter(tenant=tenant)
     regular_customers = all_customers.filter(is_regular=True)
@@ -604,7 +598,7 @@ def customer_list(request, **kwargs):
         total_orders = orders.count()
         completed_orders = completed.count()
         avg_order = total_spent / completed_orders if completed_orders > 0 else Decimal('0')
-        total_pending = get_customer_total_pending(c)  # use helper
+        total_pending = get_customer_total_pending(c)
         first_order = orders.order_by('created_at').first()
         last_order = orders.order_by('-created_at').first()
 
@@ -626,20 +620,17 @@ def customer_list(request, **kwargs):
         total_pending_all += total_pending
         total_orders_all += total_orders
 
+    # Apply filter
+    if status_filter == 'pending':
+        customer_data = [c for c in customer_data if c['total_pending'] > 0]
+    elif status_filter == 'paid':
+        customer_data = [c for c in customer_data if c['total_pending'] == 0]
+
     if q:
         customer_data = [c for c in customer_data if q.lower() in c['name'].lower() or q in c['phone']]
 
-    reverse = (order == 'desc')
-    if sort == 'name':
-        customer_data.sort(key=lambda x: x['name'].lower(), reverse=reverse)
-    elif sort == 'spent':
-        customer_data.sort(key=lambda x: x['total_spent'], reverse=reverse)
-    elif sort == 'orders':
-        customer_data.sort(key=lambda x: x['total_orders'], reverse=reverse)
-    elif sort == 'avg':
-        customer_data.sort(key=lambda x: x['avg_order'], reverse=reverse)
-    elif sort == 'pending':
-        customer_data.sort(key=lambda x: x['total_pending'], reverse=reverse)
+    # Sorting: pending customers first, then alphabetically by name
+    customer_data.sort(key=lambda x: (0 if x['total_pending'] > 0 else 1, x['name'].lower()))
 
     paginator = Paginator(customer_data, 30)
     try:
@@ -665,14 +656,11 @@ def customer_list(request, **kwargs):
         'walk_count': walk_count,
         'tab': tab,
         'search_q': q,
-        'sort': sort,
-        'order': order,
+        'filter': status_filter,
         'tenant': tenant,
     }
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
-
-
 
 def customer_profile(request, customer_id, **kwargs):
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
