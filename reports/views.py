@@ -8,10 +8,13 @@ from chakki.models import ChakkiOrder, ChakkiCategory, SellingCategory, ChakkiCu
 from expenses.models import Expense
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import datetime
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
 
 @login_required
 
 @login_required
+@cache_page(60 * 5)
 def dashboard(request, **kwargs):
     from django.db.models import Sum, Count, Avg, Q
     from decimal import Decimal
@@ -213,6 +216,7 @@ def dashboard(request, **kwargs):
     }
     template = 'mobile/reports_dashboard.html' if request.mobile else 'desktop/reports_dashboard.html'
     return render(request, template, context)
+@cache_page(60 * 5)
 def revenue(request, **kwargs):
     from django.db.models import Sum, Count, Avg, Q
     from decimal import Decimal
@@ -512,6 +516,7 @@ def categories(request, **kwargs):
 @login_required
 
 @login_required
+@cache_page(60 * 5)
 def customers(request, **kwargs):
     tenant = request.tenant
     customer_type = request.GET.get('type', 'regular')
@@ -625,6 +630,8 @@ def customers(request, **kwargs):
     }
     template = 'mobile/reports_customers.html' if request.mobile else 'desktop/reports_customers.html'
     return render(request, template, context)
+
+@cache_page(60 * 5)
 
 def orders_report(request, **kwargs):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger

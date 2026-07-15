@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 def tenant_processor(request):
     return {'tenant': getattr(request, 'tenant', None)}
 
@@ -12,11 +13,16 @@ def chakki_counts(request):
     else:
         orders = ChakkiOrder.objects.filter(tenant=tenant)
     
-    pending_count = orders.filter(status='pending').count()
-    ready_count = orders.filter(status='ready').count()
-    partial_count = orders.filter(payment_status='partial').count()
-    completed_count = orders.filter(status='completed').count()
-    ready_orders = orders.filter(status='ready').order_by('-created_at')[:10]
+    counts = orders.aggregate(
+        pending_count=Count('id', filter=Q(status='pending')),
+        ready_count=Count('id', filter=Q(status='ready')),
+        partial_count=Count('id', filter=Q(payment_status='partial')),
+        completed_count=Count('id', filter=Q(status='completed')),
+    )
+    pending_count = counts['pending_count']
+    ready_count = counts['ready_count']
+    partial_count = counts['partial_count']
+    completed_count = counts['completed_count']
     return {
         'pending_count': pending_count,
         'ready_count': ready_count,

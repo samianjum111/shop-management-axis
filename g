@@ -1,49 +1,71 @@
 #!/usr/bin/env python3
 """
-Remove the "Go to Login" button from root_home.html.
-The page will still show the welcome message and portal URL example.
+Fix IndentationError in expenses/views.py
+Removes the duplicate import line inside expense_dashboard function.
+Also ensures ready_orders is defined in context_processors.
+Run: python3 fix_indent.py
 """
-
+import re
 from pathlib import Path
 
-TEMPLATE_PATH = Path(__file__).parent / 'templates' / 'root_home.html'
+def read_file(path):
+    with open(path, 'r') as f:
+        return f.read()
 
-def remove_button():
-    if not TEMPLATE_PATH.exists():
-        print(f"❌ {TEMPLATE_PATH} not found.")
-        return False
+def write_file(path, content):
+    with open(path, 'w') as f:
+        f.write(content)
 
-    with open(TEMPLATE_PATH, 'r') as f:
-        content = f.read()
-
-    # Remove the anchor tag containing "Go to Login"
-    # We'll replace the line(s) that contain the button.
-    # The button is: <a href="/login/" class="portal-link">Go to Login</a>
-    # We'll remove that entire line, but keep any surrounding content.
-    lines = content.splitlines()
-    new_lines = []
-    for line in lines:
-        if 'Go to Login' in line and 'portal-link' in line:
-            # Skip this line entirely (remove the button)
-            continue
-        new_lines.append(line)
-
-    new_content = '\n'.join(new_lines)
-
-    # If nothing changed, print a warning but still save (idempotent)
-    if new_content == content:
-        print("⚠️  Button not found or already removed.")
+def fix_expenses_indent():
+    path = Path('expenses/views.py')
+    if not path.exists():
+        print("⚠️ expenses/views.py not found")
+        return
+    
+    content = read_file(path)
+    
+    # Look for the line with extra indent and remove it
+    # Pattern: lines that start with 8 spaces and contain 'from django.db.models import Sum, Q'
+    # We'll remove that line entirely because the import already exists at top.
+    # Use regex to find and replace.
+    pattern = r'^ {8}from django\.db\.models import Sum, Q\s*$'
+    new_content = re.sub(pattern, '', content, flags=re.MULTILINE)
+    
+    if new_content != content:
+        write_file(path, new_content)
+        print("✅ Removed duplicate import line with extra indent in expenses/views.py")
     else:
-        with open(TEMPLATE_PATH, 'w') as f:
-            f.write(new_content)
-        print("✅ Removed 'Go to Login' button from root_home.html.")
+        print("ℹ️ No indentation error found in expenses/views.py")
 
-    return True
+def fix_context_processor():
+    path = Path('core/context_processors.py')
+    if not path.exists():
+        print("⚠️ core/context_processors.py not found")
+        return
+    
+    content = read_file(path)
+    if 'ready_orders' not in content:
+        # Insert ready_orders definition before the return statement
+        lines = content.splitlines()
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith('return {'):
+                new_lines.append('    ready_orders = orders.filter(status="ready").order_by("-created_at")[:10]')
+            new_lines.append(line)
+        new_content = '\n'.join(new_lines)
+        write_file(path, new_content)
+        print("✅ Added ready_orders definition in core/context_processors.py")
+    else:
+        print("ℹ️ core/context_processors.py already has ready_orders")
 
 def main():
-    print("🚀 Removing login button from root_home.html...")
-    if remove_button():
-        print("\n✅ Done. Restart your server to see the change.")
+    print("🚀 Fixing indentation and missing definitions...")
+    fix_expenses_indent()
+    fix_context_processor()
+    print("\n✅ Fixes applied.")
+    print("Restart Gunicorn:")
+    print("   sudo systemctl restart gunicorn")
+    print("   python manage.py collectstatic --noinput")
 
 if __name__ == "__main__":
     main()

@@ -79,6 +79,17 @@ WSGI_APPLICATION = 'saas_system.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(default='postgresql://localhost:5432/dbname')
 }
+
+
+# Caching (database backend – uses Django's db cache)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'cache_table',
+        'TIMEOUT': 300,
+    }
+}
+
 DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
 
 AUTHENTICATION_BACKENDS = [

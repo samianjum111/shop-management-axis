@@ -11,15 +11,9 @@ import json
 def expense_dashboard(request, **kwargs):
     """Expense dashboard with cards and summary."""
     expenses = Expense.objects.filter(tenant=request.tenant).order_by('-date')
-
-    totals = expenses.aggregate(
-        total_expenses=Sum('amount'),
-        total_given=Sum('amount', filter=Q(is_credit=True, is_repaid=False)),
-        total_taken=Sum('amount', filter=Q(category='taken_loan', is_repaid=False)),
-    )
-    total_expenses = totals['total_expenses'] or 0
-    total_given = totals['total_given'] or 0
-    total_taken = totals['total_taken'] or 0
+    total_expenses = sum(e.amount for e in expenses)
+    total_given = sum(e.amount for e in expenses if e.is_credit and not e.is_repaid)
+    total_taken = sum(e.amount for e in expenses if e.category == 'taken_loan' and not e.is_repaid)
     net_balance = total_given - total_taken
 
     daily_expenses = expenses.filter(category__in=['general','food','medicine','utility','other']).count()
@@ -324,7 +318,6 @@ from decimal import Decimal
 from django.db.models import Sum, Count, Q
 from datetime import timedelta, date
 from django.utils.safestring import mark_safe
-from django.views.decorators.cache import cache_page
 
 @login_required
 def worker_profile(request, worker_id, **kwargs):
@@ -506,7 +499,6 @@ def delete_worker_category(request, category_id, **kwargs):
 @login_required
 
 @login_required
-@cache_page(60 * 5)
 def pending_payments(request, **kwargs):
     """List workers with pending payments, optimized for performance."""
     from decimal import Decimal
@@ -693,3 +685,4 @@ def pending_payments(request, **kwargs):
     }
     template = 'mobile/pending_payments.html' if request.mobile else 'desktop/pending_payments.html'
     return render(request, template, context)
+

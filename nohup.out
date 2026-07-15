@@ -1,0 +1,1429 @@
+[2026-07-12 11:05:24 +0000] [40067] [INFO] Starting gunicorn 26.0.0
+[2026-07-12 11:05:24 +0000] [40067] [INFO] Listening at: http://0.0.0.0:8000 (40067)
+[2026-07-12 11:05:24 +0000] [40067] [INFO] Using worker: gthread
+[2026-07-12 11:05:24 +0000] [40068] [INFO] Booting worker with pid: 40068
+[2026-07-12 11:05:24 +0000] [40069] [INFO] Booting worker with pid: 40069
+[2026-07-12 11:05:24 +0000] [40067] [INFO] Control socket listening at /run/user/0/gunicorn.ctl
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+[2026-07-12 11:37:51 +0000] [40067] [INFO] Handling signal: term
+[2026-07-12 16:37:51 +0500] [40068] [INFO] Worker exiting (pid: 40068)
+[2026-07-12 16:37:51 +0500] [40069] [INFO] Worker exiting (pid: 40069)
+[2026-07-12 11:37:51 +0000] [40067] [INFO] Worker (pid:40068) was sent SIGTERM!
+[2026-07-12 11:37:51 +0000] [40067] [INFO] Worker (pid:40069) was sent SIGTERM!
+[2026-07-12 11:37:51 +0000] [40067] [INFO] Shutting down: Master
+[2026-07-12 11:37:52 +0000] [40384] [INFO] Starting gunicorn 26.0.0
+[2026-07-12 11:37:52 +0000] [40384] [INFO] Listening at: http://0.0.0.0:8000 (40384)
+[2026-07-12 11:37:52 +0000] [40384] [INFO] Using worker: gthread
+[2026-07-12 11:37:52 +0000] [40385] [INFO] Booting worker with pid: 40385
+[2026-07-12 11:37:52 +0000] [40386] [INFO] Booting worker with pid: 40386
+[2026-07-12 11:37:52 +0000] [40384] [INFO] Control socket listening at /run/user/0/gunicorn.ctl
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /webui/
+Not Found: /webui/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /geoserver/web/
+Not Found: /geoserver/web/
+Not Found: /manager/html
+Not Found: /manager/html
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /storage/.env
+Not Found: /storage/.env
+Not Found: /.git/config
+Not Found: /.git/config
+Not Found: /.gitconfig
+Not Found: /.gitconfig
+Not Found: /backend/.env.production
+Not Found: /backend/.env.production
+Not Found: /src/.env
+Not Found: /src/.env
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+[2026-07-12 14:06:09 +0000] [40384] [INFO] Handling signal: term
+[2026-07-12 19:06:09 +0500] [40385] [INFO] Worker exiting (pid: 40385)
+⚠️  Skipping tenant public: relation "subscriptions_subscriptionrequest" does not exist
+LINE 1: ...riptions_subscriptionrequest"."processed_at" FROM "subscript...
+                                                             ^
+
+[2026-07-12 19:06:09 +0500] [40386] [INFO] Worker exiting (pid: 40386)
+[2026-07-12 14:06:10 +0000] [40384] [INFO] Worker (pid:40385) was sent SIGTERM!
+[2026-07-12 14:06:10 +0000] [40384] [INFO] Worker (pid:40386) was sent SIGTERM!
+[2026-07-12 14:06:10 +0000] [40384] [INFO] Shutting down: Master
+[2026-07-12 14:06:11 +0000] [44020] [INFO] Starting gunicorn 26.0.0
+[2026-07-12 14:06:11 +0000] [44020] [INFO] Listening at: http://0.0.0.0:8000 (44020)
+[2026-07-12 14:06:11 +0000] [44020] [INFO] Using worker: gthread
+[2026-07-12 14:06:11 +0000] [44021] [INFO] Booting worker with pid: 44021
+[2026-07-12 14:06:11 +0000] [44022] [INFO] Booting worker with pid: 44022
+[2026-07-12 14:06:11 +0000] [44020] [INFO] Control socket listening at /run/user/0/gunicorn.ctl
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /vpn/js/rdx/core/lang/rdx_en.json.gz
+Not Found: /vpn/js/rdx/core/lang/rdx_en.json.gz
+Not Found: /wsman
+Not Found: /wsman
+Not Found: /_layouts/15/error.aspx
+Not Found: /_layouts/15/error.aspx
+Not Found: /auth.html
+Not Found: /auth.html
+Not Found: /auth1.html
+Not Found: /auth1.html
+Not Found: /sslvpnLogin.html
+Not Found: /sslvpnLogin.html
+Not Found: /api/sonicos/auth
+Not Found: /api/sonicos/auth
+Not Found: /api/sonicos/tfa
+Not Found: /api/sonicos/tfa
+Not Found: /sonicui/7/sslvpn-portal/
+Not Found: /sonicui/7/sslvpn-portal/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Internal Server Error: /portal/chaki/chakki/add/
+Traceback (most recent call last):
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/var/www/shop-management-axis/chakki/views.py", line 801, in add_order
+    redirect_url = reverse('add_order', kwargs={'schema_name': tenant.schema_name})
+NameError: name 'reverse' is not defined
+Internal Server Error: /portal/chaki/chakki/add/
+Traceback (most recent call last):
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/var/www/shop-management-axis/chakki/views.py", line 801, in add_order
+    redirect_url = reverse('add_order', kwargs={'schema_name': tenant.schema_name})
+NameError: name 'reverse' is not defined
+Not Found: /robots.txt
+Not Found: /robots.txt
+Not Found: /+CSCOE+/logon.html
+Not Found: /+CSCOE+/logon.html
+Not Found: /+CSCOT+/oem-customization
+Not Found: /+CSCOT+/oem-customization
+Not Found: /.env
+Not Found: /.env
+Not Found: /.ftpconfig
+Not Found: /.ftpconfig
+Not Found: /.git/config
+Not Found: /.git/config
+Not Found: /.idea/WebServers.xml
+Not Found: /.idea/WebServers.xml
+Not Found: /.remote-sync.json
+Not Found: /.remote-sync.json
+Not Found: /.vscode/ftp-sync.json
+Not Found: /.vscode/ftp-sync.json
+Not Found: /.vscode/sftp.json
+Not Found: /.vscode/sftp.json
+Not Found: /AHT/AHT_UI/public/js/app.min.js
+Not Found: /AHT/AHT_UI/public/js/app.min.js
+Not Found: /CACHE/sdesktop/install/start.htm
+Not Found: /CACHE/sdesktop/install/start.htm
+Not Found: /EndUserPortal.jsp
+Not Found: /EndUserPortal.jsp
+Not Found: /Guest.aspx
+Not Found: /Guest.aspx
+Not Found: /Login.jsp
+Not Found: /Login.jsp
+Not Found: /Login/Login
+Not Found: /Login/Login
+Not Found: /Orion/Login.aspx
+Not Found: /Orion/Login.aspx
+Not Found: /RASHTML5Gateway/
+Not Found: /RASHTML5Gateway/
+Not Found: /WebInterface/login.html
+Not Found: /WebInterface/login.html
+Not Found: /_layouts/15/error.aspx
+Not Found: /_layouts/15/error.aspx
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /admin_login.html
+Not Found: /admin_login.html
+Not Found: /api/v2/cmdb/system/admin
+Not Found: /api/v2/cmdb/system/admin
+Not Found: /api/v2/cmdb/system/admin/admin
+Not Found: /api/v2/cmdb/system/admin/admin
+Not Found: /appliance
+Not Found: /appliance
+Not Found: /auth
+Not Found: /auth
+Not Found: /auth.html
+Not Found: /auth.html
+Not Found: /auth/admin
+Not Found: /auth/admin
+Not Found: /auth/admin/master/console/
+Not Found: /auth/admin/master/console/
+Not Found: /authorization.do
+Not Found: /authorization.do
+Not Found: /cgi-bin/welcome
+Not Found: /cgi-bin/welcome
+Not Found: /cgi-mod/index.cgi
+Not Found: /cgi-mod/index.cgi
+Not Found: /client
+Not Found: /client
+Not Found: /configurations
+Not Found: /configurations
+Not Found: /configurations.do
+Not Found: /configurations.do
+Not Found: /dana-na/auth/url_2/welcome.cgi
+Not Found: /dana-na/auth/url_2/welcome.cgi
+Not Found: /dana-na/auth/url_3/welcome.cgi
+Not Found: /dana-na/auth/url_3/welcome.cgi
+Not Found: /dana-na/auth/url_default/welcome.cgi
+Not Found: /dana-na/auth/url_default/welcome.cgi
+Not Found: /dana-na/nc/nc_gina_ver.txt
+Not Found: /dana-na/nc/nc_gina_ver.txt
+Not Found: /deployment-config.json
+Not Found: /deployment-config.json
+Not Found: /fpui/jsp/login.jsp
+Not Found: /fpui/jsp/login.jsp
+Not Found: /global-protect/login.esp
+Not Found: /global-protect/login.esp
+Not Found: /human.aspx
+Not Found: /human.aspx
+Not Found: /iam/login
+Not Found: /iam/login
+Not Found: /index.do
+Not Found: /index.do
+Not Found: /jira/secure/Dashboard.jspa
+Not Found: /jira/secure/Dashboard.jspa
+Not Found: /jsp/index.jsp
+Not Found: /jsp/index.jsp
+Not Found: /login.action
+Not Found: /login.action
+Not Found: /login.html
+Not Found: /login.html
+Not Found: /login.jsp
+Not Found: /login.jsp
+Not Found: /logon/LogonPoint/custom.html
+Not Found: /logon/LogonPoint/custom.html
+Not Found: /logon/LogonPoint/index.html
+Not Found: /logon/LogonPoint/index.html
+Not Found: /logon/LogonPoint/tmindex.html
+Not Found: /logon/LogonPoint/tmindex.html
+Not Found: /mftp
+Not Found: /mftp
+Not Found: /mifs/login.jsp
+Not Found: /mifs/login.jsp
+Not Found: /mifs/user/login.jsp
+Not Found: /mifs/user/login.jsp
+Not Found: /owa/auth/logon.aspx
+Not Found: /owa/auth/logon.aspx
+Not Found: /php/login.php
+Not Found: /php/login.php
+Not Found: /php/ztp_gate.php/.js.map
+Not Found: /php/ztp_gate.php/.js.map
+Not Found: /portal/webclient/index.html
+Not Found: /portal/webclient/index.html
+Not Found: /rdweb
+Not Found: /rdweb
+Not Found: /remote
+Not Found: /remote
+Not Found: /remote/fgt_lang
+Not Found: /remote/fgt_lang
+Not Found: /remote/login
+Not Found: /remote/login
+Not Found: /secure/Dashboard.jspa
+Not Found: /secure/Dashboard.jspa
+Not Found: /showLogin.cc
+Not Found: /showLogin.cc
+Not Found: /sonicui/7/login/
+Not Found: /sonicui/7/login/
+Not Found: /sonicui/7/sslvpn-portal/
+Not Found: /sonicui/7/sslvpn-portal/
+Not Found: /sslvpn/Login/Login
+Not Found: /sslvpn/Login/Login
+Not Found: /users/sign_in
+Not Found: /users/sign_in
+Not Found: /vpn/index.html
+Not Found: /vpn/index.html
+Not Found: /web/login
+Not Found: /web/login
+Not Found: /webapps/login
+Not Found: /webapps/login
+Not Found: /webclient/Login.xhtml
+Not Found: /webclient/Login.xhtml
+Not Found: /webconsole
+Not Found: /webconsole
+Not Found: /webui/
+Not Found: /webui/
+Not Found: /wsman
+Not Found: /wsman
+Not Found: /hello.world
+Not Found: /hello.world
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/LICENSE/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/LICENSE/eval-stdin.php
+Not Found: /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.well-known/security.txt
+Not Found: /.well-known/security.txt
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /hello.world
+Not Found: /hello.world
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/LICENSE/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/LICENSE/eval-stdin.php
+Not Found: /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /laravel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /laravel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /www/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /www/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /ws/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /ws/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /yii/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /yii/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /zend/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /zend/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /ws/ec/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /ws/ec/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /V2/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /V2/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /tests/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /tests/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /test/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /test/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /testing/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /testing/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /api/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /api/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /demo/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /demo/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /cms/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /cms/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /crm/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /crm/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /backup/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /backup/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /blog/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /blog/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /workspace/drupal/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /workspace/drupal/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /panel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /panel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /public/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /public/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /apps/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /apps/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /app/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /app/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /index.php
+Not Found: /index.php
+Not Found: /public/index.php
+Not Found: /public/index.php
+Not Found: /index.php
+Not Found: /index.php
+Not Found: /index.php
+Not Found: /index.php
+Not Found: /containers/json
+Not Found: /containers/json
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /portal/2/dashboard/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env.old
+Not Found: /.env.old
+Not Found: /public/.env
+Not Found: /public/.env
+Not Found: /.env.dist
+Not Found: /.env.dist
+Not Found: /backend/.env.production
+Not Found: /backend/.env.production
+Not Found: /www/.env
+Not Found: /www/.env
+Not Found: /.env
+Not Found: /.env
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /manage/account/login
+Not Found: /manage/account/login
+Not Found: /core/.env
+Not Found: /core/.env
+Not Found: /.env.local
+Not Found: /.env.local
+Not Found: /.env.dev
+Not Found: /.env.dev
+Not Found: /.env.test
+Not Found: /.env.test
+Not Found: /.env.testing
+Not Found: /.env.testing
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Not Found: /v1/messages
+Not Found: /v1/messages
+Not Found: /v1/messages
+Not Found: /v1/messages
+Not Found: /anthropic/v1/messages
+Not Found: /anthropic/v1/messages
+Not Found: /v1/chat/completions
+Not Found: /v1/chat/completions
+Not Found: /status
+Not Found: /status
+Not Found: /stat
+Not Found: /stat
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /sitemap.xml
+Not Found: /sitemap.xml
+Not Found: /robots.txt
+Not Found: /robots.txt
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /api
+Not Found: /api
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /developmentserver/metadatauploader
+Not Found: /developmentserver/metadatauploader
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /mcp
+Not Found: /mcp
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /sse
+Not Found: /sse
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /goform/formJsonAjaxReq
+Not Found: /goform/formJsonAjaxReq
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /mcp
+Not Found: /mcp
+Not Found: /sse
+Not Found: /sse
+Not Found: /portal/
+Not Found: /portal/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /wiki
+Not Found: /wiki
+[2026-07-13 11:58:12 +0500] [44021] [WARNING] Invalid request from ip=66.132.195.124: Invalid HTTP request line: 'PRI * HTTP/2.0'
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.well-known/security.txt
+Not Found: /.well-known/security.txt
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/
+Not Found: /portal/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/
+Not Found: /portal/2/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /portal/2/
+Not Found: /portal/2/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /portal/2/
+Not Found: /portal/2/
+Not Found: /webui/
+Not Found: /webui/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /geoserver/web/
+Not Found: /geoserver/web/
+[2026-07-13 08:58:10 +0000] [44020] [INFO] Handling signal: term
+[2026-07-13 13:58:10 +0500] [44021] [INFO] Worker exiting (pid: 44021)
+[2026-07-13 13:58:10 +0500] [44022] [INFO] Worker exiting (pid: 44022)
+[2026-07-13 08:58:10 +0000] [44020] [INFO] Worker (pid:44021) was sent SIGTERM!
+[2026-07-13 08:58:10 +0000] [44020] [INFO] Worker (pid:44022) was sent SIGTERM!
+[2026-07-13 08:58:10 +0000] [44020] [INFO] Shutting down: Master
+[2026-07-13 08:58:11 +0000] [58254] [INFO] Starting gunicorn 26.0.0
+[2026-07-13 08:58:11 +0000] [58254] [INFO] Listening at: http://0.0.0.0:8000 (58254)
+[2026-07-13 08:58:11 +0000] [58254] [INFO] Using worker: gthread
+[2026-07-13 08:58:11 +0000] [58255] [INFO] Booting worker with pid: 58255
+[2026-07-13 08:58:11 +0000] [58256] [INFO] Booting worker with pid: 58256
+[2026-07-13 08:58:11 +0000] [58254] [INFO] Control socket listening at /run/user/0/gunicorn.ctl
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /cgi-bin/luci/;stok=/locale
+Not Found: /cgi-bin/luci/;stok=/locale
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /443
+Not Found: /443
+Not Found: /.git/config
+Not Found: /.git/config
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+[2026-07-13 16:00:34 +0500] [58255] [WARNING] Invalid request from ip=80.94.95.43: Invalid HTTP request line: '\x03\x00\x00/*à\x00\x00\x00\x00\x00Cookie: mstshash=Administr'
+Not Found: /developmentserver/metadatauploader
+Not Found: /developmentserver/metadatauploader
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /Dockerfile
+Not Found: /Dockerfile
+Not Found: /.git/config
+Not Found: /.git/config
+Not Found: /server-status
+Not Found: /server-status
+Not Found: /phpinfo.php
+Not Found: /phpinfo.php
+Not Found: /.env
+Not Found: /.env
+Not Found: /info.php
+Not Found: /info.php
+Not Found: /storage/logs/laravel.log
+Not Found: /storage/logs/laravel.log
+Not Found: /id_rsa
+Not Found: /id_rsa
+Not Found: /docker-compose.yml
+Not Found: /docker-compose.yml
+Not Found: /wp-config.php.bak
+Not Found: /wp-config.php.bak
+Not Found: /.git/HEAD
+Not Found: /.git/HEAD
+Not Found: /.env
+Not Found: /.env
+Not Found: /sendgrid.env
+Not Found: /sendgrid.env
+Not Found: /twilio.env
+Not Found: /twilio.env
+Not Found: /api/.env
+Not Found: /api/.env
+Not Found: /phpinfo/
+Not Found: /phpinfo/
+Not Found: /dev/.env
+Not Found: /dev/.env
+Not Found: /app_dev.php/_profiler/phpinfo
+Not Found: /app_dev.php/_profiler/phpinfo
+Not Found: /laravel/.env
+Not Found: /laravel/.env
+Not Found: /.config.yaml
+Not Found: /.config.yaml
+Not Found: /backend/.env
+Not Found: /backend/.env
+Not Found: /secrets.env
+Not Found: /secrets.env
+Not Found: /.env.example
+Not Found: /.env.example
+Not Found: /web/.env
+Not Found: /web/.env
+Not Found: /.env.bak
+Not Found: /.env.bak
+Not Found: /staging/.env
+Not Found: /staging/.env
+Not Found: /debug/default/view
+Not Found: /debug/default/view
+Not Found: /core/.env
+Not Found: /core/.env
+Not Found: /phpinfo.php
+Not Found: /phpinfo.php
+Not Found: /info/
+Not Found: /info/
+Not Found: /images/.env
+Not Found: /images/.env
+Not Found: /.env.save.1
+Not Found: /.env.save.1
+Not Found: /.env.save
+Not Found: /.env.save
+Not Found: /API/.env
+Not Found: /API/.env
+Not Found: /app/.env
+Not Found: /app/.env
+Not Found: /test
+Not Found: /test
+Not Found: /.env.php
+Not Found: /.env.php
+Not Found: /.env.sample.php
+Not Found: /.env.sample.php
+Not Found: /.env.local.php
+Not Found: /.env.local.php
+Not Found: /.env.production.php
+Not Found: /.env.production.php
+Not Found: /config.dev.php
+Not Found: /config.dev.php
+Not Found: /config.env
+Not Found: /config.env
+Not Found: /twilio/.env.php
+Not Found: /twilio/.env.php
+Not Found: /config/.env.php
+Not Found: /config/.env.php
+Not Found: /sendgrid/.env.php
+Not Found: /sendgrid/.env.php
+Not Found: /.env.php.bak
+Not Found: /.env.php.bak
+Not Found: /.env.php-bak
+Not Found: /.env.php-bak
+Not Found: /.env.php-backup
+Not Found: /.env.php-backup
+Not Found: /.env.php.backup
+Not Found: /.env.php.backup
+Not Found: /test/.env.php
+Not Found: /test/.env.php
+Not Found: /.env.example.php
+Not Found: /.env.example.php
+Not Found: /app_dev.php/_profiler/.env
+Not Found: /app_dev.php/_profiler/.env
+Not Found: /var/.env.local.php
+Not Found: /var/.env.local.php
+Not Found: /.env.production
+Not Found: /.env.production
+Not Found: /.env.prod
+Not Found: /.env.prod
+Not Found: /.env.local
+Not Found: /.env.local
+Not Found: /id_rsa
+Not Found: /id_rsa
+Not Found: /info.php
+Not Found: /info.php
+Not Found: /.git/HEAD
+Not Found: /.git/HEAD
+Not Found: /.env.backup
+Not Found: /.env.backup
+Not Found: /storage/logs/laravel.log
+Not Found: /storage/logs/laravel.log
+Not Found: /.env
+Not Found: /.env
+Not Found: /_ignition/health-check
+Not Found: /_ignition/health-check
+Not Found: /phpinfo.php
+Not Found: /phpinfo.php
+Not Found: /server-status
+Not Found: /server-status
+Not Found: /Dockerfile
+Not Found: /Dockerfile
+Not Found: /.git/config
+Not Found: /.git/config
+Not Found: /docker-compose.yml
+Not Found: /docker-compose.yml
+Not Found: /wp-config.php.bak
+Not Found: /wp-config.php.bak
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Not Found: /.env.php
+Not Found: /.env.php
+Not Found: /.env.sample.php
+Not Found: /.env.sample.php
+Not Found: /.env.local.php
+Not Found: /.env.local.php
+Not Found: /.env.production.php
+Not Found: /.env.production.php
+Not Found: /config.dev.php
+Not Found: /config.dev.php
+Not Found: /config.env
+Not Found: /config.env
+Not Found: /twilio/.env.php
+Not Found: /twilio/.env.php
+Not Found: /config/.env.php
+Not Found: /config/.env.php
+Not Found: /sendgrid/.env.php
+Not Found: /sendgrid/.env.php
+Not Found: /.env.php.bak
+Not Found: /.env.php.bak
+Not Found: /.env.php-bak
+Not Found: /.env.php-bak
+Not Found: /.env.php-backup
+Not Found: /.env.php-backup
+Not Found: /.env.php.backup
+Not Found: /.env.php.backup
+Not Found: /test/.env.php
+Not Found: /test/.env.php
+Not Found: /.env.example.php
+Not Found: /.env.example.php
+Not Found: /app_dev.php/_profiler/.env
+Not Found: /app_dev.php/_profiler/.env
+Not Found: /var/.env.local.php
+Not Found: /var/.env.local.php
+Not Found: /api/.env
+Not Found: /api/.env
+Not Found: /app/.env
+Not Found: /app/.env
+Not Found: /.env.production
+Not Found: /.env.production
+Not Found: /.env.save
+Not Found: /.env.save
+Not Found: /backend/.env
+Not Found: /backend/.env
+Not Found: /core/.env
+Not Found: /core/.env
+Not Found: /laravel/.env
+Not Found: /laravel/.env
+Not Found: /.env.example
+Not Found: /.env.example
+Not Found: /.env.prod
+Not Found: /.env.prod
+Not Found: /.env.local
+Not Found: /.env.local
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /env
+Not Found: /env
+Not Found: /public/.env
+Not Found: /public/.env
+Not Found: /.env.sample
+Not Found: /.env.sample
+Not Found: /frontend/.env
+Not Found: /frontend/.env
+Not Found: /repository/.env
+Not Found: /repository/.env
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /.env
+Not Found: /.env
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /status
+Not Found: /status
+Not Found: /stat
+Not Found: /stat
+Not Found: /goform/formJsonAjaxReq
+Not Found: /goform/formJsonAjaxReq
+Not Found: /hello.world
+Not Found: /hello.world
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/Util/PHP/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/LICENSE/eval-stdin.php
+Not Found: /vendor/phpunit/phpunit/LICENSE/eval-stdin.php
+Not Found: /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /phpunit/Util/PHP/eval-stdin.php
+Not Found: /phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/phpunit/Util/PHP/eval-stdin.php
+Not Found: /lib/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /lib/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /laravel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /laravel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /www/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /www/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Not Found: /invoker/EJBInvokerServlet
+Not Found: /invoker/EJBInvokerServlet
+Not Found: /jmx-console/HtmlAdaptor
+Not Found: /jmx-console/HtmlAdaptor
+Not Found: /invoker/JMXInvokerServlet
+Not Found: /invoker/JMXInvokerServlet
+Not Found: /web-console/ServerInfo.jsp
+Not Found: /web-console/ServerInfo.jsp
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env.sample
+Not Found: /.env.sample
+Not Found: /api/.env.production
+Not Found: /api/.env.production
+Not Found: /app/.env.production
+Not Found: /app/.env.production
+Not Found: /server/.env.production
+Not Found: /server/.env.production
+Not Found: /.env.old
+Not Found: /.env.old
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /webui/
+Not Found: /webui/
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /geoserver/web/
+Not Found: /geoserver/web/
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /version
+Not Found: /version
+Not Found: /v1
+Not Found: /v1
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /mcp
+Not Found: /mcp
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /shell
+Not Found: /shell
+Not Found: /hudson
+Not Found: /hudson
+Not Found: /.env
+Not Found: /.env
+Not Found: /.env.swp
+Not Found: /.env.swp
+Not Found: /v2/.env
+Not Found: /v2/.env
+Not Found: /config.yaml
+Not Found: /config.yaml
+Not Found: /.git/config
+Not Found: /.git/config
+Not Found: /settings.json
+Not Found: /settings.json
+Not Found: /v1/.env
+Not Found: /v1/.env
+Not Found: /private/.env
+Not Found: /private/.env
+Not Found: /config.js
+Not Found: /config.js
+Not Found: /config.json
+Not Found: /config.json
+Not Found: /.git/HEAD
+Not Found: /.git/HEAD
+Not Found: /public/.env
+Not Found: /public/.env
+Not Found: /.svn/wc.db
+Not Found: /.svn/wc.db
+Not Found: /settings.yml
+Not Found: /settings.yml
+Not Found: /config.php
+Not Found: /config.php
+Not Found: /appsettings.json
+Not Found: /appsettings.json
+Not Found: /application-dev.yml
+Not Found: /application-dev.yml
+Not Found: /wp-config.php.bak
+Not Found: /wp-config.php.bak
+Not Found: /wp-config.php.old
+Not Found: /wp-config.php.old
+Not Found: /wp-config.php~
+Not Found: /wp-config.php~
+Not Found: /wp-config.php.swp
+Not Found: /wp-config.php.swp
+Not Found: /configuration.php
+Not Found: /configuration.php
+Not Found: /wp-config.txt
+Not Found: /wp-config.txt
+Not Found: /wp-config.php.orig
+Not Found: /wp-config.php.orig
+Not Found: /sites/default/settings.php
+Not Found: /sites/default/settings.php
+Not Found: /wp-config.php
+Not Found: /wp-config.php
+Not Found: /.docker/config.json
+Not Found: /.docker/config.json
+Not Found: /docker-compose.dev.yml
+Not Found: /docker-compose.dev.yml
+Not Found: /.npmrc
+Not Found: /.npmrc
+Not Found: /.yarnrc
+Not Found: /.yarnrc
+Not Found: /debug/vars
+Not Found: /debug/vars
+Not Found: /docker-compose.prod.yml
+Not Found: /docker-compose.prod.yml
+Not Found: /storage/logs/laravel.log
+Not Found: /storage/logs/laravel.log
+Not Found: /.pgpass
+Not Found: /.pgpass
+Not Found: /.my.cnf
+Not Found: /.my.cnf
+Not Found: /database.yml
+Not Found: /database.yml
+Not Found: /id_rsa
+Not Found: /id_rsa
+Not Found: /dump.sql
+Not Found: /dump.sql
+Not Found: /backup.sql
+Not Found: /backup.sql
+Not Found: /database.sql
+Not Found: /database.sql
+Not Found: /firebase-adminsdk.json
+Not Found: /firebase-adminsdk.json
+Not Found: /serviceAccountKey.json
+Not Found: /serviceAccountKey.json
+Not Found: /db.sql
+Not Found: /db.sql
+Not Found: /google-credentials.json
+Not Found: /google-credentials.json
+Not Found: /keyfile.json
+Not Found: /gcloud-service-key.json
+Not Found: /gcloud-service-key.json
+Not Found: /keyfile.json
+Not Found: /service-account.json
+Not Found: /service-account.json
+Not Found: /docker-compose.yaml
+Not Found: /docker-compose.yaml
+Not Found: /.config/codex/auth.json
+Not Found: /.config/codex/auth.json
+Not Found: /home/.codex/auth.json
+Not Found: /home/.codex/auth.json
+Not Found: /.env.local.php
+Not Found: /.env.local.php
+Not Found: /phpinfo.php
+Not Found: /phpinfo.php
+Not Found: /root/.codex/auth.json
+Not Found: /root/.codex/auth.json
+Not Found: /actuator/env
+Not Found: /actuator/env
+Not Found: /actuator/configprops
+Not Found: /actuator/configprops
+Not Found: /.htpasswd
+Not Found: /.htpasswd
+Not Found: /info.php
+Not Found: /info.php
+Not Found: /.ssh/id_rsa
+Not Found: /.ssh/id_rsa
+Not Found: /.codex/config.json
+Not Found: /.codex/config.json
+Not Found: /codex/auth.json
+Not Found: /codex/auth.json
+Not Found: /local.settings.json
+Not Found: /local.settings.json
+Not Found: /robots.txt
+Not Found: /robots.txt
+Not Found: /sitemap.xml
+Not Found: /sitemap.xml
+[2026-07-14 12:54:23 +0500] [58256] [WARNING] Invalid request from ip=66.132.195.53: Invalid HTTP request line: 'PRI * HTTP/2.0'
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /robots.txt
+Not Found: /robots.txt
+Not Found: /%77eb%75i_%77sma_Http
+Not Found: /%77eb%75i_%77sma_Http
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /wiki
+Not Found: /wiki
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /443
+Not Found: /443
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /SDK/webLanguage
+Not Found: /SDK/webLanguage
+Not Found: /_profiler/phpinfo
+Not Found: /_profiler/phpinfo
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /sitemap.xml
+Not Found: /sitemap.xml
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /favicon.ico
+Not Found: /.env
+Not Found: /.env
+Forbidden (CSRF cookie not set.): /
+Forbidden (CSRF cookie not set.): /
+Internal Server Error: /portal/chaki/reports/customers/
+Traceback (most recent call last):
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/reports/views.py", line 536, in customers
+    total_pending = get_customer_total_pending(c)
+NameError: name 'get_customer_total_pending' is not defined
+Internal Server Error: /portal/chaki/reports/customers/
+Traceback (most recent call last):
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/reports/views.py", line 536, in customers
+    total_pending = get_customer_total_pending(c)
+NameError: name 'get_customer_total_pending' is not defined
+Internal Server Error: /portal/chaki/reports/customers/
+Traceback (most recent call last):
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/reports/views.py", line 536, in customers
+    total_pending = get_customer_total_pending(c)
+NameError: name 'get_customer_total_pending' is not defined
+Internal Server Error: /portal/chaki/reports/customers/
+Traceback (most recent call last):
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/venv/lib/python3.10/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+  File "/var/www/shop-management-axis/reports/views.py", line 536, in customers
+    total_pending = get_customer_total_pending(c)
+NameError: name 'get_customer_total_pending' is not defined
+Not Found: /.env
+Not Found: /.env
+Not Found: /.env.php
+Not Found: /.env.php
+Not Found: /.env.sample.php
+Not Found: /.env.sample.php
+Not Found: /.env.local.php
+Not Found: /.env.local.php
+Not Found: /.env.production.php
+Not Found: /.env.production.php
+Not Found: /config.dev.php
+Not Found: /config.dev.php
+Not Found: /config.env
+Not Found: /config.env
+Not Found: /twilio/.env.php
+Not Found: /twilio/.env.php
+Not Found: /config/.env.php
+Not Found: /config/.env.php
+Not Found: /sendgrid/.env.php
+Not Found: /sendgrid/.env.php
+Not Found: /.env.php.bak
+Not Found: /.env.php.bak
+Not Found: /.env.php-bak
+Not Found: /.env.php-bak
+Not Found: /.env.php-backup
+Not Found: /.env.php-backup
+Not Found: /.env.php.backup
+Not Found: /.env.php.backup
+Not Found: /test/.env.php
+Not Found: /test/.env.php
+Not Found: /.env.example.php
+Not Found: /.env.example.php
+Not Found: /app_dev.php/_profiler/.env
+Not Found: /app_dev.php/_profiler/.env
+Not Found: /var/.env.local.php
+Not Found: /var/.env.local.php
+Not Found: /api/.env
+Not Found: /api/.env
+Not Found: /app/.env
+Not Found: /app/.env
+Not Found: /.env.production
+Not Found: /.env.production
+Not Found: /.env.save
+Not Found: /.env.save
+Not Found: /backend/.env
+Not Found: /backend/.env
+Not Found: /core/.env
+Not Found: /core/.env
+Not Found: /laravel/.env
+Not Found: /laravel/.env
+Not Found: /.env.example
+Not Found: /.env.example
+Not Found: /.env.prod
+Not Found: /.env.prod
+Not Found: /.env.local
+Not Found: /.env.local
+[2026-07-14 13:41:34 +0000] [58254] [INFO] Handling signal: term
+[2026-07-14 18:41:34 +0500] [58255] [INFO] Worker exiting (pid: 58255)
+[2026-07-14 18:41:34 +0500] [58256] [INFO] Worker exiting (pid: 58256)
+[2026-07-14 13:41:34 +0000] [58254] [INFO] Worker (pid:58255) was sent SIGTERM!
+[2026-07-14 13:41:34 +0000] [58254] [INFO] Worker (pid:58256) was sent SIGTERM!
+[2026-07-14 13:41:34 +0000] [58254] [INFO] Shutting down: Master
+[2026-07-14 13:41:35 +0000] [79957] [INFO] Starting gunicorn 26.0.0
+[2026-07-14 13:41:35 +0000] [79957] [ERROR] Connection in use: ('0.0.0.0', 8000)
+[2026-07-14 13:41:35 +0000] [79957] [ERROR] connection to ('0.0.0.0', 8000) failed: [Errno 98] Address already in use
+[2026-07-14 13:41:36 +0000] [79957] [ERROR] Connection in use: ('0.0.0.0', 8000)
+[2026-07-14 13:41:36 +0000] [79957] [ERROR] connection to ('0.0.0.0', 8000) failed: [Errno 98] Address already in use
+[2026-07-14 13:41:37 +0000] [79957] [ERROR] Connection in use: ('0.0.0.0', 8000)
+[2026-07-14 13:41:37 +0000] [79957] [ERROR] connection to ('0.0.0.0', 8000) failed: [Errno 98] Address already in use
+[2026-07-14 13:41:38 +0000] [79957] [ERROR] Connection in use: ('0.0.0.0', 8000)
+[2026-07-14 13:41:38 +0000] [79957] [ERROR] connection to ('0.0.0.0', 8000) failed: [Errno 98] Address already in use
+[2026-07-14 13:41:39 +0000] [79957] [ERROR] Connection in use: ('0.0.0.0', 8000)
+[2026-07-14 13:41:39 +0000] [79957] [ERROR] connection to ('0.0.0.0', 8000) failed: [Errno 98] Address already in use
+[2026-07-14 13:41:40 +0000] [79957] [ERROR] Can't connect to ('0.0.0.0', 8000)

@@ -60,12 +60,21 @@ def chakki_home(request, **kwargs):
         )
 
     # Counts for status tabs (includes all orders)
-    all_count = all_orders.count()
-    pending_count = all_orders.filter(status='pending').count()
-    ready_count = all_orders.filter(status='ready').count()
-    partial_count = all_orders.filter(payment_status='partial').count()
-    completed_count = all_orders.filter(status='completed').count()
-    cancelled_count = all_orders.filter(status='cancelled').count()
+    from django.db.models import Count, Q
+    status_counts = all_orders.aggregate(
+        all_count=Count('id'),
+        pending_count=Count('id', filter=Q(status='pending')),
+        ready_count=Count('id', filter=Q(status='ready')),
+        partial_count=Count('id', filter=Q(payment_status='partial')),
+        completed_count=Count('id', filter=Q(status='completed')),
+        cancelled_count=Count('id', filter=Q(status='cancelled')),
+    )
+    all_count = status_counts['all_count']
+    pending_count = status_counts['pending_count']
+    ready_count = status_counts['ready_count']
+    partial_count = status_counts['partial_count']
+    completed_count = status_counts['completed_count']
+    cancelled_count = status_counts['cancelled_count']
 
     # Apply status filter
     if status_filter == 'pending':
@@ -1389,4 +1398,3 @@ def collect_pending(request, customer_id, **kwargs):
 
     messages.success(request, f"Successfully collected ₹{amount}. Remaining pending: ₹{get_customer_total_pending(customer)}")
     return redirect('customer_profile', schema_name=request.tenant.schema_name, customer_id=customer.id)
-
