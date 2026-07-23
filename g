@@ -1,71 +1,110 @@
 #!/usr/bin/env python3
 """
-Fix IndentationError in expenses/views.py
-Removes the duplicate import line inside expense_dashboard function.
-Also ensures ready_orders is defined in context_processors.
-Run: python3 fix_indent.py
+Auto‑patcher for Wasmer/Shipit Django deployment.
+Fixes "psycopg2-binary" not found for wasix_wasm32 platform.
 """
+
 import re
 from pathlib import Path
 
-def read_file(path):
-    with open(path, 'r') as f:
-        return f.read()
+PROJECT_ROOT = Path.cwd()
+REQUIREMENTS = PROJECT_ROOT / "requirements.txt"
+SHIPIT_FILE = PROJECT_ROOT / "Shipit"          # no extension, JSON format
 
-def write_file(path, content):
-    with open(path, 'w') as f:
-        f.write(content)
+def patch_requirements():
+    """Replace psycopg2-binary with psycopg2 in requirements.txt."""
+    if not REQUIREMENTS.exists():
+        print("❌ requirements.txt not found. Are you in the project root?")
+        return False
 
-def fix_expenses_indent():
-    path = Path('expenses/views.py')
-    if not path.exists():
-        print("⚠️ expenses/views.py not found")
-        return
-    
-    content = read_file(path)
-    
-    # Look for the line with extra indent and remove it
-    # Pattern: lines that start with 8 spaces and contain 'from django.db.models import Sum, Q'
-    # We'll remove that line entirely because the import already exists at top.
-    # Use regex to find and replace.
-    pattern = r'^ {8}from django\.db\.models import Sum, Q\s*$'
-    new_content = re.sub(pattern, '', content, flags=re.MULTILINE)
-    
-    if new_content != content:
-        write_file(path, new_content)
-        print("✅ Removed duplicate import line with extra indent in expenses/views.py")
+    with REQUIREMENTS.open("r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Check if psycopg2-binary is present
+    if "psycopg2-binary" not in content:
+        print("ℹ️  psycopg2-binary not found in requirements.txt. Nothing to patch.")
+        return True
+
+    # Replace with psycopg2
+    new_content = re.sub(
+        r"psycopg2-binary\s*==?\s*[\d.]+",   # matches exact or loose version
+        "psycopg2",
+        content
+    )
+
+    # Ensure psycopg2 is present (if it was removed entirely)
+    if "psycopg2" not in new_content:
+        new_content += "\npsycopg2\n"
+
+    with REQUIREMENTS.open("w", encoding="utf-8") as f:
+        f.write(new_content)
+
+    print("✅ requirements.txt patched: psycopg2-binary → psycopg2")
+    return True
+
+
+def create_shipit():
+    """Create/update a Shipit file that overrides the install command."""
+    # Base config from the user's deployment log
+    config = {
+        "name": "out",
+        "commands": {
+            "start": "python manage.py migrate --noinput && python manage.py collectstatic --noinput && uvicorn saas_system.asgi:application --host 0.0.0.0 --port 8000"
+        },
+        "framework": "django",
+        "server": "uvicorn",
+        "migration_strategy": "django",
+        "database": "postgresql",
+        "extra_dependencies": [
+            "uvicorn"
+        ],
+        "wsgi_application": "saas_system.wsgi:application",
+        "install_inputs": [
+            "requirements.txt"
+        ]
+    }
+
+    # If Shipit file already exists, we can merge or replace.
+    # We'll read it and update only the commands.install field.
+    if SHIPIT_FILE.exists():
+        import json
+        with SHIPIT_FILE.open("r", encoding="utf-8") as f:
+            try:
+                existing = json.load(f)
+                # Override or add install command
+                existing.setdefault("commands", {})["install"] = "pip install -r requirements.txt"
+                # Preserve other fields, but ensure important ones are present
+                for key, value in config.items():
+                    if key not in existing:
+                        existing[key] = value
+                config = existing
+            except json.JSONDecodeError:
+                print("⚠️  Existing Shipit file is not valid JSON. Overwriting with new config.")
     else:
-        print("ℹ️ No indentation error found in expenses/views.py")
+        # New file: add install command
+        config["commands"]["install"] = "pip install -r requirements.txt"
 
-def fix_context_processor():
-    path = Path('core/context_processors.py')
-    if not path.exists():
-        print("⚠️ core/context_processors.py not found")
-        return
-    
-    content = read_file(path)
-    if 'ready_orders' not in content:
-        # Insert ready_orders definition before the return statement
-        lines = content.splitlines()
-        new_lines = []
-        for line in lines:
-            if line.strip().startswith('return {'):
-                new_lines.append('    ready_orders = orders.filter(status="ready").order_by("-created_at")[:10]')
-            new_lines.append(line)
-        new_content = '\n'.join(new_lines)
-        write_file(path, new_content)
-        print("✅ Added ready_orders definition in core/context_processors.py")
-    else:
-        print("ℹ️ core/context_processors.py already has ready_orders")
+    import json
+    with SHIPIT_FILE.open("w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+    print("✅ Shipit file created/updated with custom install command (pip install).")
+
 
 def main():
-    print("🚀 Fixing indentation and missing definitions...")
-    fix_expenses_indent()
-    fix_context_processor()
-    print("\n✅ Fixes applied.")
-    print("Restart Gunicorn:")
-    print("   sudo systemctl restart gunicorn")
-    print("   python manage.py collectstatic --noinput")
+    print("🚀 Wasmer Deployment Patcher")
+    print("─────────────────────────────")
+
+    if not patch_requirements():
+        return
+
+    create_shipit()
+
+    print("\n🎉 Patches applied successfully!")
+    print("📌 Now commit the changes and redeploy to Wasmer.")
+    print("   (Run: git add . && git commit -m 'Fix psycopg2 for WASM' && git push)")
+    print("   Then trigger a new deployment.")
+
 
 if __name__ == "__main__":
     main()

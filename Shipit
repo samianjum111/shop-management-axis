@@ -1,0 +1,18 @@
+{
+  "name": "out",
+  "commands": {
+    "start": "python manage.py migrate --noinput && python manage.py collectstatic --noinput && uvicorn saas_system.asgi:application --host 0.0.0.0 --port 8000",
+    "install": "pip install -r requirements.txt"
+  },
+  "framework": "django",
+  "server": "uvicorn",
+  "migration_strategy": "django",
+  "database": "postgresql",
+  "extra_dependencies": [
+    "uvicorn"
+  ],
+  "wsgi_application": "saas_system.wsgi:application",
+  "install_inputs": [
+    "requirements.txt"
+  ]
+}
