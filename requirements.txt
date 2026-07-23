@@ -5,4 +5,4 @@ gunicorn
 python-dotenv
 
 dj-database-url==2.0.0
-django-tenants==3.5.0
+django-tenants==3.9.0

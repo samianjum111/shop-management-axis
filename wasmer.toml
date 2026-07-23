@@ -1,0 +1,2 @@
+[wasmer]
+entrypoint = "saas_system.wsgi:application"
