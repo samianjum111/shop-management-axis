@@ -217,6 +217,7 @@ def dashboard(request, **kwargs):
     template = 'mobile/reports_dashboard.html' if request.mobile else 'desktop/reports_dashboard.html'
     return render(request, template, context)
 @cache_page(60 * 5)
+@login_required
 def revenue(request, **kwargs):
     from django.db.models import Sum, Count, Avg, Q
     from decimal import Decimal
@@ -633,6 +634,7 @@ def customers(request, **kwargs):
 
 @cache_page(60 * 5)
 
+@login_required
 def orders_report(request, **kwargs):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     from django.db.models import Q, Sum, Count, Avg

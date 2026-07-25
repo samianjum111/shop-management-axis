@@ -13,6 +13,7 @@ from expenses.models import Expense
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
+@login_required
 def get_customer_total_pending(customer):
     """Return total pending amount for a customer (orders + loans)."""
     from decimal import Decimal
@@ -287,6 +288,7 @@ def order_detail(request, order_id, **kwargs):
     template = 'mobile/order_detail.html' if request.mobile else 'desktop/order_detail.html'
     return render(request, template, context)
 
+@login_required
 def complete_order(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
     if order.remaining_amount > 0:
@@ -533,6 +535,7 @@ def settings_view(request, **kwargs):
     template = 'mobile/settings.html' if request.mobile else 'desktop/settings.html'
     return render(request, template, context)
 
+@login_required
 def search(request, **kwargs):
     tenant = request.tenant
     q = request.GET.get('q', '').strip()
@@ -671,6 +674,7 @@ def customer_list(request, **kwargs):
     template = 'mobile/customer_list.html' if request.mobile else 'desktop/customer_list.html'
     return render(request, template, context)
 
+@login_required
 def customer_profile(request, customer_id, **kwargs):
     customer = get_object_or_404(ChakkiCustomer, id=customer_id, tenant=request.tenant)
 
@@ -773,6 +777,7 @@ def customer_profile(request, customer_id, **kwargs):
     }
     template = 'mobile/customer_profile.html' if request.mobile else 'desktop/customer_profile.html'
     return render(request, template, context)
+@login_required
 def add_order(request, **kwargs):
     # We no longer need global setting for rates; use category rates.
     categories = ChakkiCategory.objects.filter(tenant=request.tenant)
@@ -936,6 +941,7 @@ def add_order(request, **kwargs):
     template = 'mobile/add_order_form.html' if request.mobile else 'desktop/add_order_form.html'
     return render(request, template, context)
 
+@login_required
 def order_confirmation(request, order_id, **kwargs):
     order = get_object_or_404(ChakkiOrder, id=order_id, tenant=request.tenant)
     context = {

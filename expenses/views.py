@@ -42,6 +42,7 @@ def expense_dashboard(request, **kwargs):
     }
     template = 'mobile/expenses.html' if request.mobile else 'desktop/expenses.html'
     return render(request, template, context)
+@login_required
 def daily_expense_list(request, **kwargs):
     """Enhanced daily expenses page with analytics, search, filters, and pagination."""
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -101,6 +102,7 @@ def daily_expense_list(request, **kwargs):
     }
     template = 'mobile/daily_expenses.html' if request.mobile else 'desktop/daily_expenses.html'
     return render(request, template, context)
+@login_required
 def daily_expense_detail(request, expense_id, **kwargs):
     """Return expense data as JSON for modal."""
     expense = get_object_or_404(Expense, id=expense_id)
@@ -163,11 +165,13 @@ def loan_list(request, loan_type, **kwargs):
     context = {'expenses': expenses, 'title': title, 'loan_type': loan_type, 'tenant': request.tenant}
     template = 'mobile/expense_list.html' if request.mobile else 'desktop/expense_list.html'
     return render(request, template, context)
+@login_required
 def reminder_list(request, **kwargs):
     reminders = Reminder.objects.filter(tenant=request.tenant).order_by('remind_date')
     context = {'reminders': reminders, 'tenant': request.tenant}
     template = 'mobile/reminder_list.html' if request.mobile else 'desktop/reminder_list.html'
     return render(request, template, context)
+@login_required
 def add_reminder(request, **kwargs):
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -201,6 +205,7 @@ def worker_list(request, **kwargs):
     context = {'workers': workers, 'categories': categories, 'tenant': request.tenant, 'active_count': active_count, 'categories_count': categories_count}
     template = 'mobile/worker_list.html' if request.mobile else 'desktop/worker_list.html'
     return render(request, template, context)
+@login_required
 def add_worker(request, **kwargs):
     categories = WorkerCategory.objects.filter(tenant=request.tenant)
     template = 'mobile/add_worker.html' if request.mobile else 'desktop/add_worker.html'
@@ -263,6 +268,7 @@ def add_worker_category(request, **kwargs):
     messages.info(request, "Category management is now on the Workers page.")
     return redirect('worker_list', schema_name=request.tenant.schema_name)
 
+@login_required
 def edit_worker(request, worker_id, **kwargs):
     worker = get_object_or_404(Worker, id=worker_id)
     categories = WorkerCategory.objects.filter(tenant=request.tenant)
@@ -377,6 +383,7 @@ def worker_profile(request, worker_id, **kwargs):
     return render(request, template, context)
 
 
+@login_required
 def worker_attendance(request, **kwargs):
     today = date.today()
     selected_date = request.GET.get('date')
@@ -452,6 +459,7 @@ def worker_attendance(request, **kwargs):
     template = 'mobile/worker_attendance.html' if request.mobile else 'desktop/worker_attendance.html'
     return render(request, template, context)
 
+@login_required
 def worker_pay(request, worker_id, **kwargs):
     worker = get_object_or_404(Worker, id=worker_id)
     if request.method == 'POST':
@@ -477,6 +485,7 @@ def worker_pay(request, worker_id, **kwargs):
             return redirect(next_url)
         return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)
     return redirect('worker_profile', schema_name=request.tenant.schema_name, worker_id=worker.id)@login_required
+@login_required
 def edit_worker_category(request, **kwargs):
     if request.method == 'POST':
         category_id = request.POST.get('category_id')

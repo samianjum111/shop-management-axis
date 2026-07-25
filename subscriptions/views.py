@@ -7,8 +7,10 @@ from django.db import transaction
 from datetime import timedelta
 from tenants.models import Tenant
 from .models import SubscriptionRequest
+from django.contrib.auth.decorators import login_required
 
 # ---------- Tenant-facing views ----------
+@login_required
 def payment_required(request, schema_name):
     tenant = request.tenant
     if not tenant:
@@ -31,6 +33,7 @@ def payment_required(request, schema_name):
     template = 'mobile/subscription_payment.html' if request.mobile else 'desktop/subscription_payment.html'
     return render(request, template, context)
 
+@login_required
 def upload_screenshot(request, schema_name):
     tenant = request.tenant
     if request.method == 'POST':
@@ -49,6 +52,7 @@ def upload_screenshot(request, schema_name):
         return redirect('subscriptions:subscription_processing', schema_name=schema_name)
     return redirect('subscription_payment', schema_name=schema_name)
 
+@login_required
 def processing_page(request, schema_name):
     tenant = request.tenant
     latest_req = tenant.subscription_requests.first()
@@ -95,6 +99,7 @@ def review_subscriptions(request):
         "rejected_requests": rejected,
     }
     return render(request, "admin/review_subscriptions.html", context)
+@login_required
 def approve_request(request, request_id):
     if not request.user.is_superuser:
         messages.error(request, "Permission denied.")
