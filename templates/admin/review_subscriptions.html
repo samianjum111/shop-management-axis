@@ -190,13 +190,13 @@
             <img src="{{ req.screenshot.url }}" class="screenshot-preview" onclick="openModal('{{ req.screenshot.url }}')" alt="Screenshot">
           </td>
           <td>
-            <form method="post" action="{% url 'subscriptions:approve_request' req.id %}" style="display:inline;">
+            <form method="post" action="{% url 'admin_approve_request' req.id %}" style="display:inline;">
               {% csrf_token %}
               <button type="submit" class="btn-action btn-approve" onclick="return confirm('Approve this subscription?')">
                 <i class="fas fa-check"></i> Approve
               </button>
             </form>
-            <form method="post" action="{% url 'subscriptions:reject_request' req.id %}" style="display:inline;">
+            <form method="post" action="{% url 'admin_reject_request' req.id %}" style="display:inline;">
               {% csrf_token %}
               <button type="submit" class="btn-action btn-reject" onclick="return confirm('Reject this subscription?')">
                 <i class="fas fa-times"></i> Reject

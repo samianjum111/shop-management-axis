@@ -20,6 +20,7 @@ class SubscriptionMiddleware:
             '/static/',
             '/media/',
             '/admin/',
+            '/admin/subscriptions/review/',
         ]
         path = request.path_info
         if path.startswith('/portal/') and '/subscription/' in path:
@@ -30,7 +31,14 @@ class SubscriptionMiddleware:
                 return None
 
         if not tenant.is_subscription_active():
-            payment_url = reverse('subscriptions:subscription_payment', kwargs={'schema_name': tenant.schema_name})
-            return HttpResponseRedirect(payment_url)
+            # Check for pending request first
+            from .models import SubscriptionRequest
+            pending_req = SubscriptionRequest.objects.filter(tenant=tenant, status='pending').first()
+            if pending_req:
+                processing_url = reverse('subscriptions:subscription_processing', kwargs={'schema_name': tenant.schema_name})
+                return HttpResponseRedirect(processing_url)
+            else:
+                payment_url = reverse('subscriptions:subscription_payment', kwargs={'schema_name': tenant.schema_name})
+                return HttpResponseRedirect(payment_url)
 
         return None

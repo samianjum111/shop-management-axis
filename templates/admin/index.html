@@ -1,0 +1,17 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div id="content-main">
+  {% if user.is_superuser %}
+    <div class="module" style="margin-bottom: 1rem;">
+      <h2>Subscription Management</h2>
+      <div style="padding: 0.5rem 1rem;">
+        <a href="{% url 'global_subscription_review' %}" style="font-weight: 600; font-size: 1.1rem; color: #007bff;">
+          <i class="fas fa-clipboard-list"></i> Review Subscription Requests
+        </a>
+      </div>
+    </div>
+  {% endif %}
+  {{ block.super }}
+</div>
+{% endblock %}
