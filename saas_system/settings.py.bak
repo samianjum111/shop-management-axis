@@ -31,17 +31,17 @@ SHARED_APPS = (
     'tenants',
 )
 
-TENANT_APPS = ('core',
+TENANT_APPS = (
+    'core',
     'chakki',
     'expenses',
     'reports',
-    'subscriptions',)
+)
 
 INSTALLED_APPS = list(SHARED_APPS) + list(TENANT_APPS)
 
 MIDDLEWARE = [
     'core.middleware.TenantFromPathMiddleware',
-    'subscriptions.middleware.SubscriptionMiddleware',
     'core.middleware.DeviceMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',

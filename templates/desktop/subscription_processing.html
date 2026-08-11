@@ -1,0 +1,137 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+
+{% block title %}Processing | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .processing-screen {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .processing-card {
+    background: var(--surface);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+  .spinner {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    border: 5px solid var(--border);
+    border-top: 5px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 1rem 0;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .processing-card h4 {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+  }
+  .processing-card .sub {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 0.3rem 1.2rem;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .status-badge.pending { background: #fff3cd; color: #856404; }
+  .status-badge.approved { background: #d4edda; color: #155724; }
+  .status-badge.rejected { background: #f8d7da; color: #b02a37; }
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.7rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s;
+    width: 100%;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+  }
+  .btn-secondary {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.7rem 2rem;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 0.5rem;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    transition: 0.2s;
+  }
+  .btn-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="processing-screen">
+  <div class="processing-card">
+    {% if latest_request.status == 'pending' %}
+      <div class="spinner"></div>
+      <h4>Processing</h4>
+      <div class="sub">Your payment screenshot is being reviewed by our team. This usually takes a few hours.</div>
+      <div><span class="status-badge pending">Pending Review</span></div>
+      <div style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">Requested on {{ latest_request.request_date|date:"d M Y H:i" }}</div>
+    {% elif latest_request.status == 'approved' %}
+      <i class="fas fa-check-circle" style="font-size:3.5rem; color:#28a745;"></i>
+      <h4>Approved!</h4>
+      <div class="sub">Your subscription has been approved. You can now access your portal.</div>
+      <a href="{% url 'portal_dashboard' schema_name=tenant.schema_name %}" class="btn-premium">
+        <i class="fas fa-arrow-right"></i> Go to Dashboard
+      </a>
+    {% elif latest_request.status == 'rejected' %}
+      <i class="fas fa-times-circle" style="font-size:3.5rem; color:#dc3545;"></i>
+      <h4>Rejected</h4>
+      <div class="sub">Your payment screenshot was rejected. Please upload a valid screenshot.</div>
+      <a href="{% url 'subscriptions:subscription_payment' schema_name=tenant.schema_name %}" class="btn-premium">
+        <i class="fas fa-redo"></i> Re-upload
+      </a>
+    {% else %}
+      <i class="fas fa-info-circle" style="font-size:3.5rem; color:var(--accent);"></i>
+      <h4>No Request</h4>
+      <div class="sub">You haven't submitted any payment request yet.</div>
+      <a href="{% url 'subscriptions:subscription_payment' schema_name=tenant.schema_name %}" class="btn-premium">
+        <i class="fas fa-upload"></i> Submit Payment
+      </a>
+    {% endif %}
+    <a href="{% url 'portal_logout' schema_name=tenant.schema_name %}" class="btn-secondary">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+  </div>
+</div>
+{% endblock %}

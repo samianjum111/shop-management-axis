@@ -1,0 +1,177 @@
+{% extends "desktop/base.html" %}
+{% load static %}
+
+{% block title %}Subscription Payment | {{ tenant.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .payment-screen {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .payment-card {
+    background: var(--surface);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+  }
+  .payment-card .icon {
+    font-size: 3.5rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  .payment-card h3 {
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin-bottom: 0.3rem;
+  }
+  .payment-card .sub {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin-bottom: 1.8rem;
+  }
+  .payment-details {
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 1.2rem;
+    margin: 1.2rem 0;
+    text-align: left;
+  }
+  .payment-details .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .payment-details .row:last-child {
+    border-bottom: none;
+  }
+  .payment-details .label {
+    color: var(--text-secondary);
+  }
+  .payment-details .value {
+    font-weight: 600;
+  }
+  .payment-details .value.highlight {
+    color: var(--accent);
+  }
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 2rem 1rem;
+    margin: 1.5rem 0;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .upload-area:hover {
+    border-color: var(--accent);
+    background: var(--surface-alt);
+  }
+  .upload-area input[type="file"] {
+    display: none;
+  }
+  .upload-area .icon {
+    font-size: 2.5rem;
+    color: var(--muted);
+  }
+  .btn-premium {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 40px;
+    padding: 0.7rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s;
+    width: 100%;
+    cursor: pointer;
+  }
+  .btn-premium:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,42,58,0.2);
+  }
+  .btn-secondary {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 0.7rem 2rem;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 0.5rem;
+    display: inline-block;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  .btn-secondary:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+  .file-name {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0.3rem 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-screen">
+  <div class="payment-card">
+    <div class="icon"><i class="fas fa-credit-card"></i></div>
+    <h3>Subscription Required</h3>
+    <div class="sub">Your portal access has been paused. Please complete the payment to continue.</div>
+
+    <div class="payment-details">
+      <div class="row">
+        <span class="label">Plan</span>
+        <span class="value">{{ duration_days }} days</span>
+      </div>
+      <div class="row">
+        <span class="label">Amount</span>
+        <span class="value highlight">₹{{ amount|floatformat:2 }}</span>
+      </div>
+      <div class="row">
+        <span class="label">JazzCash Number</span>
+        <span class="value">{{ jazzcash_number|default:"Not set" }}</span>
+      </div>
+      <div class="row">
+        <span class="label">Account Name</span>
+        <span class="value">{{ jazzcash_name|default:"Not set" }}</span>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'subscriptions:upload_screenshot' schema_name=tenant.schema_name %}">
+      {% csrf_token %}
+      <div class="upload-area" onclick="document.getElementById('screenshotInput').click();">
+        <i class="fas fa-cloud-upload-alt icon"></i>
+        <p>Click to upload payment screenshot</p>
+        <input type="file" name="screenshot" id="screenshotInput" accept="image/*">
+      </div>
+      <div class="file-name" id="file-name"></div>
+      <button type="submit" class="btn-premium">
+        <i class="fas fa-upload"></i> Submit for Review
+      </button>
+    </form>
+
+    <a href="{% url 'portal_logout' schema_name=tenant.schema_name %}" class="btn-secondary">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+  </div>
+</div>
+
+<script>
+  document.getElementById('screenshotInput').addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name || '';
+    document.getElementById('file-name').textContent = fileName ? 'Selected: ' + fileName : '';
+  });
+</script>
+{% endblock %}
