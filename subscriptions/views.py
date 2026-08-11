@@ -95,41 +95,6 @@ def review_subscriptions(request):
         "rejected_requests": rejected,
     }
     return render(request, "admin/review_subscriptions.html", context)
-def review_subscriptions(request):
-    """Super admin review across ALL tenants."""
-    if not request.user.is_superuser:
-        messages.error(request, "You do not have permission to access this page.")
-        return redirect('/admin/')
-
-    pending = []
-    approved = []
-    rejected = []
-
-    # Query each tenant schema
-    for tenant in Tenant.objects.all():
-        try:
-            connection.set_tenant(tenant)
-            pending.extend(SubscriptionRequest.objects.filter(status='pending'))
-            approved.extend(SubscriptionRequest.objects.filter(status='approved')[:20])
-            rejected.extend(SubscriptionRequest.objects.filter(status='rejected')[:20])
-        except Exception as e:
-            # If the subscription table doesn't exist yet in this tenant, skip
-            print(f"⚠️  Skipping tenant {tenant.schema_name}: {e}")
-            continue
-    connection.set_schema_to_public()
-
-    # Sort by request_date descending (most recent first)
-    pending = sorted(pending, key=lambda x: x.request_date, reverse=True)
-    approved = sorted(approved, key=lambda x: x.request_date, reverse=True)[:20]
-    rejected = sorted(rejected, key=lambda x: x.request_date, reverse=True)[:20]
-
-    context = {
-        'pending_requests': pending,
-        'approved_requests': approved,
-        'rejected_requests': rejected,
-    }
-    return render(request, 'admin/review_subscriptions.html', context)
-@staff_member_required
 def approve_request(request, request_id):
     if not request.user.is_superuser:
         messages.error(request, "Permission denied.")
@@ -172,16 +137,15 @@ def reject_request(request, request_id):
 
 # ---------- Admin-only approve/reject (no schema_name needed) ----------
 @staff_member_required
-def admin_approve_request(request, request_id):
+def admin_approve_request(request, tenant_id, request_id):
     if not request.user.is_superuser:
         messages.error(request, "Permission denied.")
         return redirect('global_subscription_review')
 
-    # Switch to tenant's schema to get the request
-    req = get_object_or_404(SubscriptionRequest, id=request_id)
-    tenant = req.tenant
+    tenant = get_object_or_404(Tenant, id=tenant_id)
     connection.set_tenant(tenant)
-    req.refresh_from_db()  # now in tenant schema
+    req = get_object_or_404(SubscriptionRequest, id=request_id)
+    req.refresh_from_db()
     if req.status != 'pending':
         messages.warning(request, "This request has already been processed.")
         connection.set_schema_to_public()
@@ -199,16 +163,15 @@ def admin_approve_request(request, request_id):
     connection.set_schema_to_public()
     messages.success(request, f"Subscription for {tenant.name} approved and extended.")
     return redirect('global_subscription_review')
-
 @staff_member_required
-def admin_reject_request(request, request_id):
+def admin_reject_request(request, tenant_id, request_id):
     if not request.user.is_superuser:
         messages.error(request, "Permission denied.")
         return redirect('global_subscription_review')
 
-    req = get_object_or_404(SubscriptionRequest, id=request_id)
-    tenant = req.tenant
+    tenant = get_object_or_404(Tenant, id=tenant_id)
     connection.set_tenant(tenant)
+    req = get_object_or_404(SubscriptionRequest, id=request_id)
     req.refresh_from_db()
     if req.status != 'pending':
         messages.warning(request, "This request has already been processed.")

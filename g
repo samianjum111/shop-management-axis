@@ -1,55 +1,76 @@
 #!/usr/bin/env python3
 """
-Patch subscriptions/views.py, urls.py, and admin template to fix approve/reject URLs.
-Run with: python3 patch_admin_urls.py
+Fix subscription approve/reject URLs:
+- Add tenant_id to URL patterns and views
+- Update the global admin template to pass tenant_id
 """
 
 import os
-import sys
 import re
 from pathlib import Path
 
-# Set Django settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'saas_system.settings')
+
 import django
 django.setup()
 
-from django.conf import settings
-from django.core.management import call_command
-
-VIEWS_PATH = Path(__file__).parent / 'subscriptions' / 'views.py'
-URLS_PATH = Path(__file__).parent / 'saas_system' / 'urls.py'
-TEMPLATE_PATH = Path(__file__).parent / 'templates' / 'admin' / 'review_subscriptions.html'
-
-def add_admin_views():
-    """Add admin_approve_request and admin_reject_request to views.py."""
-    if not VIEWS_PATH.exists():
-        print("❌ subscriptions/views.py not found.")
-        return False
-
-    with open(VIEWS_PATH, 'r') as f:
+# ----------------------------------------------------------------------
+# 1. Update saas_system/urls.py – add tenant_id to approve/reject paths
+# ----------------------------------------------------------------------
+urls_path = Path('saas_system/urls.py')
+if urls_path.exists():
+    with open(urls_path, 'r') as f:
         content = f.read()
 
-    # Check if already present
-    if 'def admin_approve_request' in content:
-        print("✅ Admin approve/reject views already exist.")
-        return True
+    # Replace approve pattern
+    content = re.sub(
+        r"path\('admin/subscriptions/approve/<int:request_id>/',\s*subscription_views\.admin_approve_request,\s*name='admin_approve_request'\),",
+        "path('admin/subscriptions/approve/<int:tenant_id>/<int:request_id>/', subscription_views.admin_approve_request, name='admin_approve_request'),",
+        content
+    )
+    # Replace reject pattern
+    content = re.sub(
+        r"path\('admin/subscriptions/reject/<int:request_id>/',\s*subscription_views\.admin_reject_request,\s*name='admin_reject_request'\),",
+        "path('admin/subscriptions/reject/<int:tenant_id>/<int:request_id>/', subscription_views.admin_reject_request, name='admin_reject_request'),",
+        content
+    )
 
-    # Insert new functions after the existing reject_request function
-    new_views = """
+    with open(urls_path, 'w') as f:
+        f.write(content)
+    print("✅ Updated saas_system/urls.py")
+else:
+    print("❌ saas_system/urls.py not found")
 
-# ---------- Admin-only approve/reject (no schema_name needed) ----------
-@staff_member_required
-def admin_approve_request(request, request_id):
+# ----------------------------------------------------------------------
+# 2. Update subscriptions/views.py – accept tenant_id and switch schema
+# ----------------------------------------------------------------------
+views_path = Path('subscriptions/views.py')
+if views_path.exists():
+    with open(views_path, 'r') as f:
+        content = f.read()
+
+    # Replace the approve function signature and logic
+    # Find the function definition and replace with corrected version
+    # We'll locate the start of the function and replace everything until the next top-level def
+    # We'll use a more robust approach: split by lines and replace the function block
+    lines = content.splitlines()
+    new_lines = []
+    i = 0
+    in_approve = False
+    in_reject = False
+    approve_skip = False
+    reject_skip = False
+
+    # We'll define the corrected functions as strings
+    corrected_approve = """def admin_approve_request(request, tenant_id, request_id):
     if not request.user.is_superuser:
         messages.error(request, "Permission denied.")
         return redirect('global_subscription_review')
 
-    # Switch to tenant's schema to get the request
-    req = get_object_or_404(SubscriptionRequest, id=request_id)
-    tenant = req.tenant
+    tenant = get_object_or_404(Tenant, id=tenant_id)
     connection.set_tenant(tenant)
-    req.refresh_from_db()  # now in tenant schema
+    req = get_object_or_404(SubscriptionRequest, id=request_id)
+    req.refresh_from_db()
     if req.status != 'pending':
         messages.warning(request, "This request has already been processed.")
         connection.set_schema_to_public()
@@ -66,17 +87,16 @@ def admin_approve_request(request, request_id):
             messages.warning(request, f"Tenant {tenant.name} has no duration set. Subscription not extended.")
     connection.set_schema_to_public()
     messages.success(request, f"Subscription for {tenant.name} approved and extended.")
-    return redirect('global_subscription_review')
+    return redirect('global_subscription_review')"""
 
-@staff_member_required
-def admin_reject_request(request, request_id):
+    corrected_reject = """def admin_reject_request(request, tenant_id, request_id):
     if not request.user.is_superuser:
         messages.error(request, "Permission denied.")
         return redirect('global_subscription_review')
 
-    req = get_object_or_404(SubscriptionRequest, id=request_id)
-    tenant = req.tenant
+    tenant = get_object_or_404(Tenant, id=tenant_id)
     connection.set_tenant(tenant)
+    req = get_object_or_404(SubscriptionRequest, id=request_id)
     req.refresh_from_db()
     if req.status != 'pending':
         messages.warning(request, "This request has already been processed.")
@@ -88,104 +108,78 @@ def admin_reject_request(request, request_id):
     req.save()
     connection.set_schema_to_public()
     messages.success(request, f"Subscription request for {tenant.name} rejected.")
-    return redirect('global_subscription_review')
-"""
+    return redirect('global_subscription_review')"""
 
-    # Find the last function definition (or end of file)
-    lines = content.splitlines()
-    # Insert after the last line that is not a decorator or blank
-    # We'll place it after the existing reject_request function.
-    # Find the last occurrence of "def reject_request" and insert after its body.
-    # Simpler: append at the end of the file.
-    new_content = content + new_views
-    with open(VIEWS_PATH, 'w') as f:
-        f.write(new_content)
-    print("✅ Added admin approve/reject views.")
-    return True
+    # We'll scan lines and skip the old functions, then insert our corrected versions
+    # Keep track of when we are inside a function we want to replace
+    inside_approve = False
+    inside_reject = False
+    skip_until_next_def = False
+    for line in lines:
+        # Detect start of admin_approve_request
+        if line.strip().startswith('def admin_approve_request('):
+            inside_approve = True
+            # Add the corrected function
+            new_lines.extend(corrected_approve.splitlines())
+            skip_until_next_def = True
+            continue
+        # Detect start of admin_reject_request
+        if line.strip().startswith('def admin_reject_request('):
+            inside_reject = True
+            # Add the corrected function
+            new_lines.extend(corrected_reject.splitlines())
+            skip_until_next_def = True
+            continue
+        # If we are inside a function we skipped, skip lines until we hit a top-level def or end
+        if skip_until_next_def:
+            # If line is not indented and is not a blank line, it might be a new top-level definition
+            if line and not line[0].isspace():
+                # This is a new top-level definition, stop skipping
+                skip_until_next_def = False
+                # But we already added our corrected function, so we should not add this line again
+                # However, we need to keep this line (the next function) – but we already added our function,
+                # so we continue without adding this line (it will be processed in next iterations)
+                # But we must not skip it permanently; we'll set skip_until_next_def=False and continue
+                # Actually, we want to keep all lines after the replaced functions.
+                # So we should add this line now.
+                new_lines.append(line)
+            # If we are still skipping, do not add the line
+            continue
+        # If not skipping, add the line
+        new_lines.append(line)
 
-def add_admin_urls():
-    """Add admin-specific approve/reject URLs to saas_system/urls.py."""
-    if not URLS_PATH.exists():
-        print("❌ saas_system/urls.py not found.")
-        return False
+    # Write the new content
+    with open(views_path, 'w') as f:
+        f.write('\n'.join(new_lines))
+    print("✅ Updated subscriptions/views.py")
+else:
+    print("❌ subscriptions/views.py not found")
 
-    with open(URLS_PATH, 'r') as f:
+# ----------------------------------------------------------------------
+# 3. Update templates/admin/review_subscriptions.html – use tenant_id in URL tags
+# ----------------------------------------------------------------------
+template_path = Path('templates/admin/review_subscriptions.html')
+if template_path.exists():
+    with open(template_path, 'r') as f:
         content = f.read()
 
-    # Check if already present
-    if "admin/subscriptions/approve/" in content:
-        print("✅ Admin approve/reject URLs already exist.")
-        return True
+    # Replace approve form action
+    content = re.sub(
+        r"action=\"{% url 'admin_approve_request' req\.id %}\"",
+        "action=\"{% url 'admin_approve_request' tenant_id=req.tenant.id request_id=req.id %}\"",
+        content
+    )
+    # Replace reject form action
+    content = re.sub(
+        r"action=\"{% url 'admin_reject_request' req\.id %}\"",
+        "action=\"{% url 'admin_reject_request' tenant_id=req.tenant.id request_id=req.id %}\"",
+        content
+    )
 
-    # Add import if missing
-    if 'from subscriptions import views as subscription_views' not in content:
-        # Add after existing imports
-        import_line = "from subscriptions import views as subscription_views"
-        lines = content.splitlines()
-        insert_idx = 0
-        for i, line in enumerate(lines):
-            if line.startswith('from ') or line.startswith('import '):
-                insert_idx = i + 1
-        lines.insert(insert_idx, import_line)
-        content = '\n'.join(lines)
+    with open(template_path, 'w') as f:
+        f.write(content)
+    print("✅ Updated templates/admin/review_subscriptions.html")
+else:
+    print("❌ templates/admin/review_subscriptions.html not found – but that's OK if it doesn't exist.")
 
-    # Add URL patterns
-    # Find urlpatterns list and insert new paths after the existing admin/subscriptions/review/ path
-    pattern = r"(urlpatterns\s*=\s*\[[\s\S]*?)(\n\])"
-    replacement = r"""\1
-    path('admin/subscriptions/approve/<int:request_id>/', subscription_views.admin_approve_request, name='admin_approve_request'),
-    path('admin/subscriptions/reject/<int:request_id>/', subscription_views.admin_reject_request, name='admin_reject_request'),
-]"""
-    new_content = re.sub(pattern, replacement, content, count=1)
-
-    if new_content == content:
-        print("⚠️  Could not automatically add URLs. Please add them manually.")
-        return False
-
-    with open(URLS_PATH, 'w') as f:
-        f.write(new_content)
-    print("✅ Added admin approve/reject URLs.")
-    return True
-
-def update_template():
-    """Update admin template to use new URLs."""
-    if not TEMPLATE_PATH.exists():
-        print("❌ admin/review_subscriptions.html not found.")
-        return False
-
-    with open(TEMPLATE_PATH, 'r') as f:
-        content = f.read()
-
-    # Replace old URLs with new ones
-    # We'll replace the action URLs in the form tags.
-    # Forms currently use:
-    #   {% url 'subscriptions:approve_request' req.id %}
-    #   {% url 'subscriptions:reject_request' req.id %}
-    # Replace with:
-    #   {% url 'admin_approve_request' req.id %}
-    #   {% url 'admin_reject_request' req.id %}
-    new_content = content.replace("{% url 'subscriptions:approve_request' req.id %}", "{% url 'admin_approve_request' req.id %}")
-    new_content = new_content.replace("{% url 'subscriptions:reject_request' req.id %}", "{% url 'admin_reject_request' req.id %}")
-
-    if new_content == content:
-        print("⚠️  No changes made to template (maybe already updated).")
-    else:
-        with open(TEMPLATE_PATH, 'w') as f:
-            f.write(new_content)
-        print("✅ Updated admin template to use new URLs.")
-    return True
-
-def main():
-    print("🔧 Patching admin approve/reject URLs...")
-    views_ok = add_admin_views()
-    urls_ok = add_admin_urls()
-    template_ok = update_template()
-
-    if views_ok and urls_ok and template_ok:
-        print("\n🎉 Done! Please restart your Django server.")
-        print("   Visit /admin/subscriptions/review/ and try Approve/Reject now.")
-    else:
-        print("\n⚠️  Some steps failed. Please review errors above.")
-
-if __name__ == "__main__":
-    main()
+print("\n🎉 Fix applied! Restart your Django server and test the approve/reject buttons.")
