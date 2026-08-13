@@ -6,9 +6,14 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+
+# Railway proxy settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['149.56.80.98', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['149.56.80.98', 'localhost', '127.0.0.1', '*.railway.app']
+    # Add the Railway domain from environment if needed]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://shop-management-axis-production.up.railway.app',
@@ -108,6 +113,8 @@ TIME_ZONE = 'Asia/Karachi'
 USE_I18N = True
 USE_TZ = True
 
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
